@@ -6,7 +6,7 @@ lints.workspace = true
 
 [package]
 name = "tectonic"
-version = "0.0.0-dev.0" # assigned with cranko (see README)
+version = "0.16.0-dev" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 A modernized, complete, embeddable TeX/LaTeX engine. Tectonic is forked from the XeTeX
