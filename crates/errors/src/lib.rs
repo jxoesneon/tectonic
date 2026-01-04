@@ -126,11 +126,10 @@ macro_rules! atry {
 #[macro_export]
 macro_rules! a_ok_or {
     ($option:expr ; $( $annotation:tt )+) => {{
-        use $crate::atry;
         $option.ok_or_else(|| {
             let mut ar = $crate::AnnotatedMessage::default();
             $(
-                atry!(@aa ar $annotation);
+                $crate::atry!(@aa ar $annotation);
             )+
             ar
         })?
