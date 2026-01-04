@@ -152,10 +152,12 @@ fn main() {
     // something I'd be relatively OK with since it'd only affect the progam
     // UI, not the processing results).
 
+use is_terminal::IsTerminal;
+
     let chatter_level = ChatterLevel::from_str(&args.chatter_level).unwrap();
     let use_cli_color = match &*args.cli_color {
         "always" => true,
-        "auto" => atty::is(atty::Stream::Stdout),
+        "auto" => std::io::stdout().is_terminal(),
         "never" => false,
         _ => unreachable!(),
     };

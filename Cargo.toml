@@ -61,7 +61,7 @@ name = "tectonic"
 crate-type = ["rlib"]
 
 [dependencies]
-atty = "0.2"
+is-terminal = "0.4"
 byte-unit = "^4.0"
 cfg-if = "1.0"
 error-chain = "^0.12"
