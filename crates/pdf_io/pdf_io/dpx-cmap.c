@@ -315,8 +315,7 @@ CMap_decode_char (CMap *cmap,
         default:
             _tt_abort("%s: Unknown mapping type.", CMAP_DEBUG_STR);
         }
-        if (inbytesleft)
-            *inbytesleft -= count;
+        *inbytesleft -= count;
         *inbuf = p;
     }
 }
