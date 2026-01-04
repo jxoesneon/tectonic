@@ -2,10 +2,10 @@ name: "CodeQL"
 
 on:
   push:
-    branches: ["local/ferrotex-vendor-v2", "main"]
+    branches: ["local/ferrotex-vendor-v2", "master"]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: ["local/ferrotex-vendor-v2"]
+    branches: ["local/ferrotex-vendor-v2", "master"]
   schedule:
     - cron: "39 5 * * 1"
 
