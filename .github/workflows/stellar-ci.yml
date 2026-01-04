@@ -60,7 +60,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +76,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
 
@@ -86,14 +95,24 @@ jobs:
           brew install graphite2 harfbuzz icu4c openssl
           echo "PKG_CONFIG_PATH=$(brew --prefix icu4c)/lib/pkgconfig:$(brew --prefix openssl)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
-      # Windows Deps (vcpkg - simplified for speed if possible, else rely on cached setup or pre-built)
-      # Tectonic's original CI used vcpkg, which is heavy.
-      # For "Stellar CI" on a fork, we might want to rely on `tectonic_dep_support` to build generic deps
-      # OR use the vcpkg action. Let's try attempting a build without heavy vcpkg first if crates vendor it,
-      # but Tectonic relies heavily on external libs.
-      # Re-using their vcpkg approach might be safest for Windows.
-      # For now, let's stick to standard cargo test and see if it handles vendored deps.
-      # Tectonic crates often have 'external-harfbuzz' etc features disabled by default.
+      # Windows Deps (vcpkg)
+      - name: Install vcpkg dependencies
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/vcpkg-deps
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Setup build variables (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          echo "TECTONIC_DEP_BACKEND=vcpkg" >> "$GITHUB_ENV"
+          echo "VCPKG_ROOT=$GITHUB_WORKSPACE/target/vcpkg" >> "$GITHUB_ENV"
+          echo "RUSTFLAGS=-Ctarget-feature=+crt-static" >> "$GITHUB_ENV"
+          echo "VCPKGRS_TRIPLET=x64-windows-static-release" >> "$GITHUB_ENV"
+          echo "VCPKG_DEFAULT_HOST_TRIPLET=x64-windows-static-release" >> "$GITHUB_ENV"
+          # Format file locking issue workaround:
+          echo "RUST_TEST_THREADS=1" >> "$GITHUB_ENV"
 
       - name: Run Tests
-        run: cargo test --workspace
+        run: cargo test --workspace --target ${{ matrix.target }}
