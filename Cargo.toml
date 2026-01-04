@@ -6,7 +6,7 @@ lints.workspace = true
 
 [package]
 name = "tectonic"
-version = "0.0.0-dev.0" # assigned with cranko (see README)
+version = "0.16.0" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 A modernized, complete, embeddable TeX/LaTeX engine. Tectonic is forked from the XeTeX
@@ -95,7 +95,7 @@ tectonic_errors = { path = "crates/errors", version = "0.0.0-dev.0" }
 tectonic_geturl = { path = "crates/geturl", version = "0.0.0-dev.0", default-features = false }
 tectonic_io_base = { path = "crates/io_base", version = "0.0.0-dev.0" }
 tectonic_status_base = { path = "crates/status_base", version = "0.0.0-dev.0" }
-tectonic_xdv = { path = "crates/xdv", version = "0.0.0-dev.0" }
+tectonic_xdv = { path = "crates/xdv", version = "0.4.0" }
 tectonic_xetex_layout = { path = "crates/xetex_layout", version = "0.0.0-dev.0" }
 tempfile = "^3.1"
 termcolor = "^1.1"
