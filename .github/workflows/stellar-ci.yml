@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - local/ferrotex-vendor-v2
-      - main
+      - master
   pull_request:
     branches:
       - local/ferrotex-vendor-v2
-      - main
+      - master
 
 env:
   CARGO_TERM_COLOR: always
