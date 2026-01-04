@@ -1166,11 +1166,15 @@ static void do_arcfour_setkey (ARC4_CONTEXT *ctx, const unsigned char *key, unsi
     ctx->sbox[i] = ctx->sbox[j];
     ctx->sbox[j] = t;
   }
-  memset(karr, 0, 256);
+  {
+    volatile unsigned char *p = karr;
+    while (p < karr + 256) *p++ = 0;
+  }
 }
 
 void ARC4_set_key (ARC4_CONTEXT *ctx, unsigned int keylen, const unsigned char *key)
 {
+  // codeql[cpp/weak-cryptographic-algorithm] : RC4 is required for backward compatibility with PDF 1.1
   do_arcfour_setkey(ctx, key, keylen);
   _gcry_burn_stack(300);
 }
