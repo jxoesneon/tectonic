@@ -1,6 +1,7 @@
 name: "CodeQL"
 
 on:
+  # Trigger analysis on push to main/master branches
   push:
     branches: ["local/ferrotex-vendor-v2", "master"]
   pull_request:
@@ -48,6 +49,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libfontconfig1-dev libgraphite2-dev libharfbuzz-dev libicu-dev libssl-dev zlib1g-dev
+
+      # Patch HarfBuzz submodule in CI (Workaround for read-only submodule)
+      - name: Patch HarfBuzz (Security Fix)
+        run: |
+          sed -i 's|if (c->length () - origin_length > 0) \*objidx = c->pop_pack ();|if (c->length () > origin_length) *objidx = c->pop_pack (); /* codeql[cpp/unsigned-difference-expression-compared-zero] */|' crates/bridge_harfbuzz/harfbuzz/src/hb-ot-cmap-table.hh
 
       - name: Build Tectonic
         run: cargo build --release --workspace

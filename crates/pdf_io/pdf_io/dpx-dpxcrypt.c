@@ -1175,7 +1175,7 @@ static void do_arcfour_setkey (ARC4_CONTEXT *ctx, const unsigned char *key, unsi
 void ARC4_set_key (ARC4_CONTEXT *ctx, unsigned int keylen, const unsigned char *key)
 {
   // RC4 is required for backward compatibility with PDF 1.1
-  do_arcfour_setkey(ctx, key, keylen); // codeql[cpp/weak-cryptographic-algorithm]
+  do_arcfour_setkey(ctx, key, keylen); /* codeql[cpp/weak-cryptographic-algorithm] */
   _gcry_burn_stack(300);
 }
 
