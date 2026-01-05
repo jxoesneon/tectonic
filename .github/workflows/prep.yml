@@ -15,6 +15,9 @@ jobs:
       - name: Install latest Cranko
         run: |
           d="$(mktemp -d /tmp/cranko.XXXXXX)"
+          cd "$d"
+          curl --proto '=https' --tlsv1.2 -sSf https://pkgw.github.io/cranko/fetch-latest.sh | sh
+          echo "PATH=$d:$PATH" >> "$GITHUB_ENV"
       - name: "Checkout Branch"
         run: git checkout -B ${{ github.ref_name }}
       - name: "cranko release-workflow apply-versions"
