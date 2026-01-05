@@ -26,6 +26,7 @@ cfg_if::cfg_if! {
         pub type WriteError = toml::ser::Error;
     } else {
         use std::error;
+        use std::fmt::Display;
 
         #[derive(Debug)]
         pub enum ReadError {}
