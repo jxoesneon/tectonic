@@ -140,6 +140,7 @@ jobs:
         run: cranko cargo foreach-released --pause=90 -- publish --no-verify
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
   update-website:
     runs-on: ubuntu-latest
     if: ${{ inputs.is-release }}
