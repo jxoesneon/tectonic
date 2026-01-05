@@ -20,4 +20,4 @@ test_output.txt
 *.log
 *.out
 /tests/tex-outputs/*.log
-/tests/tex-outputs/*.out
+/tests/tex-outputs/*.out.agent/
