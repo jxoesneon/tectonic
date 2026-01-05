@@ -1,8 +1,3043 @@
-# See elsewhere for changelog
+# rc: micro bump
 
-This project’s release notes are curated from the Git history of its main
-branch. You can find them by looking at [the version of this file on the
-`release` branch][branch] or the [GitHub release history][gh-releases].
+- chore(ci): align release trigger with Cranko workflow
+- chore: ignore .agent directory and fix .gitignore
+- chore: stop tracking .agent folder and update .gitignore
+- fix: revert accidental renaming of crates in source control
+- docs: improve release workflow resilience with preventive steps
+- docs: add stellar release workflow
+- chore: cleanup repository artifacts and update .gitignore
+- chore: Tectonic v0.16.2 Release Hardening and CI/CD Automation
+- fix(ci): patch harfbuzz in CI & fix crypto suppression
+- chore(ci): modernize CodeQL actions to v4
+- fix(ci): replace CodeQL autobuild with manual build steps
+- fix(ci): target master branch for CodeQL
+- fix(ci): use vcpkg and explicit targets for Windows support
+- chore(deps): update lockfile to resolve security audit
+- fix(ci): target master branch and remove legacy workflow
+- ci: add CodeQL analysis for C++
+- ci: implement stellar CI/CD (audit, clippy, matrix test)
+- chore: update tectonic_xdv dependency to 0.4.0
+- chore: bump tectonic_xdv to 0.4.0
+- Create codeql.yml
+- chore: stabilize version to 0.16.0
+- chore: bump version and patch build flags for ferrotex vendor v2
+- chore: bump vcpkg ref, maybe fix gperf build
+- Don't publish bundle_env_overrides_test
+- feat(bundle_env_overrides_test): decouple crate
+- fix(tests/bundle_env_overrides): make robust
+- Port xetex_layout to Rust (#1138)
+- Add graphite2 bridge
+- Add harfbuzz Rust bridge, simple tests
+- fix build_dir in select and pack actions
+- Make hash keys type-strict to match the lookup type.
+- fix(ci): allow running for forks
+- Swap HashData to use a SlotMap internally, uncapping max hashed items
+- Switch mac setup to use precompiled cranko
+- Add mac_core library for FFI bindings to CoreFoundation/CoreText
+- Enable and fix undocumented_unsafe_blocks
+- Remove backtrace cfg that would always error if enabled
+- Add documentation to top-level project
+- Make sure all crates inherit workspace-level lints
+- Shift from crate-level lint config to workspace-level lints.rust config. Apply
+  missing_docs globally.
+- Add test for `tectonic-biber` with cleanups
+- Prefer `tectonic-biber` as the biber executable
+- bundles: add tests for bundle url overrides env vars
+- Move fmt to prep
+- Try adding problem matchers
+- Fix features hopefully
+- Fix no features test by enabling exactly one necessary feature
+- Appease clippy
+- Update edition to 2021
+- Remove upload_coverage, try using codecov action
+- Update upload_coverage.yml
+- Allow missing continuous release
+- doc: make format version var less confusing
+- Add name
+- Upload coverage testing
+- Also work on push
+- Fix artifact download
+- Shrink
+- Make coverage upload work
+- Fix feature builds
+- Deploy appimage
+- Fix output ref
+- Document the TECTONIC_BUNDLE_.. variables
+- Use same name for release bundle everywhere
+- Fix artifact download for deploys
+- Fix vso
+- Fix deploy actions
+- Make sure deploy has access to necessary secrets
+- Port deploy, split CI into branch and PR top-level workflows, and remove
+  remaining Azure files
+- Port remaining jobs
+- Port cross builds
+- Port artifact publishing and vcpkg jobs
+- Port prep and pkg-config builds to GitHub CI
+- Fix linkage
+- Fix freetype component
+- Add Rust bindings for FreeType2
+- Add crates as components, update comment
+- Switch to using llvm-cov
+- Remove extraFlags, add fontconfig to mac vcpkg
+- Also exclude crate in packaging
+- Params are compile-time
+- Fix name
+- Add params
+- Add params
+- Add params
+- Exclude fontconfig tests on bad targets
+- Add files
+- Make PNG dep into its own bridge crate
+- Use fontconfig bridge in xetex-layout
+- Create fontconfig bridge - not yet used by anything
+- Fix clippy
+- Fix v2 cli flag being incorrectly applied
+- Add workaround for mac external harfbuzz issues
+- Ignore stdin send failure if we get BrokenPipe - the child already closed
+  the pipe.
+- Add ot shaper test
+- Switch to using baseline cross
+- Install mingw pkgconf
+- Revert "Disable non-windows builds"
+- Disable non-windows builds
+- Bump to windows 2022
+- Add coverage variables to job
+- Fix later comment
+- Add spaces to yaml
+- Install kcov manually to workaround it not existing in 24.04
+- Update versions
+- Fix clippy
+- Fix clippy
+- Implement pdf_fstream test - fails on master
+- Clean up some clippy annotations, clean up warnings
+- Fix test_pool
+- Fix nom build
+- Bump thiserror
+- Remove unused fs2 dep
+- Simple bumps from sub-crates
+- Update watchexec
+- Drop normal unused dependencies
+- Drop dev deps unused since bundle rework
+- Bump zip
+- Bump quick_xml
+- Cache vcpkg build to improve CI speed (#1257)
+- Missing bst test, more odd strings
+- Add missing and duplicate bibdata tests
+- Fix #1185
+- Extend tested control sequences
+- Add multi-file and control-sequence tests for Bibtex
+- Fix #1237 by also starting new jobs, not just existing ones
+- Fix #1213 by using `quit_gracefully`
+- Update vcpkg ref (#1252)
+- Update macos version (#1251)
+- Apply clippy suggestions
+- Create subdir with bundle name
+- Modify gitignore
+- Added `texlive2024-0312` bundle
+- Add synctex option in Toml file (#1197)
+- Fix swapped logging bug
+- Docs
+- Fix tests, remove outdated test
+- Tweak cli args
+- Bundle crate rewrite
+- Added `bundles` directory
+- Added `bundle create`
+- Added `extra_paths` document option
+- Generate shell completions for `nextonic`
+- Fix macos version
+- fix(clippy): use more efficient cloning
+- fix(clippy): remove unnecessary borrow
+- fix(clippy): remove unnecessary `to_string()`
+- fix(clippy): ignore `cfg(backtrace)`
+- fix(clippy): remove unnecessary `to_string()`
+- build/fix: update `time`
+- Also disable on i686 for now
+- Disable utf8 chars on external harfbuzz
+- Fix name
+- Add graphite tests, make Graphite work correctly in more cases
+- Add failing test for arXiv issue
+- Add failing test for remaining arxiv failures
+- Create parent directories before writing files
+- Add tests for DefinitelySame
+- Fix executable typo
+- Ignore watch test even on normal kcov run
+- Fix trip/etrip
+- Appease clippy
+- Publish test-failure artifacts.
+- Many small changes/improvements to the test utilities
+- Start test improvements
+- Update comments
+- Don't rebuild tectonic(bin) when non-binary files are changed
+- Fix clippy errors. Ignore to_string_trait_impl for now - that's actually a
+  change in promises to users.
+- Update watchexec to v3.0
+- Bump easy deps + hyper test
+- Remove structopt from dev-dependencies
+- More cli cleanup
+- Organized v2cli
+- Removed atty dependency
+- Update clap in xdv example
+- Replaced structopt with clap
+- shell escape: fixes creation of temporary subdirectories
+- Minor edits
+- Pretty quotes in mdbook
+- Normalize quotes in READMEs
+- Normalize quotes in comments
+- Normalize quotes in docs
+- Clippy
+- Docs
+- Added config and inline files
+- Added input array
+- Cargo.lock: general dependency update
+- Resolve/work around the latest Clippy complaints
+- Test `--web-bundle` overrides for v1 & v2 CLI
+- Add consistent `--web-bundle` for v1 & v2 CLI
+- Allow `-X` at later positions in the CLI
+- Test `--web-bundle` with refactored `config.rs`
+- Fix #1105 - issue caused by incorrectly only growing fields once when they may
+  need to be grown multiple times.
+- Removed `tectonic show metadata`
+- Docs
+- Cargo.lock: general deps update
+- Update for latest Clippy complaints
+- Docs
+- Cleanup
+- Added document metadata
+- Update Arch Linux package URL in index.md
+- Document 'shell_escape_cwd' for Tectonic.toml
+- docs(unicode): Fix typo
+- Search for external commands
+- Remove C code from engine_bibtex
+- dist/azure-generic-build.yml: CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG=true
+- CI/doc updates to track the Harfbuzz/ICU decoupling
+- bridge_harfbuzz: no longer require ICU
+- bridge_icu: put the libicudata link hack here, where it belongs
+- dist/azure-generic-build.yml: print full backtraces
+- dist: CI updates
+- Update CI builds to Ubuntu 22.04 / OpenSSL 3
+- Add aarch64-unknown-linux-musl as a cross-buildable architecture
+- Fix title case with colons, add test for behavior
+- Cargo.toml: VS Code wants to reformat this file for me
+- Cargo.toml: update vcpkg to latest
+- Cargo.lock: bulk-update all deps
+- Make it so that "tectonic -Z help" actually works
+- Remove MIPS target that is downgrading to Tier 3
+- Remove unused hashes on raw strings
+- Try making rustfmt/clippy builds run earlier
+- Make file expectations always check all expected files at once - don't panic
+  after first different file
+- Improve brace test
+- Add test for brace syntax in bib
+- Format imports
+- Port `scan_fn_def`
+- Update forum links
+- Fix new-line endings
+- Improve grammar
+- Match V1 CLI options
+- Use curly apostrophes
+- Match build documentation
+- Match watch usage synopsis
+- Match new usage synopsis
+- Match dump documentation
+- Merge unstable option help
+- Match compile options
+- Match compile usage synopsis
+- Match bundle usage synopsis
+- Alphabetize subcommands
+- Remove FIXME
+- added proper exe parsing for watch, supports spaces in tectonic location
+- Cargo.lock: update deps
+- Cargo.toml: main crate requires latest tectonic_bridge_core
+- Update test directory. Should work for-real for-real this time
+- Fix windows not supporting files named `AUX`
+- Fix silly mistake 2: Not setting aux location, and add test for nested aux
+  files
+- Fix preamble and add tests
+- Fix all C warnings, clippy + fmt
+- Peekable -> rust
+- docs/src/v2cli/build.md: document the new --target option
+- src/bin/tectonic/v2cli.rs: use `as_ref()` instead of `clone()`
+- Cargo.toml: update vcpkg version
+- rename reproducible mode to deterministic mode and move to unstable opts
+- introduce explicit `--reproducible` mode
+- stub ttbc_get_abspath and ttbc_input_get_mtime for reproducibility
+- fixed rustfmt error
+- added ability to specify target of build
+- Cargo.lock: update various dependencies
+- Fix clippy
+- Fix watchexec execution of custom commands - they need to act as a shell, not
+  a flat command. Also fix 'finished running' dialog
+- Format
+- Fix empty is a directory issue on windows
+- Add a bunch more tests - crossrefs, multiple cites, mismatched aux lines. This
+  should cover most main code paths as well as some particularly useful warning/
+  error paths
+- tests/executable.rs: skip the watch test when using kcov
+- dist/azure-coverage.yml: remove a now-unneeded line
+- Don't run watch on mips for now
+- Remove unecessary mut
+- Alter file indefinitely until watch activates sufficiently
+- Try making sleeps longer, works locally
+- Make thread only change after process starts
+- Try more reliable watch test
+- Cfg correctly
+- Merge remote
+- Fix watchexec execution
+- Fix watchexec, test hyper. Added tokio
+- Run `cargo update`
+- Bump zip
+- Bump toml, missed sub-crate deps
+- Update open
+- Update sha2
+- Update md-5
+- Update quick-xml
+- fmt, handle \r\n correctly in bibtex
+- Add more basic bibtex tests to help avoid regressions
+- Bump pinned vcpkg version to fix microsoft/vcpkg#30542
+- Make the latest Clippy happy
+- Cargo.lock: update dep versions
+- Fix Rustdoc internal links
+- Fix typo underyling -> underlying
+- engine_spx2html: tidy up no-output modes
+- engine_spx2html: add do-not-emit mode
+- src/driver.rs: expose HTML precomputed assets
+- engine_spxhtml: wire up "assets spec" emission to the toplevel crate
+- engine_spx2html: add Assets type and emit assets using it
+- Fix everything for Rust 1.67's Clippy
+- docs: fix init page title, and add some See Alsos
+- Cargo.toml: try updating vcpkg
+- fix clippy warnings
+- update documentation (include V2cli init subcommand)
+- fix docstrings for Init and New
+- separates 'new' and 'init' commands
+- Address new Clippy complaints with 1.65
+- Cargo.lock: update deps
+- dist: remove Windows vcpkg workaround
+- Temporary cargo-vcpkg override
+- Default Windows vcpkg to using a custom triplet
+- Cargo.lock: update deps
+- Update vcpkg and re-add a Linux vcpkg build
+- dist: add aarch64-apple-darwin build
+- docs/src/howto/auctex-setup: tiny text revisions
+- docs/src/howto/auctex-setup: recommend "tectonic -X" rather than "nextonic"
+- docs/src/howto/auctex-setup/index.md: use hard linewraps
+- [add] How-To in the book for AucTeX and Tectonic
+- engine_spx2html: sketch out "flexible" start tag
+- Update Cranko internal version requirements for TL2022 release
+- dist/azure-deployment.yml: use new --pause option for Cargo publishing
+- Cargo.lock: dep updates
+- docs: update installation in Getting Started guide too
+- docs/src/installation/index.md: document drop-in installer
+- Updates to appease latest Clippy
+- reference_sources: update to the TeXLive 2022.0 checkpoint
+- engine_xetex: update to format version 33
+- dist/azure-build-and-test.yml: set VCPKG_ROOT for Windows prebuild step too
+- dist/azure-build-and-test-vcpkg.yml: attempt to fix macOS vcpkg CI build
+- Cargo.toml: update to latest vcpkg
+- Cargo.lock: update deps
+- dist: upgrade Mac Azure Pipelines CI to macos-11
+- dist: move to three-stage Azure Pipelines build
+- Fix some new Clippy complaints
+- Cargo.lock: update deps
+- tectonic: make it so that `tectonic -Zhelp` works
+- tectonic/v2cli: don't actually open PDF in test mode
+- Use the value of the continue-on-errors option
+- tests/executable.rs: add a multi-bibtex executable test
+- Cargo.lock: update some deps
+- chore: remove unused imports
+- chore: remove test case for shell_escape_cwd
+- chore: add docs
+- fix: make shell-shell-cwd imply shell-escape
+- chore(tests): add test for shell_escape_cwd
+- feat: add option for shell-escape working dir
+- Cargo.lock: update deps
+- fix #906: When a .tex file generates multiple .aux files, only one .aux file
+  can be processed by Bibtex. Now in function `bibtex_pass`, all the .aux files
+  generated by previous passes are processed by BibtexEngine. The intermediate
+  files is listed by listing files in the `MemoryIo`, refers to function
+  `BridgeState.get_intermediate_file_names`.
+- Switch to ctry!
+- Make clippy happy
+- Augment error message when opening files for external tools
+- Cargo.lock: update deps
+- dist: remove Arch Linux package updating
+- tests/tex-outputs/pipe_input.tex: add this
+- Slightly revise cache documentation remarks
+- Make cache location customizable
+- Plug memory leaks identified by fuzzer+Valgrind
+- reference_sources: mark us as up-to-date with TeXLive 2021
+- tests: update for TeXLive 2021
+- src/io/memory.rs: allow \openin of \openout files to succeed
+- tectonic: start using the versioned default bundle URL
+- dist/azure-build-and-test-vcpkg.yml: fix up macOS vcpkg build (hopefully)
+- tests/executable.rs: bad -X position
+- Cargo.toml: update vcpkg version
+- src/bin/tectonic/main.rs: -X option in CLI docs
+- engine_spx2html: use pinot 0.1.4
+- engine_spx2html: try to fix released crates.io artifacts
+- tests/executable.rs: avoid the new test on Windows
+- src/driver.rs: fix issue #844
+- tests/executable.rs: add a testcase for issue 844
+- Cargo.lock: update deps
+- Fix new Clippy complaints
+- Wire up the new spx2html implementation in the main engine
+- engine_spx2html: Add this
+- Fix some new Clippy complaints
+- Updating links
+- Updating Arch Linux packages
+- Cargo.lock: update deps
+- engine_xetex: use the new xetex_format
+- xetex_format: update decoder tool to use multitool convention, and add string
+  decoding
+- engine_xetex: start using header autogenerated by the xetex_format crate
+- dist/azure-ci-cd.yml: update clippy test to use the generic setup
+- Fixes for newest Clippy
+- Cargo.lock: update dependencies
+- xetex_format: add a new introspection crate
+- engine_xetex: attempt to fix `redbox_png` test issue
+- Fix formatting
+- Fix relative parents escaping tempdir
+- Add file in subdirectory to biber test
+- Create subdirectories unconditionally
+- Fix external tool file copy to include sub directories, fix #843
+- docs: add g++ to fedora packages list
+- Update internal version requirements for pending release
+- Cargo.lock: general dependencies update
+- fix: #827
+- shell_escape_arg_error: Fix the previously added test.
+- shell_escape_arg_error: Add a test which fails with current master.
+- Cargo.toml: update to latest vcpkg
+- Cargo.lock: general deps update
+- docs/src/v2cli/compile.md: restore alphabetization, and add relevant comments
+- Add more helpful warning if xdv is missing
+- Better documentation
+- Add security support
+- Support hidden paths in extra search paths
+- Minor fixes
+- Clean up unstable option handling
+- Add search path support
+- Cargo.lock: update general deps
+- Cargo.toml: try updating to latest vcpkg to see if that fixes our Windows CI
+  build failure
+- Add `tectonic -X dump`
+- tests/executable.rs: don't consume output variables needlessly
+- src/bin/tectonic/v2cli.rs: honor the exit code in the Ok case!
+- tests/executable.rs: tidy up V2 invocation a bit
+- Fix new Clippy complaints in Rust 1.54.
+- Cargo.lock: update deps
+- watch: Queue updates while busy
+- Improve biber handling by parsing the `.run.xml` file
+- Cargo.lock: update deps
+- docs/src/installation/index.md: iterate nix-env command as per @tomcur's
+  suggestion
+- deprecated method
+- tests: fix up new biber tests
+- src/lib.rs: fix up warning on Windows
+- tectonic: add support for biber
+- src/lib.rs: work on toplevel docstring a bit
+- Cargo.lock: update deps
+- Switch to dev-time rather than build-time cbindgen
+- Cargo.lock: update dependencies
+- dist/arch/deploy.sh: actually insert i686 SHA512
+- tectonic: use the new security API
+- v2cli: use always-stderr status mode for "show user-cache-dir"
+- src/bin/tectonic/main.rs: you know what ... get rid of the beta flag
+- src/test_util.rs: use DirBundle here
+- v2cli: add some new bundle-related commands
+- tectonic(!): switch to using `tectonic_bundles`
+- src/status/termcolor.rs: add always_stderr() option here
+- tectonic(!): use io_base app_dirs implementation
+- bundles: add the `tectonic_bundles` crate
+- tectonic: fix build for no-serialization-feature
+- tectonic(!): start using the "document model"
+- src/driver.rs: add a disable_insecure() method
+- docmodel: separate out the document model into its own crate
+- tectonic: bring in the SyncTeX fixes
+- engine_xetex: fix #714
+- tectonic: properly reexport FORMAT_SERIAL from engine_xetex
+- docs: iterate based on Windows build experience
+- Cargo.lock: update dependencies
+- fixes for AUR
+- dist/arch/PKGBUILD.src.in: use the external-harfbuzz feature
+- dist/azure-deployment-setup.yml: include submodules when checking out for
+  deployment
+- docs/src/installation/index.md: fix up "mdbook test"
+- Split the Cargo and GitHub READMEs, and update
+- docs: update installation instructions
+- Update Cranko internal dependency requirements
+- src/document.rs: wire up shell-escape to the V2 format
+- tectonic(~): new shell-escape implementation
+- tectonic(!): de-publicize a few internal types
+- tectonic(!): port to use DriverHooks
+- src/io/setup.rs: remove as_stack()
+- src/engines/spx2html.rs: use "dyn IoProvider" instead of explicit IoStack
+- src/engines/bibtex.rs: switch to use CoreBridgeLauncher in the wrapper API too
+- src/io/setup.rs: implement IoProvider directly
+- Revert "Support multiple FilesystemIo's in IoSetup"
+- Fix complaints from 1.52.0 Clippy
+- .github/dependabot.yml: clear out ignored updates
+- Upgrade to GitHub-native Dependabot
+- src/bin/tectonic/v2cli.rs: work around watchexec 0.15 updates
+- Cargo.lock: update deps
+- Improve shell escape tests
+- Add write_to_disk back in
+- Fix shell escape dir when output path is empty
+- Pass shell escape working dir to xetex engine
+- Support multiple FilesystemIo's in IoSetup
+- Clippy
+- Actually test running a command
+- Add shell-escape to docs
+- Test shell escape variables
+- Unhide shellescape option
+- src/lib.rs: update the crate-level rustdoc a bit
+- engine_xdvipdfmx(!): have builder methods work by reference
+- engine_xdvipdfmx(!): make the paperspec a builder option
+- engine_xdvipdfmx(!): rename configuration methods
+- engine_xdvipdfmx(!): hide the XdvipdfmxConfig struct
+- engine_xdvipdfmx(!): take a CoreBridgeLauncher argument in process()
+- engine_xdvipdfmx(!): remove XdvipdfmxEngine::new()
+- engine_xetex(!): accept an external CoreBridgeLauncher
+- engine_xetex(!): rename TexResult to TexOutcome
+- engine_xetex(!): remove TexEngine::new()
+- dist/azure-coverage.yml: oh hey, let's unbreak coverage
+- pdf_io: need to define WORDS_BIGENDIAN if appropriate
+- Get the main crate building using the new engine crates
+- crates/engine_xetex: finally, move XeTeX to its own crate
+- crates/engine_xdvipdfmx: provide xdvipdfmx as a separate crate
+- crates/pdf_io: move the vast majority of xdvipdfmx into here
+- tests/tex-outputs.rs: fix a new warning in Rust 1.51
+- Cargo.lock: update various deps
+- Cargo.toml: update vcpkg
+- crates/xetex_layout: fix a floating-point precision issue
+- Add i686-unknown-linux-gnu to the CI suite
+- Fix new clippy complaints in 1.50
+- Cargo.lock: run a cargo update
+- Add setup-tectonic github action reference
+- Neaten up outputs test
+- Add documentation for new options
+- Add test for multiple outputs
+- Tectonic.toml: preamble, index and postamble
+- macOS build fixes for switchover to tectonic_xetex_layout
+- tectonic: re-enable the platform-font tracing code that we had to comment out
+- Update Cranko deps for build script include-path API break
+- build.rs: tidy this up
+- tectonic: note why we can't get rid of core-bindgen.h just yet
+- tectonic: main crate no longer needs to explicitly depend on freetype2
+- BREAKING: fix up include-dir handling
+- src/document.rs: set the build date to "now"
+- Switch the main crate to use tectonic_xetex_layout
+- crate/xetex_layout: API tweaks needed for main Tectonic crate
+- crates/xetex_layout: add this
+- watch: Use trimmed exe name rather than tectonic
+- Don't split command
+- Add basic watching ability
+- Fix the global setjmp/longjmp, hopefully
+- Port the main program to the new tectonic_bridge_core
+- tectonic: initial edits to get this to compile against tectonic_bridge_core
+- crates/engine_bibtex: import BibTeX as a standalone crate
+- crates/bridge_core: integrate the global ttstub_ APIs here
+- crates/bridge_core: initial creation
+- BREAKING CHANGE: stop using OsStr(ing) for internal filenames
+- tectonic: audit use of ICU headers a bit
+- Expose a native-tls-vendored feature
+- docs/src/v2cli/compile.md: add this, copy/pasting from the V1 CLI page
+- src/engines/mod.rs: silence complaints about EOF in getc
+- crates/geturl: update to reqwest 0.11 <=> Tokio 1.0!
+- Expose the curl geturl backend
+- Fix build when default-features disabled
+- crates/geturl: oops, fix up oversight in get_url() semantics
+- crates/geturl: don't export a Url type
+- crates/geturl: make reqwest a feature and wire it up
+- crates/geturl: fix up accidental visibility of reqwest range-reader
+  constructor
+- dist: attempt to work around Windows vcpkg build timeouts
+- Start using tectonic_geturl in the main crate
+- Add test
+- Remove unused use
+- Update reporting
+- Sort dependencies
+- Add open docs
+- Add open document option
+- build(deps): bump byteorder from 1.3.4 to 1.4.2
+- build(deps): bump anyhow from 1.0.37 to 1.0.38
+- build(deps): bump libc from 0.2.81 to 0.2.82
+- build(deps): bump regex from 1.4.2 to 1.4.3
+- tectonic: avoid deprecated harfbuzz apis
+- docs: update for new vendored Harfbuzz setup
+- docs/src/howto/build-tectonic/index.md: mention
+  TECTONIC_PKG_CONFIG_FORCE_SEMI_STATIC
+- dist/azure-ci-cd.yml: mark Windows-gnu/extdeps as a canary build
+- Cargo.toml: expose and semi-document the external-harfbuzz feature
+- dist: build with both internal and external deps
+- crates/bridge_graphite2: export info about GRAPHITE2_STATIC
+- dist/azure-generic-build-setup.yml: check out submodules for vendoring
+- crates/bridge_harfbuzz: default to vendoring Harfbuzz!
+- crates/bridge_harfbuzz/harfbuzz: vendor harfbuzz source @ 2.7.4
+- docs: update surrounding material to mesh with install/build doc updates
+- docs: work on new build instructions section
+- docs: rename "cookbook" section to "howto"
+- crates/bridge_harfbuzz: add this
+- crates/bridge_icu: add ICU bridge crate
+- crates/bridge_freetype2: add this
+- tectonic/xetex-core.h: minor tidying of FreeType2 includes
+- src/status/mod.rs: also reexport the `plain` submodule
+- BREAKING CHANGE: migrate main crate to use new support crates
+- Support CARGO_TARGET_DIR in PKGBUILD
+- crates/io_base: crate for basic I/O types
+- crates/status_base: crate for basic status-reporting types
+- crates/errors: add a low-level error-type crate
+- Cargo.lock: update derivative 2.1.1 => 2.1.3
+- tectonic: tidy up headers a bit
+- build.rs: start using the new tectonic_dep_support crate
+- Use tectonic_bridge_graphite2 in the toplevel crate.
+- dist/azure-deployment.yml: messed up dependencies
+- dist/arch: update the tectonic-bin package as well
+- dist/azure-deployment.yml: update the book in main-dev mode too
+- Bump the flate2 version requirement to 1.0.19
+- tectonic_bridge_flate: new bridge crate
+- tests/tex-outputs.rs: address a new clippy complaint
+- tectonic/dpx-pdfobj.c: minor tidying of filter_stream_decode_FlateDecode
+- crates: move support crates into this subdirectory
+- Cargo.lock: update deps
+- Add support for aarch64-apple-darwin when building with vcpkg dep backend
+- Have V2 infrastructure honor the "test mode"
+- src/document.rs: deny unknown fields in the TOML
+- tests/executable.rs: add a V2 CLI test
+- Add output specifications to Tectonic.toml
+- tests/executable.rs: remove redundant `test_` prefixes and re-alphabetize
+- docs: more work on the Unicode tutorial
+- docs: start working on new Getting Started section
+- docs: fix "mdbook test"
+- src/bin/tectonic/v2cli.rs: make clippy happy
+- docs: work on some more concept/ref docs
+- docs: start documenting V2 CLI commands
+- docs: link to official binaries in the install instructions!
+- docs: more reorganization work
+- docs: add installation material
+- docs: start working on some V2 docs
+- docs: get cookbooks back into docs build
+- v2cli build: wire up some useful build options
+- src/workspace.rs: stub out TeX files for the build command
+- v2cli build: get caching working
+- v2cli: get the build to actually build things!
+- src/driver.rs: add filesystem_root() knob
+- v2cli: wire up the beginnings of a "build" command
+- v2cli: store the bundle URL in Tectonic.toml
+- Fix Clippy complaints
+- v2cli: add a `compile` subcommand that provides the classic CLI
+- src/bin/tectonic: split main compilation implementation to a separate module
+- Fix some new `cargo doc` warnings
+- v2cli: implement the `new` subcommand
+- src/bin/tectonic/main.rs: V2 is going to require serialization
+- Fix some C compiler warnings
+- v2cli: try to be consistent with "v2" not "new"
+- newcli: stub subcommand framework
+- src/bin/tectonic: implement basic config/status setup for the V2 CLI
+- Wire in what will become a new, Cargo-like CLI calling convention
+- src/bin/tectonic/main.rs: rename from src/bin/tectonic.rs
+- build(deps): bump toml from 0.5.7 to 0.5.8
+- build(deps): bump cbindgen from 0.15.0 to 0.16.0
+- dist/azure-build-and-test-pkgconfig.yml: attempt to fix Windows pkg-config
+- build(deps): bump vcpkg from 0.2.10 to 0.2.11
+- Fix Clippy complaints
+- build(deps): bump zip from 0.5.8 to 0.5.9
+- build(deps): bump serde from 1.0.117 to 1.0.118
+- build(deps): bump libc from 0.2.80 to 0.2.81
+- build(deps): bump structopt from 0.3.20 to 0.3.21
+- build(deps): bump cc from 1.0.65 to 1.0.66
+- Fix arch linux makedepends
+- build(deps): bump termcolor from 1.1.0 to 1.1.2
+- build(deps): bump cc from 1.0.62 to 1.0.65
+- tectonic/xetex-output.c: handle USV 0xFFFF in print()
+- src/io/mod.rs: don't raise an error on close if it was a directory
+- src/engines: incorporate remaining data into digest when closing input files
+- src/engines: fix `lipsum` in TeXLive 2020
+- build(deps): bump cc from 1.0.59 to 1.0.62
+- build(deps): bump filetime from 0.2.12 to 0.2.13
+- build(deps): bump sha2 from 0.9.1 to 0.9.2
+- build(deps): bump regex from 1.3.9 to 1.4.2
+- tectonic/xetex-texmfmp.c: fix for lack of gettimeofday on Windows/MSVC
+- Reactivate Windows/vcpkg build
+- Don't print an empty "error:" line in the CLI
+- tectonic/dpx-pkfont.c: warn if we try to kpse_find_glyph
+- reference_sources: we are now caught up to TeXLive 2020.0 (r54631)
+- dist/azure-ci-cd.yml: disable the Windows/vcpkg build for now
+- Wire up \filemoddate and add a test
+- Implement the new \filemoddate primitive
+- tests: add some basic tests for \filedump and \filesize
+- tectonic/xetex-texmfmp.c: work on \filesize and \filedump
+- tests/tex-outputs.rs: try reenabling the_letter_a on Windows
+- Wire in the \creationdate implementation and add a test
+- xdvipdfmx: attempt to fix new segfault in Arxiv regression suite
+- build(deps): bump libc from 0.2.79 to 0.2.80
+- tectonic/xetex-XeTeXLayoutInterface.cpp: fix new Harfbuzz include
+- Update test cases for the engine updates
+- Update XeTeX to the TeXLive 2020.0 reference
+- Add `-Z continue-on-errors` unstable option.
+- tectonic/dpx-tt_cmap.c: fix mistaken variable name
+- tectonic/dpx-pdfximage.c: fix uninitialized value
+- tectonic/dpx-pdfdoc.h: fix values for box type enum
+- Update bibtex to the TeXLive 2020.0 reference
+- Update TECKit to the TeXLive 2020.0 reference
+- Update synctex to the TeXLive 2020.0 reference
+- tectonic/xdvipdfmx: remove some inappropriate Win32-isms that snuck in
+- Cargo.toml: update vcpkg in hopes of fixing Windows/vcpkg build
+- tests/tex-outputs: update PDF outputs for new xdvipdfmx behavior
+- Update xdvipdfmx to the TeXLive 2020.0 reference
+- build.rs: make `cargo fmt` happy
+- also emit cargo metadata after tectonic's own when using vcpkg
+- src/io/mod.rs: correct misleading error message
+- Fix cargo fmt
+- Add a4paper outputs
+- Add a4 paper test
+- Pass engine configs using structs
+- Hide shell-escape
+- build(deps): bump structopt from 0.3.19 to 0.3.20
+- build(deps): bump pkg-config from 0.3.18 to 0.3.19
+- src/io/mod.rs: fix new Clippy complaint
+- build(deps): bump serde from 1.0.116 to 1.0.117
+- Almost support shell-escape
+- Apply unstable option to paperspec
+- Apply unstable option to min_crossrefs
+- Parse min-crossrefs
+- Parse -Z better
+- Pass unstable options to engines
+- Add -Z unstable option support
+- build(deps): bump cbindgen from 0.14.6 to 0.15.0
+- build(deps): bump structopt from 0.3.18 to 0.3.19
+- build(deps): bump toml from 0.5.6 to 0.5.7
+- build(deps): bump futures from 0.1.29 to 0.1.30
+- build(deps): bump cfg-if from 0.1.10 to 1.0.0
+- build(deps): bump libc from 0.2.77 to 0.2.79
+- build(deps): bump cbindgen from 0.14.4 to 0.14.6
+- Cargo.toml: update to vcpkg fixing current msys2 issue
+- Cargo.toml: try upgrading vcpkg to fix Windows build
+- tectonic/dpx-cidtype0.c: attempt to fix loop condition
+- .config/cranko/config.toml: define Cranko upstream URLs
+- Place the cbindgen header in $OUT_DIR rather than the source tree
+- build(deps): bump structopt from 0.3.17 to 0.3.18
+- Clean up things
+- Fix input handle type issues
+- Change input function signatures to avoid ptr cast
+- Change output function signatures to avoid casts
+- Remove unnecessary dereferences
+- Clean up TectonicBridgeApi
+- Export input bridge functions
+- Export output bridge functions
+- Export some bridge functions
+- Make ExecutionState a concrete type
+- Add FORMAT_SERIAL to cbindgen
+- Integrate generated bindings
+- Setup cbindgen & build method
+- build(deps): bump zip from 0.5.7 to 0.5.8
+- build(deps): bump serde from 1.0.115 to 1.0.116
+- build(deps): bump libc from 0.2.76 to 0.2.77
+- dist/azure-coverage.yml: try to only include main code in coverage stats
+- dist/azure-coverage.yml: some kcovs have index.js, it seems
+- tests: attempt to gather code coverage info in the executable tests
+- dist/azure-coverage.yml: remove now-unneeded command and more fail-paranoia
+- Attempt to gather coverage from executable tests
+- dist: fix a sequencing bug in dist
+- dist: rework deployment stage to have many jobs
+- dist/arch/deploy.sh: fix dumb typo
+- Test color=never and color=auto
+- Restore spelling mistake
+- Rename --cli-color to --color
+- Respect chatter setting
+- Clean up atty dependency entry
+- Rework dump_to_stderr
+- rename --color to --cli-color
+- cli: implement --color={always,auto,never}
+- driver: use dynamic dispatch for StatusBackend
+- implement PlainStatusBackend
+- Add diagnostics to other errors
+- Capture diagnostics in other error types
+- Add diagnostic to errors
+- Don't duplicate file/line number
+- Add diagnostics where warning flag is set
+- Add diagnostics for begin_diagnostic() calls
+- dist: on release, auto-update the website
+- dist: more attempts to fix Arch auto-deployment
+- Stub main-branch changelogs
+- Cargo.lock: `cargo update`
+- RELEASE_PROCESS.md: tidy up for Cranko world
+- dist: delete superseded scripts
+- dist: attempt to fix Arch Linux deployment
+- tectonic: Bump Cranko internal dep on tectonic_cfg_support to mollify Cargo
+  versioning
+- dist: iterate master deployment workflow (3)
+- dist: iterate master deployment workflow (2)
+- dist/azure-deployment.yml: iterate master deployment workflow (1)
+- dist: work on wiring up the continuous-deployment release
+- dist/azure-deployment.yml: no need for the `binary-collection` artifact
+- dist: attempt to wire up Arch Linux deployment again
+- .travis.yml: remove again - got what I needed
+- .travis.yml: iterate (2)
+- .travis.yml: iterate (1)
+- .travis.yml: temporarily re-add to recover environment secrets
+- dist/azure-deployment.yml: also publish AppImage artifact(s)
+- dist/azure-deployment.yml: pass --no-verify to `cargo publish`
+- dist: work on deployment pipeline more
+- README.md: updates, including transitioning the badge to Azure Pipelines
+- build(deps): bump structopt from 0.3.16 to 0.3.17
+- dist: turn on the new Azure Pipelines setup for `master`
+- ci: delete most CI files for old setup
+- dist: add book build job
+- dist: add code coverage analysis stage
+- dist/azure-build-and-test-pkgconfig.yml: remove debug stuff
+- dist: iterate windows-gnu (2)
+- dist: iterate windows-gnu (1)
+- dist: try adding a Windows-gnu pkg-config build
+- dist/azure-build-and-test-cross.yml: fix too-many-binaries issue
+- dist: add a couple more cross builds
+- dist: iterate cross build (1)
+- dist: try a first cross-compile build
+- dist: refine toplevel Azure setup
+- dist: yet more Windows/vcpkg iteration
+- dist: iterate Windows vcpkg
+- dist: iterate Windows vcpkg
+- dist: more Windows flailing
+- dist: debug flailing for Windows-vcpkg
+- Cargo.toml: see if new Windows target triplet fixes build
+- dist: try to (hackily) fix clippy
+- Cargo.toml: see if it helps to bump to latest vcpkg
+- dist: some touchups, try verbose "cargo vcpkg"
+- dist: mo Linux matrix
+- dist: test substs in parameters
+- dist: new approach
+- dist: more debugging (6)
+- dist: more debugging (5)
+- dist: more debugging (4)
+- dist: more debugging (3)
+- dist: more debugging (2)
+- dist: more debugging
+- dist: parameter tweak 4?
+- dist: parameter tweak 3?
+- dist: parameter tweak 2?
+- dist: try parameter tweak?
+- dist: drop Linux/vcpkg for now; try revamping linux matrixing
+- dist: iterate (5)
+- dist: iterate (4)
+- dist: iterate (3)
+- dist: iterate (2)
+- dist: iterate (1)
+- dist: try stubbing a pkg-config CI path as well
+- dist: iterate (4)
+- dist: iterate (3)
+- dist: iterate (2)
+- dist: iterate (1)
+- dist/azure-build-and-test.yml: checkout full history
+- Cranko-ify versions and add internal dep commit info
+- dist: start working towards all-Azure CI/CD
+- ci: attempt to get vcpkg working for macOS semistatic
+- Cargo.lock: update for app_dirs2 and friends
+- tectonic/xetex-constants.h: fix stray missing quotation mark
+- tectonic/xetex-xetex0.c: demonstrate error_here_with_diagnostic() in
+  insert_dollar_sign()
+- tectonic: tidy up the new diagnostic API a bit
+- build(deps): bump serde from 1.0.114 to 1.0.115
+- build(deps): bump clap from 2.33.2 to 2.33.3
+- Add documentation
+- Add diagnostics to hpack and vpackage
+- Add combined line + message error function
+- Add error w/ line number helper
+- Allow capturing print into warning message
+- Add diagnostic printf/vprintf
+- Add warning api
+- build(deps): bump structopt from 0.3.15 to 0.3.16
+- build(deps): bump clap from 2.33.1 to 2.33.2
+- build(deps): bump pkg-config from 0.3.17 to 0.3.18
+- build(deps): bump cc from 1.0.57 to 1.0.58
+- tectonic/xetex-linebreak.c: fix mistake introduced in 184d062d
+- tectonic/xetex-linebreak.c: fix mistake introduced in a2e6a3e
+- build(deps): bump byte-unit from 4.0.8 to 4.0.9
+- Update app_dirs under old name
+- build(deps): bump error-chain from 0.12.2 to 0.12.4
+- build(deps): bump libc from 0.2.71 to 0.2.74
+- Switch to maintained app_dirs
+- build(deps): bump byte-unit from 4.0.4 to 4.0.8
+- build(deps): bump flate2 from 1.0.14 to 1.0.16
+- build(deps): bump cc from 1.0.56 to 1.0.57
+- missed a cargo fmt
+- Add regression test for previously fixed crash
+- Cleanup auxiliary files even on error, since xetex is now used as a library
+  rather than an executable.
+- build(deps): bump cc from 1.0.54 to 1.0.56
+- build(deps): bump byte-unit from 3.1.3 to 4.0.4
+- build(deps): bump md-5 from 0.9.0 to 0.9.1
+- build(deps): bump sha2 from 0.9.0 to 0.9.1
+- ci: try adding an Azure Pipelines build stage for the `cargo vcpkg` workflow
+- tectonic/xetex-xetex0.c: print out the hex of the lost char
+- build(deps): bump serde from 1.0.112 to 1.0.114
+- build(src/engines/mod.rs): track rust-crypto 0.9 API change in md-5 too
+- build(deps): bump md-5 from 0.8.0 to 0.9.0
+- Update to rust-crypto 0.9.0, with breaking API changes
+- build(Cargo.lock): update deps with "cargo update"
+- build(deps): bump sha2 from 0.8.2 to 0.9.0
+- build(deps): bump serde from 1.0.111 to 1.0.112
+- ci(dist/travis.sh): attempt to workaround Rust 1.44 breakage of cargo-kcov
+- build(engines/spx2html): fix clippy warning
+- build(deps): bump vcpkg from 0.2.9 to 0.2.10
+- document using cargo-vcpkg to install dependencies
+- add vcpkg tests
+- add vcpkg metadata to Cargo.toml
+- build(deps): bump vcpkg from 0.2.8 to 0.2.9
+- build(deps): bump serde from 1.0.110 to 1.0.111
+- build(deps): bump libc from 0.2.70 to 0.2.71
+- build(deps): bump byte-unit from 3.1.1 to 3.1.3
+- build(deps): bump regex from 1.3.7 to 1.3.9
+- Specify target directory implied by the `package` function
+- build(deps): bump sha2 from 0.8.1 to 0.8.2
+- .travis.yml: update the osx image
+- Fix new clippy complaints
+- .azure-pipelines: update macOS images to 10.15
+- Cargo.lock: do a "cargo update"
+- build(deps): bump libc from 0.2.69 to 0.2.70
+- build(deps): bump clap from 2.33.0 to 2.33.1
+- build(deps): bump cc from 1.0.52 to 1.0.53
+- build(deps): bump serde from 1.0.106 to 1.0.110
+- Guard against potential segfault
+- build(deps): bump structopt from 0.3.13 to 0.3.14
+- build(deps): bump cc from 1.0.50 to 1.0.52
+- build(deps): bump regex from 1.3.6 to 1.3.7
+- build(deps): bump libc from 0.2.68 to 0.2.69
+- build(deps): bump structopt from 0.3.12 to 0.3.13
+- cfg_support/LICENSE: normalize package name in preamble
+- cfg_support/README.md: fix "create" for "crate" a few times
+- Cargo.lock: general dependency updates
+- .rustfmt.toml: add this
+- cfg_support: back to version 0.0.3-dev
+- Version 0.0.2 of tectonic_cfg_support
+- build(deps): bump serde from 1.0.105 to 1.0.106
+- Add a license to cfg support without the note about third party licenses.
+- build(deps): bump regex from 1.3.5 to 1.3.6
+- build(deps): bump structopt from 0.3.11 to 0.3.12
+- build(deps): bump flate2 from 1.0.13 to 1.0.14
+- build(deps): bump serde from 1.0.104 to 1.0.105
+- build(deps): bump libc from 0.2.67 to 0.2.68
+- build(deps): bump byteorder from 1.3.2 to 1.3.4
+- Improve log formatting
+- build(deps): bump regex from 1.3.4 to 1.3.5
+- build(deps): bump zip from 0.5.4 to 0.5.5
+- build(deps): bump structopt from 0.3.9 to 0.3.11
+- build(deps): bump libc from 0.2.66 to 0.2.67
+- build(deps): bump error-chain from 0.12.1 to 0.12.2
+- README.md: mention the new GitHub action and tt.ente.ninja
+- build(deps): bump regex from 1.3.3 to 1.3.4
+- build.rs: fix new clippy complaints in 1.41.0
+- build(deps): bump structopt from 0.3.8 to 0.3.9
+- build(deps): bump toml from 0.5.5 to 0.5.6
+- build(deps): bump structopt from 0.3.7 to 0.3.8
+- build(deps): bump termcolor from 1.0.5 to 1.1.0
+- build(deps): bump cc from 1.0.48 to 1.0.50
+- build(deps): bump zip from 0.5.3 to 0.5.4
+- build(deps): bump regex from 1.3.1 to 1.3.3
+- build(deps): bump sha2 from 0.8.0 to 0.8.1
+- Remove a memory leak detected by Valgrind
+- Fixing memory leak of shaperListToFree
+- build(deps): bump structopt from 0.3.6 to 0.3.7
+- Set min_crossrefs to default to 2, not 0.
+- build(deps): bump structopt from 0.3.5 to 0.3.6
+- .circleci: sayonara
+- build.rs: add a mode to go for "semi-static" compilation
+- Add mips-unknown-linux-gnu to the pipeline
+- tests/executable.rs: attempt to honor CARGO_TARGET_@TARGET@_RUNNER if set
+- Create the x86_64-linux-musl build with Azure Pipelines / cross, not Travis
+- .azure-pipelines: deploy the semistatic macOS binary
+- .azure-pipelines: add job to build a semi-static macOS binary on PRs
+- .appveyor.yml: forgot to update environment variable references for PowerShell
+- .appveyor.yml: syntax error
+- .appveyor.yml: deploy to GitHub releases with the new tool
+- .azure-pipelines/deployment-pipeline.yml: sigh, typo
+- .azure-pipelines/deployment-pipeline.yml: use the new ttcitool
+- .azure-pipelines/deployment-pipeline.yml: looks like we need to use OAuth
+  for this
+- .azure-pipelines/deployment-pipeline.yml: two important typos!
+- .azure-pipelines/deployment-pipeline.yml: shell script typo
+- .azure-pipelines/deployment-pipeline.yml: needed to set up a different Service
+  Connection for Azure
+- .azure-pipelines: first stab at a deployment pipeline
+- .gitignore: ignore local customized "cross" tool
+- azure: get this working?
+- .azure-pipelines/pr-pipeline.yml: seems that paths are relative to current
+  file, not project root
+- .azure-pipelines: first cut at files for PRs to the main tectonic repo
+- Cargo.lock: update other deps
+- .appveyor.yml: work around bizarre variable naming issue
+- build(deps): bump reqwest from 0.9.22 to 0.9.24
+- .circleci/config.yml: temporary debugging
+- .appveyor.yml: build and test release version
+- Cargo.toml: exclude dist/ and reference_sources/ from the Cargo package
+- dist/travis.sh: create GitHub release early, if called for
+- Fix some showstopping mistakes in the CI files
+- .appveyor.yml: try publishing to GitHub (note: debug build, though!)
+- dist/travis.sh: remove some temporary diagnostic code
+- .circleci/config.yml: attempt to fix deployment
+- .appveyor.yml: oops, dumb typo in artifact name. Add debugging anyway.
+- dist/travis.sh: mention that AppImage stage publishes, too
+- dist/travis.sh: fix pathname for Docker artifact publication
+- dist/travis.sh: more robust approach to avoiding truncated logs
+- .appveyor.yml: don't accidentally short-circuit for tag pushes
+- .circleci/config.yml: attempt to get deploy stage running when appropriate
+- .appveyor.yml: attempt to fix artifact naming syntax
+- .appveyor.yml: iterate closer to publishing artifacts
+- .appveyor.yml: fix unbalance quotes
+- .appveyor.yml: argh, backwards director separator
+- .appveyor.yml: attempt to get PRs building again
+- .appveyor.yml: see if we can get this in on the continuous-deployment game
+- dist/travis.sh: set up to try to publish the static musl build artifact
+- .circleci/config.yml: more experimentation to figure out how this works
+- .circleci: start investigating integration into the continuous-deployment
+  workflow
+- dist/travis.sh: fix versioning for CD of docs mdbook
+- dist/travis.sh: guess at a workaround for some truncated logs I'm seeing
+- dist/delete-github-release-and-tag.sh: don't bail if release doesn't exist
+- .travis.yml: whitelist the continuous tag for build triggers
+- dist: rework Travis setup to publish artifacts more consistently
+- dist/travis.sh: fix release-tag detection logic
+- RELEASE_PROCESS.md: write down how to do this
+- .travis.yml: make sure to CI new tags
+- Back to development, version 0.1.13-dev
+- Version 0.1.12.
+- cfg_support/README.md: add this
+- cfg_support/Cargo.toml: add copyright header, revise description
+- dist/build-mdbook.sh: update to use mdbook 0.3.5
+- CHANGELOG.md: write this. Phew!
+- Cargo.lock: update deps
+- build.rs: use our new fancy target_cfg macro parser!
+- Call target_cfg!() with supported invocation.
+- Add a profile build feature for developers.
+- cfg_support: add self (@pkgw) to authors list and add a few links
+- cfg_support: rebuild this with a fully flexible macro
+- build(deps): bump libc from 0.2.65 to 0.2.66
+- build(deps): bump vcpkg from 0.2.7 to 0.2.8
+- Something about ascii characters?
+- Add example
+- Tabelize tectonic --help
+- build(deps): bump structopt from 0.3.4 to 0.3.5
+- build(deps): bump serde from 1.0.102 to 1.0.103
+- build(deps): bump flate2 from 1.0.12 to 1.0.13
+- build(deps): bump cc from 1.0.46 to 1.0.47
+- build(deps): bump cfg-if from 0.1.9 to 0.1.10
+- build(deps): bump toml from 0.5.3 to 0.5.5
+- build(deps): bump structopt from 0.3.3 to 0.3.4
+- build(deps): bump pkg-config from 0.3.16 to 0.3.17
+- Zero memory upon allocation in bibtex.
+- Add DirBundle
+- Make toml crate optional
+- build(deps): bump serde from 1.0.101 to 1.0.102
+- fix clippy warnings
+- build(deps): bump cc from 1.0.45 to 1.0.46
+- build(deps): bump libc from 0.2.62 to 0.2.65
+- parameterize xetex and xdvipdfmx's current time
+- Add a space in bibtex error messages.
+- build(deps): bump structopt from 0.3.2 to 0.3.3
+- build(deps): bump reqwest from 0.9.21 to 0.9.22
+- tectonic_cfg_support: Add macros, comments, docs, various cleanup, rename.
+  build.rs: use aformentioned macros
+- build(deps): bump reqwest from 0.9.20 to 0.9.21
+- build(deps): bump flate2 from 1.0.11 to 1.0.12
+- move target directed cfg! target checks to using a cfg_support module.
+- cli: restore --only-cached
+- build(deps): bump structopt from 0.3.1 to 0.3.2
+- correct other FromStr error handling
+- merge Cargo.lock
+- indicate correct error instead of panicking
+- lowercase help labels and better opt name
+- build(deps): bump pkg-config from 0.3.15 to 0.3.16
+- build(deps): bump headers from 0.2.1 to 0.2.3
+- build(deps): bump hyper from 0.12.34 to 0.12.35
+- build(deps): bump serde from 1.0.100 to 1.0.101
+- add tests for some CLI switches
+- run cargo fmt
+- remove clap from dependencies
+- whitespace nitpicks
+- fix remaining compiler errors
+- fix other arguments
+- parse ChatterLevel using FromStr trait
+- parse PassSetting using FromStr trait
+- parse OutputFormat using FromStr trait
+- build(deps): bump hyper from 0.12.33 to 0.12.34
+- build(deps): bump regex from 1.2.1 to 1.3.1
+- build(deps): bump cc from 1.0.41 to 1.0.45
+- build(deps): bump futures from 0.1.28 to 0.1.29
+- build(deps): bump serde from 1.0.99 to 1.0.100
+- use an enum for chatter level arg
+- refactor function signature
+- convert remaining CLI args
+- driver.rs: Report only tex warnings during the last pass
+- driver.rs: Avoid stringly typed rerun reason
+- convert more arguments
+- start converting CLI to structopt
+- build(deps): bump cc from 1.0.40 to 1.0.41
+- Do not compute the sha256 digest for files assumed read-only
+- ignore paper.pdf output
+- Cache index and the redirected url
+- format to 80 character line limit
+- document building with vcpkg
+- Add tests for the local cache and tar bundle code
+- build(deps): bump reqwest from 0.9.19 to 0.9.20
+- build(deps): bump lazy_static from 1.3.0 to 1.4.0
+- docs/src/introduction/index.md: revise
+- docs: revamp structure, write an intro
+- dist: remove debugging flags from docs build/push tools
+- dist/travis.sh: wire up deployment of release versions of the docs/ book
+- dist: prototype infrastructure to build and deploy the docs/ mdbook
+- Enable backtraces during Travis run
+- Commit updated Cargo.lock
+- Make aho-corasick crate optional
+- Disable exceptions and rtti for C++ code
+- update comment references to the CLI
+- build(deps): bump serde from 1.0.98 to 1.0.99
+- src/io/mod.rs: fix file offsets reported just after an ungetc()
+- tests: test case for issue #393
+- dist/docker/x86_64-alpine-linux-musl/Dockerfile: add libbz2 to the link line
+- Fix some `cargo fmt` complaints
+- build.rs: abstract over dep-finding backend more explicitly
+- .appveyor.yml: (try to) avoid the Windows/MSVC test suite failure
+- add x86_64-pc-windows-msvc build on appveyor
+- Do necessary changes to load the dependencies using vcpkg-rs.
+- ensure test reference files are checked out with LF line endings
+- update documentation comment to correct path
+- Quickfix for #429 (make sure the cache dirs are created)
+- Use libz-sys backend for flate2 and disable bzip2 for zip
+- Encapsulate app_dirs usage
+- adjust the book configuration
+- create an mdbook within docs/ folder
+- jot down idea
+- document using docker for cross compilation
+- supress some downloading progress output
+- Cargo.lock: update many deps
+- .circleci/outer-build.sh: update comment; PPC build now uses Rust 1.36
+- .travis.yml: disable caching
+- Avoid double-builds of DependaBot PR branches.
+- build(deps): bump cc from 1.0.37 to 1.0.38
+- build(deps): bump libc from 0.2.58 to 0.2.59
+- dpx: test more PNG formats
+- dpx: expand 1/2/4bpc gray PNGs
+- test exotic png formats
+- tests/redbox_png check pdf
+- xetex-ini.c: Initialize `cur_f` font index
+- xdvipdfmx: Support png images with bit depth < 8
+- bibtex: Reorder logical ands to short-circuit oob reads
+- build(deps): bump tempfile from 3.0.9 to 3.1.0
+- build(deps): bump regex from 1.1.7 to 1.1.9
+- build(deps): bump aho-corasick from 0.7.3 to 0.7.4
+- start testing bibtex
+- build(deps): [security] bump libflate from 0.1.23 to 0.1.25
+- build(deps): bump serde from 1.0.92 to 1.0.94
+- build(deps): bump flate2 from 1.0.7 to 1.0.9
+- build(deps): bump tempfile from 3.0.8 to 3.0.9
+- remove more pascal-string-isms
+- name_of_file: fix superflous NULL-byte
+- name_of_file: remove pascal-like string handling
+- Update osx_image on Travis-CI
+- Revert "Remove headers, use string range header"
+- dist: attempt to fix Travis+Docker permissions issue
+- dist: fix the static Linux build (?)
+- Replace hyper-0.10 with reqwest
+- Cargo.lock: update a bunch of deps
+- fuzz/README.md: add a brief README
+- dist/docker/x86_64-alpine-linux-musl: fix build
+- Bump byteorder from 1.3.1 to 1.3.2
+- Bump termcolor from 1.0.4 to 1.0.5
+- Bump regex from 1.1.6 to 1.1.7
+- 2018 edition: update tests
+- 2018 edition: replace `extern crate`
+- Update to Rust 2018 edition
+- fix warnings: trait objects without an explicit `dyn` are deprecated
+- Bump libc from 0.2.55 to 0.2.58
+- Bump serde from 1.0.91 to 1.0.92
+- Remove some use's leading redundant import warnings.
+- Change renamed lint from `clippy::cyclomatic_complexity` to
+  `clippy::cognitive_complexity`.
+- Add #[path = "util/mod.rs"] in tests to work around issue with latest rustfmt.
+- replace usage of deprecated tempdir crate with tempfile.
+- Bump cc from 1.0.36 to 1.0.37
+- Bump toml from 0.5.0 to 0.5.1
+- Bump libc from 0.2.54 to 0.2.55
+- Bump tempfile from 3.0.7 to 3.0.8
+- Bump error-chain from 0.12.0 to 0.12.1
+- Bump serde from 1.0.90 to 1.0.91
+- Bump libc from 0.2.53 to 0.2.54
+- Bump cc from 1.0.35 to 1.0.36
+- Bump hyper from 0.10.15 to 0.10.16
+- Bump libc from 0.2.51 to 0.2.53
+- Bump regex from 1.1.5 to 1.1.6
+- Bump cc from 1.0.34 to 1.0.35
+- Bump zip from 0.5.1 to 0.5.2
+- Bump cc from 1.0.32 to 1.0.34
+- Bump serde from 1.0.89 to 1.0.90
+- Bump clap from 2.32.0 to 2.33.0
+- src/driver.rs: update for new aho-corasick API
+- Bump cc from 1.0.31 to 1.0.32
+- Bump aho-corasick from 0.6.10 to 0.7.3
+- Use travis_retry to handle transient network errors
+- Bump regex from 1.1.2 to 1.1.5
+- Neaten the dist/travis.sh presentation
+- Bump libc from 0.2.50 to 0.2.51
+- tectonic/xetex-XeTeXFontInst.cpp: plug some big memory leaks
+- tectonic/xetex-XeTeXLayoutInterface.cpp: fix kind of obvious memleak in
+  deleteLayoutEngine()
+- tectonic/dpx-fontmap.c: fix memory leak
+- tectonic: fix memory leak from XeTeXFontMgr::getOpSize()
+- tectonic: use NATIVE_NODE_glyph_info_ptr() everywhere, I think
+- tectonic/dpx-tt_cmap.c: fix memory leak
+- tectonic/xetex-io.c: fix memory leak and pointless realloc in
+  tt_xetex_open_input()
+- tectonic: rename fullnameoffile => name_of_input_file
+- tectonic: remove unneeded make_full_name_string() function
+- tectonic: work on squashing memory leaks in the C++ font code
+- tectonic: de-globalize variable `font_k`
+- tectonic/xetex-xetex0.c: tidy up load_native_font
+- cargo update
+- Install Homebrew packages in .travis.yml
+- rustup if is_main_build to prevent nightly failure
+- Run clippy on Travis-CI
+- clippy xdv: fix cast_lossless
+- clippy xdv: fix needless_range_loop
+- clippy xdv: allow cyclomatic_complexity
+- clippy xdv: fix len_zero
+- clippy xdv: fix ptr_offset_with_cast
+- clippy xdv: fix match_ref_pats
+- clippy xdv: fix unreadable_literal
+- clippy xdv: fix redundant_field_names
+- clippy tests: fix match_wild_err_arm
+- clippy tests: fix ptr_arg
+- clippy tests: fix expect_fun_call
+- clippy tests: fix redundant_field_names
+- Silence error-chain deprecation warnings
+- tectonic/dpx-truetype.c: avoid using GCC warning #pragmas on Clang
+- cargo clippy: allow vec_box
+- cargo clippy: fix cast_lossless
+- cargo clippy: fix match_ref_pats
+- cargo clippy: fix new_without_default
+- tests/executable.rs: fix occasional failures in stdin_content
+- cargo clippy: fix needless_lifetimes
+- cargo clippy: fix match_ref_pats
+- cargo clippy: fix zero_ptr
+- cargo clippy: fix const_static_lifetime
+- cargo clippy: fix unused_io_amount
+- cargo clippy: fix len_zero
+- cargo clippy: fix unit_arg
+- cargo clippy: fix needless_return
+- cargo clippy: fix identity_conversion
+- Bump zip from 0.5.0 to 0.5.1
+- Bump cc from 1.0.30 to 1.0.31
+- cargo clippy: fix redundant_field_names
+- Bump flate2 from 1.0.6 to 1.0.7
+- Bump toml from 0.4.10 to 0.5.0
+- Bump libc from 0.2.49 to 0.2.50
+- Fix warnings about missing extern declarations
+- Fix staging repository link
+- Cargo.lock: update various deps
+- Drop explicit dependency on `serde_derive`.
+- xetex-xetex0.c: simplify print_style
+- xetex-xetex0.c: symbolify more cases
+- xetex-math.c: symbolify node type cases
+- enable and fix extra-semi warnings
+- fix malloc / delete[] mismatch
+- remove identity assignments
+- symbolify remaining INT_PAR__ magic
+- Bump libc from 0.2.48 to 0.2.49
+- Add initial support for cargo-fuzz
+- Bump serde from 1.0.87 to 1.0.88
+- Bump serde_derive from 1.0.87 to 1.0.88
+- Bump tempfile from 3.0.6 to 3.0.7
+- Bump aho-corasick from 0.6.9 to 0.6.10
+- Bump cc from 1.0.28 to 1.0.29
+- Bump tempfile from 3.0.5 to 3.0.6
+- Bump serde from 1.0.85 to 1.0.87
+- Bump serde_derive from 1.0.85 to 1.0.87
+- dist/travis.sh: harfbuzz now always includes graphite2
+- Bump libc from 0.2.47 to 0.2.48
+- Bump byteorder from 1.3.0 to 1.3.1
+- Bump serde_derive from 1.0.84 to 1.0.85
+- Bump byteorder from 1.2.7 to 1.3.0
+- Bump libc from 0.2.46 to 0.2.47
+- Bump serde from 1.0.84 to 1.0.85
+- .circleci/inner-build.sh: try harder to avoid QEMU hangs
+- Bump serde_derive from 1.0.83 to 1.0.84
+- Bump serde from 1.0.83 to 1.0.84
+- Bump libc from 0.2.45 to 0.2.46
+- Try to clean up the Travis CI infrastructure.
+- .travis.yml: experiment with "releasing" an AppImage every time we build on
+  master
+- .circleci: try to get this running more reliably
+- Bump serde from 1.0.82 to 1.0.83
+- Bump serde_derive from 1.0.82 to 1.0.83
+- Arch: Update maintainer details
+- dist/appimage/build.sh: use a script instead of a Makefile
+- dist/appimage/Makefile: the builder doesn't update executables, it seems
+- dist/appimage/tectonic.desktop: add Categories and Terminal
+- dist/appimage: tidy this up
+- Apply some beta-only rustfmt'ing (trailing semicolons).
+- Add AppImage to distribution
+- Skip AppImage file
+- CONTRIBUTING.md: add this
+- .travis.yml: check rustfmt'ing in CI
+- rustfmt everything.
+- Bump tempfile from 3.0.4 to 3.0.5
+- Bump cc from 1.0.25 to 1.0.28
+- Bump serde from 1.0.81 to 1.0.82
+- Bump libc from 0.2.44 to 0.2.45
+- Bump serde_derive from 1.0.81 to 1.0.82
+- Bump serde from 1.0.80 to 1.0.81
+- Bump toml from 0.4.9 to 0.4.10
+- Bump serde_derive from 1.0.80 to 1.0.81
+- phrase changelog entry 0.1.9 less ambiguously
+- fix typo in changelog entry for 0.1.9: mode → made
+- Bump regex from 1.0.6 to 1.1.0
+- Bump libc from 0.2.43 to 0.2.44
+- Bump toml from 0.4.8 to 0.4.9
+- tectonic/core-foundation.h: fix build for certain versions of g++
+- Bump flate2 from 1.0.4 to 1.0.5
+- Bump zip from 0.4.2 to 0.5.0
+- Some futzing with the `static-musl` branch
+- tectonic: rename AES_cbc_encrypt
+- .travis.yml: build a static version of tectonic
+- Some polish to optional-serde-derive
+- Make serde dependency optional
+- Move to the next development version.
+- Bump regex from 1.0.5 to 1.0.6
+- dist/arch/PKGBUILD: update for 0.1.11
+- Version 0.1.11 of the main crate
+- CHANGELOG.md: write this
+- Cargo.lock: bulk-update dependencies
+- Bump lazy_static from 1.1.0 to 1.2.0
+- Bump aho-corasick from 0.6.8 to 0.6.9
+- src/config.rs: default to archive.org, not purl.org
+- Put the global mutex inside the Tectonic crate
+- src/config.rs: use AtomicBool rather than a static mut bool
+- src/driver.rs: cleaner approach to ProcessingSession.into_file_data()
+- src/lib.rs: add an all-in-one function `latex_to_pdf()`
+- src/driver.rs: add a helper to destructure a session into its output files
+- src/driver.rs: make the processing generic over StatusBackends
+- src/driver.rs: provide more control over where output lands
+- Add an API for the "primary input" to come from an in-memory buffer.
+- Bump byteorder from 1.2.6 to 1.2.7
+-  .circle: update PowerPC chroot builder to Rust 1.27.0
+- tectonic/xetex-shipout.c: symbolic-ify and annotate new_edge()
+- tectonic/xetex-shipout.c: symbolic-ify and annotate reverse()
+- tectonic/xetex-shipout.c: symbolic-ify vlist_out()
+- tectonic/xetex-shipout.c: finish symbolic-ifying hlist_out()
+- tectonic/xetex-shipout.c: overlarge tidying commit
+- tectonic/xetex-shipout.c: tidy up ship_out()
+- tectonic: symbolic-ify str_ptr offsets
+- tectonic/xetex-shipout.c: tidy up one of those silly for loops
+- tectonic: reintroduce the cur_length() macro
+- tectonic/xetex-shipout.c: tidy up finalize_dvi_file()
+- tectonic/xetex-shipout.c: more tidying
+- tectonic/xetex-shipout.c: remove some needless braces around dvi_out calls
+- tectonic/xetex-shipout.c: reintroduce WEB's dvi_out() function
+- tectonic/xetex-pagebuilder.c: customizations for semantic pagination mode
+- Bump flate2 from 1.0.3 to 1.0.4
+- tectonic: symbolic-ify linked-list advances in bulk
+- tectonic/xetex-pagebuilder.c: finish symbolic-ifying fire_up()
+- tectonic/xetex-pagebuilder.c: work on clarifying fire_up()
+- tectonic/xetex-pagebuilder.c: more comments clarifying build_page()
+- tectonic/xetex-pagebuilder.c: isolate pagebuilder code here
+- tectonic/xetex-xetex0.c: a bit more tidying of build_page()
+- tectonic/xetex-xetex0.c: symbol-ify and tidy build_page()
+- tectonic: annotate some shipout-related routines
+- Bump serde from 1.0.79 to 1.0.80
+- Bump serde_derive from 1.0.79 to 1.0.80
+- tectonic: defuse linebreaking in semantic pagination mode!
+- tectonic/xetex-linebreak.c: more tidying
+- tectonic/xetex-linebreak.c: static-ify a few more variables
+- tectonic/xetex-linebreak.c: more tidying and commenting
+- tectonic/xetex-linebreak.c: symbolic struct accesses in try_break()
+- tectonic/xetex-linebreak.c: turn some "goto continue_"-s into real continue
+  statements in try_break()
+- tectonic/xetex-linebreak.c: static-ify a few functions used only here
+- tests/tex-outputs.rs: disable `the_letter_a` on Windows
+- tectonic: tidy up not-so-portable printf format string specifiers
+- tectonic/xetex-constants.h: avoid a #define clash on Windows
+- Bump sha2 from 0.7.1 to 0.8.0
+- Bump flate2 from 1.0.2 to 1.0.3
+- Bump toml from 0.4.7 to 0.4.8
+- Bump md-5 from 0.7.0 to 0.8.0
+- tectonic/xetex-linebreak.c: finish making line_break() symbolic!
+- tectonic/xetex-linebreak.c: more work on making things symbolic
+- tectonic: use macros for various accesses to "native" nodes
+- tectonic/xetex-xetex0.c: tidy up just_copy()
+- tectonic: work on rationalizing synctex macros
+- tests/tex-outputs/otf_basic.tex: new test
+- tests/tex-outputs/redbox_png.tex: new test
+- tectonic/xetex-linebreak.c: more work on symbolic-ification
+- tectonic/dpx-spc_dvips.c: remove PSTricks features
+- tectonic/dpx-spc_dvips.c: reindent
+- Deployment to AUR worked!
+- dist/arch/PKGBUILD: synchronize with what's currently on AUR
+- .travis.yml: try AUR again / don't use ssh-agent
+- tectonic: fixups to build on macOS
+- tectonic/xetex-web.h: rename from XeTeX_web.h
+- tectonic/xetex-swap.h: rename from XeTeXswap.h
+- tectonic/xetex-pic.c: rename from XeTeX_pic.c
+- tectonic/xetex-macos.c: rename from XeTeX_mac.c
+- tectonic/xetex-ini.c: rename from xetexini.c
+- tecteonic: rename the C++ files with a "xetex-" prefix
+- tectonic/xetex-ext.[ch]: rename from XeTeX_ext.[ch]
+- tectonic/xetex-xetexd.h: rename from xetexd.h
+- tectonic/xetex-xetex0.c: rename from xetex0.c
+- tectonic/xetex-texmfmp.c: rename from texmfmp.c
+- tectonic/tectonic.h: remove this as well
+- tectonic/xetex-synctex.[ch]: rename from synctex.[ch]
+- tectonic/xetex-output.c: rename from output.c
+- tectonic: rename all TECKit files to a common format
+- tectonic/internals.h: sayonara
+- tectonic/xetex-*.h: remove references to internals.h
+- tectonic/dpx-*.c: remove all references to "internals.h"
+- tectonic: replace internals.h with universal dpx-core.h in dpx-*.h
+- tectonic: start working on excising internals.h
+- tectonic/core-memory.c: rename from core-kpathsea.c
+- tectonic/core-foundation.h: always provide M_PI
+- tectonic/xetex-core.h: move selector_t here from internals.h
+- tectonic/xetex-io.c: rename from io.c
+- tectonic/xetex-scaledmath.c: rename from mathutil.c
+- tectonic/core-foundation.h: move ssize_t compat foo here
+- tectonic/XeTeX_pic.c: move load_picture() here
+- tectonic: the `real_point` type doesn't need to be global
+- tectonic/core-strutils.h: add this
+- tectonic/core-foundation.h: move some things here from internals.h
+- tectonic/core-foundation.h: add this
+- tectonic: xetex-prefix errors.c
+- tectonic: rename engine-interface.[ch] to xetex-engine-interface.[ch]
+- tectonic: rename Engine.{cpp,h} -> xetex-Engine.{cpp,h}
+- tectonic: rename stringpool.[ch] => xetex-stringpool.[ch]
+- tectonic/xetex-constants.h: rename from constants.h
+- dist/arch: one last thing to try
+- dist/arch: iterate more
+- dist/arch: iterate on how this works
+- TEMPORARY: try deploying 0.1.10 to Arch
+- dist/arch/deploy.sh: a guess at how to fix this script
+- Go back to development mode.
+- Version 0.1.10
+- Cargo.toml: remove docs.rs "dependencies" line
+- CHANGELOG.md: update for upcoming release
+- tectonic/io.c: fix a compiler warning on GCC 8.1
+- Cargo.lock: update deps
+- update hyper-native-tls to 0.3 adding support for OpenSSL 1.1.1
+- test reading of utf16{be,le} encoded files
+- add unicode_file_name test
+- start_input inline more_name and fix utf8->utf16 conversion
+- fix and simplify pack_file_name
+- tests/util: some context on panics
+- fix conversion of two-codepoint utf16 chars in gettexstring
+- cleanup name_of_file
+- fix off-by-one (uninitialized read)
+- replace pi const with M_PI
+- Bump serde_derive from 1.0.78 to 1.0.79
+- Bump serde from 1.0.78 to 1.0.79
+- src/io/format_cache.rs: fix some funky indentation
+- tests: centralize format-file generation
+- src/errors.rs: recognize tempfile::PersistError
+- tectonic/xetex-linebreak.c: turn the get_native_usv() macro into an inline
+  function
+- tectonic: aww yeah, make a bunch of functions static
+- tectonic/xetex-math.c: start working on static-izing things
+- tectonic/xetex-math.c: break out math routines into this file
+- tectonic: add a macro accessor for the PIC_NODE path length field
+- tectonic: pic_path_byte() -> PIC_NODE_byte()
+- tectonic: remove set_native_char() macro
+- tectonic: remove get_native_char() macro
+- tectonic/xetexd.h: turn print_c_string() into an inline function
+- tectonic: remove the eqtb/the_eqtb distinction, as previous commit
+- tectonic: get rid of the zmem/mem distinction
+- tectonic: remove the last one-letter global variable, "l"
+- tectonic: remove the global variable "k"
+- tectonic: remove the global variable "f"
+- Remove the global variable "c".
+- tectonic: tidy up trie_op_hash array and its related #defines
+- Go back to the development versions
+- Version 0.1.9.
+- Cargo.lock: update deps
+- CHANGELOG.md: polish
+- CHANGELOG.md: update with descriptions of what's been happening
+- tectonic/dpx-pdffont.c: check windows via _WIN32 instead of _MSC_VER
+- build.rs: actually, don't do the static linking
+- tectonic/dpx-spc_dvips.c: rip out calculate_PS for Windows
+- tectonic/dpx-dpxfile.c: rip out some cache code for Windows
+- tectonic/dpx-dpxfile.c: make tempfile creation work on Windows
+- tectonic/dpx-pdffont.c: getenv() doesn't do the job on Windows
+- src/io/local_cache.rs: fix this on Windows
+- src/io/local_cache.rs: fix some indentation that got horked
+- build.rs: adapt so that we can build on Windows (!)
+- tectonic: avoid Unix-specific headers for the Windows build
+- tectonic: clean up `xeq_level`
+- Bump cc from 1.0.23 to 1.0.24
+- Bump regex from 1.0.4 to 1.0.5
+- Bump serde from 1.0.76 to 1.0.78
+- Bump serde_derive from 1.0.75 to 1.0.78
+- Bump pkg-config from 0.3.13 to 0.3.14
+- Bump serde from 1.0.75 to 1.0.76
+- Bump termcolor from 1.0.2 to 1.0.3
+- Bump cc from 1.0.22 to 1.0.23
+- Cargo.lock: update various deps
+- Bump aho-corasick from 0.6.6 to 0.6.8
+- Do not panic on an empty filename in MemoryIo
+- Add extern keyword to functions called from C
+- Abort the engine on internal error in input_seek
+- Abort the engine on internal error in input_close
+- Fix #63: do not panic into C
+- Add appveyor file.
+- Fix problems with uninitialized memory.
+- Fix building under windows-gnu target.
+- Add new unit test.
+- Implement configuration for automatic local bundle loading.
+- .travis.yml: go back to caring about whether we build on Rust stable
+- Cargo.lock: just update everything in one go
+- Bump serde from 1.0.70 to 1.0.71
+- Add --only-cached/-C command line flag
+- .circleci/outer-build.sh: update tarball URL
+- build.rs: make requirement of harfbuzz >= 1.4 more explicit
+- Bump byteorder from 1.2.3 to 1.2.4
+- Bump flate2 from 1.0.1 to 1.0.2
+- Bump lazy_static from 1.0.2 to 1.1.0
+- Bump regex from 0.2.11 to 1.0.2
+- Bump mkstemp-rs from 0.0.2 to 1.0.0
+- Bump termcolor from 0.3.6 to 1.0.1
+- Bump zip from 0.2.8 to 0.4.2
+- src/bin/tectonic.rs: be consistent about not ending --help text with
+  punctuation
+- src/bin/tectonic.rs: mention the behavior of "-" as an input path
+- Cargo.toml: update error-chain to 0.12, making some warnings go away
+- Cargo.toml: update dependencies
+- Fix various small issues in driver module.
+- tests/driver.rs: stub out a test rig for the driver code
+- tests/assets: add files needed for end-to-end local PDF processing
+- tests: avoid mysterious flate2 imports
+- src/bin/tectonic.rs: rename from src/cli_driver.rs
+- Use the local cache when a web bundle is specified with the `-w` option.
+- Fix format file caching, and therefore the -b and -w options.
+- Mark this as version 0.1.9-dev.
+- src/io: add the Bundle trait
+- src: reduce need for explicit ResultExt imports
+- .circleci/config.yml: add a "version" key to silence a CI warning
+- README.md: add a link to the CHANGELOG
+- dist/arch/deploy.sh: turn on shell tracing
+- Cargo.toml: update the `cc` dependency
+- Cargo.toml: specify version of xdv dependency; needed to publish
+- xdv/README.md: add a quick README so that we can publish this on crates.io
+- Version 0.1.8.
+- CHANGELOG.md: add this
+- Cargo.lock: update dependencies
+- Use an absolute path to reference_sources
+- Fix review comments.
+- Move some of the error-display back to the CLI tool.
+- Move ProcessingSession into the main crate.
+- tectonic/xetex0.c: emit a Tectonic warning if missing characters are
+  encountered
+- tectonic: avoid a few more warnings from GCC 8.1
+- tectonic/dpx-spc_dvips.c: avoid a compiler warning from GCC 8.1
+- Make CliIoSetup public and rename it.
+- README.md: fix the link to the API docs
+- Treat Beamer's .toc and .snm files as intermediates
+- tectonic/xetex-linebreak.c: reconstitute() is only used here
+- tectonic: static-ify some shipout-related variables
+- tectonic/xetex-shipout.c: transition dvi_buf and related variables
+- tectonic: start working on gathering shipout-related globals
+- tectonic/xetex-shipout.c: easiest to centralize the DVI routines here
+- tectonic: fix xdvipdfmx/XeTeX name clash of dvi_pop()
+- tectonic/xetexini.c: yhash only used here
+- tectonic/xetex-shipout.c: new file with page-shipping routines
+- tectonic/xetex0.c: fix a bug from the XeTeX source
+- tectonic: un-globalize lots of variables
+- tectonic/xetex-linebreak.c: new file, mostly the old inimisc.c
+- .travis.yml: temporarily mark stable as allowed to fail
+- .gitignore: track change in format file name
+- tectonic: finish symbolic-ifying the remainder of post_line_break()
+- tectonic: more semantic patching of kern node subtypes
+- tectonic: semantic patch kern node subtypes
+- tectonic: more symbolic-ification work on post_line_break()
+- tectonic: use BOX_glue_set
+- tectonic: more symbolic-ification work on post_line_break()
+- tectonic: flatten some control flow in post_line_break()
+- tectonic: work on symbolic-ifying post_line_break()
+- tectonic: tidy up the very end of line_break()
+- tectonic: symbolic-ify a few things relating to insertion nodes
+- tectonic: bit more symbolification in line_break()
+- tectonic: introduce FONT_CHARINFO_ITALCORR
+- tectonic: introduce FONT_CHARINFO_DEPTH
+- tectonic: introduct FONT_CHARINFO_HEIGHT
+- tectonic: improve macro-ization of font accesses
+- tectonic: work on symbolic-ifying character dimension information
+- tectonic: symbolic-ify `effective_char(x, y, char(z))`
+- tectonic: symbolic-ify `effective_char(x, y, lig_char(z))`
+- tectonic: symbolic-ify `c = char(E)`
+- tectonic: symbolic-ify `f = font(E)`
+- tectonic: symbolic-ify `f = font(lig_char(x))`
+- tectonic: bring back is_char_node() as an inline function
+- tectonic: replace almost all MIN_HALFWORDs with TEX_NULL
+- tectonic: more work on making line_break more symbolic
+- tectonic: some more manual work on symbolic struct accesses
+- tectonic: macro-ify some glue_spec.shrink_order references
+- tectonic: more symbolic struct accesses
+- tectonic: use Coccinelle to automatically replace some struct field references
+- tectonic: start working on symbolic-ifying line_break()
+- Cargo.lock: update
+- Add packaging status badge
+- store format file uncompressed
+- tectonic/inimisc.c: annotate post_line_break()
+- tectonic/inimisc.c: tidy post_line_break()
+- tectonic: put post_line_break() next to line_break() and static-ify it
+- tectonic/inimisc.c: more annotation of line_break
+- Use Circle CI to build and test Tectonic on a big-endian system
+- build.rs: tell the C code when we're compiling big-endian
+- tectonic/strings.txt: actually remove this
+- tectonic: rename 'scaled' to 'scaled_t'
+- tectonic: replace 'integer' typedef with 'int32_t'
+- tectonic: more helpful field names in list_state_record struct
+- tectonic: can't see how "yzmem" is doing anything here ...
+- tectonic: symbolic constants for fixed slots near MEM_TOP
+- tectonic/inimisc.c: transcribe overview of line_break()
+- tectonic: commit to MEM_TOP being a constant
+- .travis.yml: blind stab at working around Travis xenial apt locking issue
+- let `cargo-kcov` run all tests
+- Get some coverage badges up there!
+- Set up code coverage monitoring with codecov.io.
+- update fmt metadata
+- restore old handling of one-char primitives
+- fix initialization order
+- add EMPTY_STRING constant
+- remove stringpool checksum
+- refactor `primitive`
+- remove the strings file
+- deal with S()
+- tectonic: endianness hint in packed struct names
+- tectonic: big rename #1: hh.H<n> => b32.s{1 - <n>}
+- tectonic: big rename #1: qqqq.B<n> => b16.s{3 - <n>}
+- tectonic: rename two_halves to b32x2
+- tectonic: rename four_quarters to b16x4
+- tectonic: tidy xetexd comments
+- tectonic: can now de-unionize the "two_halves" struct
+- tectonic: map away all "hh.u.Bx" references
+- tectonic: we can now eliminate "qqqq.u"
+- tectonic: can now simplify memory_word further
+- tectonic: Get rid of memory_word.cint
+- tectonic: kpse_file_format_type => tt_input_format_type, and drop unused
+  variants
+- tectonic/dpx-tfm.c: remove last use of kpse_find_file()
+- tectonic/dpx-spc_dvips.c: remove a call to kpse_find_file()
+- tectonic: remove last use of dpx_find_file
+- tectonic/dpx-spc_pdfm.c: remove more non-Rust I/O in xdvipdfmx
+- tectonic/dpx-otl_conf.c: more porting to Rust I/O
+- tectonic/dpx-tt_cmap.c: remove more non-Rust I/O in xdvipdfmx
+- tectonic/dpx-truetype.c: remove more non-Rust I/O in xdvipdfmx
+- tectonic/dpx-pdfdoc.c: remove more non-Rust I/O in xdvipdfmx
+- tectonic: remove another bit that needed porting to Rust I/O
+- tests/tex-outputs.rs: don't try xdvipdfmx if TeX fails
+- Fix a subtle problem in PDF output testing.
+- tectonic/xetex0.c: fix a maybe-uninitialized warning
+- build.rs: turn off some suggest-attribute warnings
+- tectonic: port some lingering "PORT TO RUST IO" sections
+- Start testing xdvipdfmx and PDF outputs.
+- Gather test suite infrastructure in a common module.
+- Make it possible to disable PDF compression
+- tectonic: get rid of `fmemory_word`
+- Attempt to fix the Travis CI Linux build.
+- Assert that we are still caught up with staging.
+- Minor Rust documentation work.
+- tectonic/synctex.c: fix mistake with initializer values
+- Update to reference files eba5b0cc (TeXLive 46289)
+- Synchronize us with staging c35452c4.
+- Verify that we're current as of staging 7c2b22e.
+- Verify that we are current as of staging 7bcc359.
+- Verify that we're current as of reference c40c1d9d4.
+- Add the staging repo as a submodule.
+- tectonic/dpx-pdfdoc.c: fix some more C warnings
+- spx2html: use the massively improved tectonic_xdv error approach
+- xdv: implement the Error trait for XdvError
+- xdv: improve the error story by, like, infinity
+- update lockfile
+- gcc => cc
+- Stub out the `spx2html` engine.
+- xdv: remove the copious debugging printlns, I guess
+- bump dependencies
+- src/io/mod.rs: add convenience OpenResult::must_exist()
+- src/errors.rs: convenience errmsg! macro
+- target gnu c dialect
+- xdv: turn the stream parser into library code
+- xdv: whoops, fix postpost parsing for SPX
+- xdv/examples/xdvdump.rs: note ASCII-ness of character runs
+- xdv: batch up runs of characters
+- tectonic/xetexini.c: default to \XeTeXgenerateactualtext = 1 in SPX mode
+- tectonic: tidying: (str_ptr) => str_ptr
+- tectonic/xetex0.c: tidy up new_native_word_node, new_native_character
+- xdv: add a Rust XDV/SPX parser
+- Start real work on HTML output!
+- tectonic/xetex0.c: tidy up close_files_and_terminate()
+- tectonic: tidy ship_out and freeze the output_comment variable
+- Fix build with multiple versions of flate2
+- tectonic/constants.h: group DVI operator codes here
+- Cargo.lock: update dependencies
+- Update pkgbuild
+- tectonic/bibtex.c: increase size of various bibtex buffers
+- refactor .travis.yml
+- add linux builds to travis matrix
+- Bump to development version 0.1.8-dev.
+- Version 0.1.7.
+- use c11 for the c builds
+- src/io/mod.rs: fix parsing of certain PDF files
+- Cargo.lock: update packages
+- tectonix/dpx-pdfdoc: Remove bits/ includes
+- upgrade error-chain to ~0.11
+- tectonic: remove magic_offset string
+- tectonic/constants.h: small alignment fixes
+- char literal fixups!
+- scan_keyword fixup
+- apply some more clippy suggestions
+- tectonic: replace constants representing chars with char literals
+- tectonic: cstrify some areas unreachable by coccinelle
+- tectonic: cstrify print_spec and print_glue
+- tectonic: cstrify scan_keyword (2/2)
+- tectonic: cstrify scan_keyword (1/2)
+- tectonic: cstrify print_write_whatsit
+- tectonic: cstrify pdf_error
+- tectonic: cleanup S(<reserved keyword>)
+- tectonic/errors: cstrify fatal_error (2/2)
+- tectonic/errors: cstrify fatal_error (1/2)
+- tectonic/errors: cstrify overflow (2/2)
+- tectonic/errors: cstrify overflow (1/2)
+- tectonic/dpx-dvipdfmx: add missing include
+- fix some clippy warnings
+- tectonic/core-bridge.c: refactor includes
+- tectonic/dpx-pdfobj.c: move misplaced ifdef (balance braces)
+- tectonic/dpx: apply include-what-you-use's suggestions
+- io/itarbundle: fix typo
+- tectonic/bibtex.h: fix relative include
+- assume that libpng is available
+- assume that getenv is available
+- assume that mksftmp is available
+- remove HAVE_INTTYPES_H and HAVE_STDINT_H
+- tectonic: switch to relative includes for project headers
+- tectonic/output.c: print: remove unused pool_pointer j
+- damn you keywords
+- tectonic: rename print_cstr_nl to print_nl_cstr for consistency
+- tectonic/errors: cstrify confusion(...) (2/2)
+- tectonic/errors: cstrify confusion(...) (1/2)
+- tectonic/bibtex: reduce goto usage
+- tectonic: cstrify help_line (2/2)
+- tectonic: cstrify help_line (1/2)
+- not sure how this happened, differences in rust/python re engine?
+- tectonic: cstrify print_esc
+- tectonic: cstrify print_nl calls
+- tectonic: replace print(S(...)) with print_cstr(...)
+- tectonic/output.c: add print_cstr variants
+- tectonic/output.c: misc refactor
+- tectonic: free most of the big allocated arrays
+- tectonic: replace ascii numbers with char literals
+- tectonic/xetex0.c: cleanup register wrappers
+- tectonic/xetex0.c: remove return register wrappers
+- tectonic: remove more NULL-checks before calling free
+- tectonic/dpx: reset global state
+- tectonic: remove unused xfseeko and xftello
+- tectonic/xetex0.c: remove unreachable breaks in switch cases w/ goto
+- tectonic/dpx: reduce state in set_verbose functions
+- update to the latest version of gcc to use flag_if_supported
+- build.rs: add -std=c++14 to have char16_t and similar defined
+- tectonic: add approriate attribute to global variables declarations
+- tectonic: add missing static attribute to functions when appropriate
+- tectonic: remove nested extern function declarations
+- tectonic: fix clang -Wmissing-field-initializers warnings
+- tectonic: fix remaining -Wcast-qual warnings
+- tectonic: define ZLIB_CONST to avoid casting away const qualifier
+- tectonic: add format attribute when appropriate
+- tectonic/Engine: fix -Wshadow warning
+- tectonic: remove unreachable code
+- tectonic: fix typo in always false comparison
+- build.rs: add flag_if_supported utility function
+- Cargo.toml: update docs link to point to docs.rs
+- Bump to development version 0.1.7-dev.
+- Version 0.1.6.
+- Cargo.lock: update dependencies
+- src/engines/mod.rs: don't issue a warning when trying to MD5 a nonexistent
+  file
+- tectonic/dpx-pdfobj.c: silence a compiler warning
+- enable gcc-rs parallel feature
+- src/cli_driver.rs: fix paths in Makefile rules files
+- tectonic: change every unsigned to unsigned int to be consistent
+- use inline function instead of non-capturing closure
+- refactor usage of hyper clients
+- add redirection policy heuristic
+- tectonic/dpx-specials: change the return type of check functions to bool
+- tectonic: fix many -Wsign-compare warnings
+- tectonic: change int to unsigned or size_t when appropriate
+- tectonic: use bool instead of int when appropriate
+- tectonic: remove NULL-check before calling pdf_release_obj
+- tectonic/texmfmp: remove useless xfree macro
+- tectonic/dpx-fontmap: fix a use after free
+- tectonic: remove NULL-check before calling mfree
+- tectonic/dpx-pdfcolor: remove unused global variables
+- tectonic: change global variables scope to static when appropriate
+- tectonic: remove duplicated const variables
+- tectonic/xetexd.h: remove unused global variables
+- tectonic: remove duplicated xtoi function
+- Use libc::c_char when appropriated
+- Improve outdir checking
+- tectonic/dpx-dpxfile: remove useless defines
+- tectonic: add startswith helper function
+- Remove unused `fs_root` and cleanup
+- tectonic: replace !strcmp(a, b) with streq_ptr(a, b)
+- tectonic: replace calls to realloc with xrealloc
+- tectonic: replace calls to malloc with xmalloc
+- tectonic: remove useless casts on the result of malloc
+- tectonic: replace zero-check on pointers with NULL
+- tectonic: simplify common pattern with mfree
+- tectonic: remove NULL-check before calling free
+- tectonic/dpx-dvipdfmx: remove useless code
+- tectonic: do not ask the user for a password
+- tectonic/dpx-pkfont: fix old style declaration
+- tectonic: remove deadcode
+- Fix typos and minor improvements
+- Prefix TeX (Y|YZ|Z|D)_(OK|NONE|SEEN|FIXED) constants
+- fix merge
+- fixed tests, add check if outdir exists
+- chose output name
+- add -o, --outdir option
+- Add a test for --keep-logs on a TeX error
+- Keep logs even if TeX errors out.
+- Do not insert files with non-UTF8 names into the manifest
+- Do not change the extension of files requested by the engine.
+- Link to forum from README
+- tectonic: clean up OSX warnings - remaining ones in default config
+- tectonic: clean up OSX warnings - extra parens in TeX code
+- tectonic/bibtex.c: got sloppy in paren removal and broke things
+- src/engines/mod.rs: `tfm` not allowed `ofm` ext.
+- tectonic: clean up OSX warnings - extra parens in bibtex.c while() loops
+- tectonic: clean up OSX warnings - body-less if statements
+- tectonic: clean up OSX warnings - extra parens in bibtex.c
+- tectonic/dpx-tfm.c: implement Rust-y I/O for OFM metric loading
+- tectonic/dpx-tfm.c: reindent to standard style
+- tectonic/dpx-tfm.c: re-add OFM functions
+- tests/executable: Ignoring more tests
+- src/engines/mod: Consider `.tfm` an `.otf` format
+- tectonic/xetex0.c: fix a signed overflow warning that shows up in --release
+- tectonic: fix some warnings that only show up in --release mode
+- Be more careful about paths in the CLI.
+- tests/executable.rs: don't make temp dir if it won't be used
+- tectonic: eliminate many (Linux gcc) compiler warnings
+- Teach the CLI how to process standard input.
+- Rework how the "primary input" is handled.
+- src/cli_driver.rs: make a Builder helper for CliIoSetup
+- src/cli_driver.rs: IoSetup construct no longer needs to be resulty
+- tectonic/xetex0.c: tidy up out_what()
+- tectonic/xetex0.c: annotate all the zaniness going on with start_input
+- tectonic/xetex0.c: tidy up make_name_string()
+- tectonic/xetex0.c: tidy up scan_file_name()
+- tectonic/xetex0.c: tidy up pack_file_name()
+- tectonic/xetex0.c: tidy up end_name()
+- tectonic/xetex0.c: tidy up begin_name() and more_name()
+- Add \TectonicCodaTokens, a new special token list.
+- src/errors.rs: implement a lame comparison function
+- tests/tex-outputs.rs: use more flexible settings-struct for test case
+  parameters
+- tectonic/xetex0.c: last bit of get_next() tidying
+- tectonic/xetex0.c: tidy up for loops in get_next()
+- tectonic/xetex0.c: more work on get_next()
+- engines/mod: Make `format_to_extension` return Vec
+- tectonic/xetex0.c: whitespace futzing and dedenting in get_next()
+- tectonic/xetex0.c: first chunk of tidying and macro-ifying get_next()
+- build.rs: fix build on Rust 1.18
+- tectonic: tidy up constants relating to begin_token_list()
+- tectonic/dpx-system: remove useless macro definitions
+- tectonic/dpx-dvipdfmx: remove useless assignation to opterr
+- tectonic: remove my_name global variable
+- tectonic/dpx-{pdfdoc,pdfobj,dvipdfmx}: change variables from int to bool
+- tectonic: remove enable_objstm global variable
+- tectonic/dpx-dvipdfmx: remove opt_flags global variable
+- tectonic: move dvipdfmx_main declaration to dpx-dvipdfmx.h
+- tectonic: remove the pdf_filename global variable
+- tectonic/dpx-dvipdfmx: remove handling of unsupported use cases
+- tectonic: remove unused error_cleanup function
+- tectonic: remove the dvi_filename global variable
+- tectonic: remove global variables handling page ranges
+- tectonic/dpx-dvi: remove handling of config special
+- src/io/itarbundle: More polite network error msg
+- tectonic/core-kpathutil: remove useless casts
+- Do not write names containing new lines into the manifest
+- Improve robustness of manifest parsing
+- tests: change expected failure `should_panic` to `ignore`
+- update: Clearer message on network failure
+- update: Update MAX_STRINGS value
+- src/cli_driver.rs: point beta users to forums rather than GitHub issues
+- Cargo.toml: docs.rs build will need libicu-dev too
+- fixup! Write failing regression test for #31
+- Write failing regression test for #31
+- tests/executable.rs: change panic semantics to support should_panic
+- tests/executable.rs: add subdirectory copying ability
+- tests: clean up directory retrieval for executable tests
+- test: use plain tex for regressions where possible
+- tectonic/XeTeXFontInst: fix wrong variable type
+- tectonic/dpx-pdfobj: fix wrong format string
+- tectonic/dpx-spc_tpic: change some variables from int to bool
+- tectonic/internals.h: remove useless TRUE/FALSE define
+- tectonic: remove boolean typedef
+- tectonic: remove useless get_job_name function
+- tests: write executable and regression testing suite
+- tectonic: remove do_early_args() and simplify dvipdfmx_main
+- tectonic: remove unused functions
+- tectonic: remove unused variables
+- Clarify the distinction between path vs tex path
+- tectonic/dpx-pdfobj.c: tidy up apply_filter_TIFF2_1_2_4() a bit
+- Fix #50: Normalize paths in MemoryIo
+- Cargo.toml: attempt to fix us up on docs.rs
+- tectonic: remove dead code from #if 0
+- tectonic: remove extern attribute for functions
+- tectonic: remove const_string typedef
+- tectonic: remove the string typedef
+- tectonic/dpx-pdfobj: remove useless assignation
+- tectonic/dpx: remove useless code related to DPXTEST
+- tectonic: fix warnings about misleading indentation
+- tectonic: fix warnings due to comparison of signed/unsigned values
+- tectonic/bibtex: fix wrong return type
+- tectonic: fix redundant reclarations warnings
+- tectonic: fix warnings related to old style definitions
+- tectonic: fix many format issues
+- tectonic: avoid assigning const value to non const variable
+- tectonic/dpx: replace #if to #ifdef
+- build.rs: define HAVE_INTTYPES_H
+- tectonic/core-bridge: remove useless const qualifier
+- Fix SyncTeX tests: gzipped files seem platform dependent
+- Set default halt_on_error to true
+- Implement a builder pattern for TexEngine
+- Add the --synctex command line option, gzip synctex
+- Fix a typo introduced in c7b79e6
+- config: use https for default_config
+- Deploy releases to AUR automatically
+- tectonic/core-kpathutil.c: rename from tectonic/tidy_kpathutil.c
+- build.rs: compile our C/C++ code with the `-Wall` flag
+- build.rs: fix indentation in the platform-specifics functions
+- tectonic: tidy up some Synctex-related pieces
+- tectonic/synctex.c: eliminate some one-time-use macros
+- tests/tex-outputs.rs: save expected/observed outputs to disk if a test fails
+- dist/deploy_key.enc: Add an encrypted SSH key for deployment via Travis
+- Improve SyncTeX messages
+- src/io/local_cache.rs: add fixme for setting readonly
+- Tweak SyncTeX to use Tectonic I/O infrastructure
+- Rerun build.rs only on changes in tectonic/
+- Add a SyncTeX test
+- Remove unnecessary comments
+- Fix SyncTeX (re)initialization
+- Fix SyncTeX coordinates
+- Make cache files readonly
+- Only quote filenames if they have spaces
+- src/io/itarbundle.rs: sigh, add a FIXME
+- Support amsrefs
+- dist: include PKGBUILD from the AUR
+- Quote filenames so XeTeX handles spaces right
+- Back to development: version 0.1.6-dev
+- Version 0.1.5
+- Cargo.lock: update dependencies
+- src/engines/mod.rs: implement get_file_md5 for real
+- tectonic/dpx-pdfximage.c: make the EPS warning not terrible
+- xdvipdfmx: wire it up so that xdvipdfmx warnings get issued through Rust
+- Add a C API to issue warnings and errors through Rust's systems.
+- tectonic: tidy up engine launch on the C/C++ side
+- Use a structure of function pointers to express the C/C++ => Rust API.
+- tectonic: stub out the new "bridge" API
+- tectonic/core-bridge.h: rename from stubs.h
+- .travis.yml: looks like the dylib hack can be removed
+- tectonic/XeTeXLayoutInterface.cpp: merge contents of hz.cpp
+- Remove Poppler dependency (!)
+- tectonic/xetexini.c: fix format loading
+- src/io/itarbundle.rs: retry HTTP fetches if they fail
+- tests: tidy up so the "plain" format is actually called "plain.fmt.gz"
+- Update the format-file version to 24
+- tectonic/xetexini.c: take a few things out of our format-file format
+- tectonic: add a \pdfmdfivesum primitive
+- tectonic/xetex0.c: tidy and symbolic constants for conv_toks()
+- CODE_OF_CONDUCT.md
+- Back to development: bump to version 0.1.5-dev.
+- Version 0.1.4.
+- Remove `emit_tex_constants` sub-crate.
+- Cargo.toml: run "cargo update"
+- Lock the manifest file when using the local filesystem cache layer.
+- tests/formats.rs: update SHA256 sum
+- Bump the format file version to catch up with all of our changes.
+- As long as we're breaking format compatibility, add a ".gz" extension for
+  clarity
+- Calculate our own string pool checksum.
+- Add a new integer variable: \pdfoutput
+- tests/tex-outputs.rs: generate the format file on-the-fly
+- Remove the embedded `xetex.fmt` for tests.
+- src/io/mod.rs: add OpenResult::is_not_available()
+- Save formats in a special munged path and generate formats on-the-fly.
+- src/io/mod.rs: add IoProvider.input_open_format()
+- Cargo.lock: update for rust-crypto changes
+- tectonic/xetex0.c: tidy a couple more magic constants
+- tectonic: Tidy up added integer state variables
+- tectonic/xetex0.c: some more symbolic constants
+- tectonic/*: align now mis-aligned macros
+- tectonic/*: fix mixed indentation
+- tectonic/*: remove trailing whitespace
+- tectonic/dpx-*: replace remaining tabs; alignment
+- tectonic/dpx-*: fix mixed indentation
+- tectonic/dpx-*: remove trailing whitespace
+- Added  Copy derive back
+- Replaced rust-crypto with crates from RustCrypto project
+- tectonic/XeTeX_ext.c: stop including <png.h>
+- tests/formats: add tests of reproducible format-file generation
+- src/io/mod.rs: fix digest computation in the face of partial writes
+- src/engines/mod.rs: flush output handles on close
+- Avoid nesting {Output,Input}Handles when gzipping.
+- src/digest.rs: make DigestData Copy as well as Clone
+- tectonic: clarify a couple of magic-looking UTF8-related numbers
+- tectonic: tidy up some 5-character magic constants
+- tectonic: wow, no 6-character magic integer values!
+- tectonic/xetex0.c: tidy and const-ify shift_case()
+- tectonic/xetex0.c: tidy and const-ify handle_right_brace()
+- tectonic/xetex0.c: tidy and const-ify insert_src_special()
+- tectonic/xetex0.c: tidy and const-ify get_r_token()
+- tectonic/xetex0.c: tidy and const-ify off_save()
+- tectonic/xetex0.c: tidy and const-ify write_out()
+- tectonic/xetex0.c: tidy and const-ify expand()
+- tectonic/xetex0.c: lab21 => reswitch
+- tectonic/xetex0.c: tidy and const-ify check_outer_validity()
+- tectonic/xetex0.c: tidy and const-ify begin_token_list()
+- tectonic/xetex0.c: tidy and const-ify badness()
+- tectonic: 7-digit symbolic constants everywhere except xetex0.c
+- tectonic: remove last 8-digit magic constants from C code
+- tectonic/xetex0.c: tidying in do_register_command()
+- tectonic/xetex0.c: symbolic consts in do_register_command()
+- tectonic/xetex0.c: tidying in init_align()
+- tectonic/xetex0.c: symbolic consts in init_align()
+- tectonic/xetex0.c: tidying of movement()
+- tectonic/xetex0.c: symbolic consts for in movement()
+- tectonic/xetex0.c: tidying in conditional()
+- tectonic/xetex0.c: symbolic consts in conditional()
+- tectonic/xetex0.c: symbols, tidying in read_toks()
+- tectonic/xetex0.c: tidy and symbolic consts in scan_glue()
+- tectonic/xetex0.c: symbolic consts in scan_optional_equals()
+- tectonic/xetex0.c: symbolic consts in insert_relax()
+- tectonic/xetex0.c: tidying of macro_call()
+- tectonic/xetex0.c: symbolic consts in macro_call()
+- tectonic/xetex0.c: other tidying of id_lookup()
+- tectonic/xetex0.c: symbolc consts in id_lookup()
+- .travis.yml: stable builds again; disallow its failure
+- tectonic/xetex0.c: print_cmd_chr(): tidy one for loop
+- tectonic/xetex0.c: constify print_cmd_chr()
+- tectonic/xetex0.c: print_cmd_chr(): initial tidying
+- tectonic/xetex0.c: some miscellaneous nine-digit constants
+- tectonic/xetex0.c: scan_delimiter_int(): symbolic-const-ify
+- tectonic/xetexini.c: remove last 10-digit magic constants
+- tectonic/xetex0.c: remove last 10-digit magic constant!
+- tectonic/xetex0.c: math_fraction(): tidy and constify
+- tectonic/xetex0.c: tidy and const-fiy scan_delimiter()
+- tectonic/xetex0.c: tidy and symbolic-const scan_box()
+- tectonic/xetex0.c: begin_box(): tidy
+- tectonic/xetex0.c: begin_box(): symbolic constants
+- tectonic/xetex0.c: box_end(): tidy
+- tectonic/xetex0.c: box_end(): symbolic constants
+- tectonic/xetex0.c: show_save_groups(): tidy
+- tectonic/xetex0.c: show_save_groups(): symbolic constants
+- tectonic/xetex0.c: try_break(): symbolic const-ify
+- tectonic/xetex0.c: try_break(): cosmetics
+- tectonic/xetex0.c: try_break(): clean up font info expressions
+- tectonic/xetex0.c: start work on try_break()
+- tectonic/xetex0.c: tidy and symbolic-ify make_fraction()
+- tectonic/xetex0.c: tidy and symbolic-ify xetex_scan_dimen
+- tectonic/xetex0.c: expand lab31=done goto label
+- tectonic/xetex0.c: expand attach_sign goto label
+- tectonic/xetex0.c: better consts and tidy in dvi_{four,two}()
+- tectonic/constants.h: better symbolic values for token constants
+- tectonic/xetex0.c: tidy and symbolic-const-ify scan_int()
+- tectonic/xetex0.c: scan_something_internal(): final tidying
+- tectonic/xetex0.c: scan_something_internal(): more constification
+- tectonic/xetex0.c: scan_something_internal(): more tidying
+- tectonic/xetex0.c: scan_something_internal(): work on LAST_ITEM case
+- tectonic/xetex0.c: scan_something_internal(): tidy braces
+- tectonic/xetex0.c: start const-ifying scan_something_internal()
+- tectonic/xetex0.c: remove empty "interaction == error_stop_mode" if statements
+- tectonic/xetex0.c: start macro-ifying large numeric constants
+- tectonic/xetex0.c: const-ify some hardcoded eqtb offsets in print_cmd_chr()
+- tectonic/xetex0.c: tidy formatting of copy_node_list()
+- tectonic/xetex0.c: symbolic const-ify copy_node_list()
+- tectonic/xetex0.c: style cleanup of flush_node_list()
+- tectonic/xetex0.c: symbolic const-ify flush_node_list()
+- Cargo.lock: libc 0.2.21 => 0.2.22
+- Update hyper to ^0.10
+- tectonic: remove now-pointless get_nullstr() function
+- tectonic/xetex0.c: tidy up all "done" goto labels
+- tectonic/xetex0.c: finish up show_node_list()
+- tectonic/xetex0.c: show_node_list(): tidy up common math noads
+- tectonic/xetex0.c: show_node_list(): WHATSIT_NODE case
+- tectonic/xetex0.c: more work on show_node_list()
+- tectonic/xetex0.c: start working on show_node_list()
+- tectonic/xetex0.c: replace magic constants in print_skip_param()
+- tectonic/xetex0.c: replace magic constants in print_subsidiary_data()
+- tectonic/xetex0.c: replace magic constants in short_display()
+- tectonic/xetex0.c: replace magic constants in runaway()
+- tectonic/xetex0.c: replace magic constants in show_token_list()
+- tectonic/stringpool.c: transfer some functions here from xetex0
+- tectonic/inimisc.c: finish tidying up symbolic constants here
+- tectonic/inimisc.c: finish DISC_NODE case
+- tectonic/inimisc.c: more work on DISC_NODE case
+- tectonic/inimisc.c: start tidying DISC_NODE case
+- tectonic/inimisc.c: tidy up a few short cases in line_break()
+- tectonic/inimisc.c: final look at line_break():GLUE_NODE, for now
+- tectonic/inimisc.c: more work on line_break():GLUE_NODE
+- tectonic/inimisc.c: more work on line_break():GLUE_NODE
+- tectonic/inimisc.c: start in on GLUE_NODE in line_break()
+- tectonic/inimisc.c: tidy up first cray-cray triple array index in line_break()
+- tectonic/inimisc.c: dedent cray-cray nested blocks in line_break()
+- tectonic/inimisc.c: work on tidying up line_break()
+- tectonic/inimisc.c: some basic tidying
+- tectonic/xetexini.c: tidy up prefixed_command() with symbolic constants
+- tectonic/xetexini.c: tidy up new_hyph_exceptions()
+- tectonic/xetexini.c: tidy up new_patterns()
+- tests: add a simple \mdfivesum test
+- Cargo.lock: update deps
+- tectonic: fix cb3f692e938
+- tectonic: go back to making a copy of the eqtb pointer
+- tectonic: remove unhelpful nonnegative_integer typedef
+- tectonic/xetexd.h: remove some redundant #defines
+- tectonic: remove a couple more useless variables
+- tectonic: likewise kill main_memory = mem_top + 1
+- tectonic: likewise kill mem_max, which is just mem_top
+- tectonic: likewise kill extra_mem_top
+- tectonic: likewise kill mem_min
+- tectonic: likewise remove extra_mem_bot
+- tectonic: remove the annoying, always-zero "mem_bot" variable
+- tectonic/xetexini.c: tidy up primitive() a bit
+- tectonic/xetexini.c: lots of tidying of the initialization codepath
+- tectonic/xetexini.c: tidy up initialize_more_variables()
+- tectonic/xetexini.c: more cleanup of init_terminal()
+- tectonic/xetexini.c: catch some missing symbolic-ifications
+- tectonic: make format files byte-for-byte reproducible
+- Demonstrate INITEX mode in the (e-)TRIP tests
+- Make it possible to run in "initex" mode.
+- tectonic/xetex0.c: no terminal-input red herring
+- tectonic/errors.c: properly show and propagate up the fatal error message!
+- tectonic/xetex0.c: tiny bit of const-ification
+- Permanently enable e-TeX.
+- tectonic: purge mltex
+- tectonic: use more symbolic constants
+- tectonic: use more symbolic constants
+- tectonic: fix a typo in a constant
+- tectonic: macro-ize local halfword accesses
+- tectonic: macro-ize things related to math font accesses
+- tectonic: tidy up more magic offset numbers
+- tectonic: macro-ize delimiter code accesses
+- tectonic: remove hardcoding of synctex parameter number
+- tectonic: macro-ize scaled register accesses
+- tectonic: macro-ize token and count register accesses
+- tectonic: macro-ize glue register accesses
+- tectonic: macro-ize box register accesses
+- tectonic: macro-ize etex state etqb accesses
+- tectonic: macro-ize more character-code eqtb accesses
+- tectonic: macro-ize some character-code eqtb accesses
+- tectonic: macro-ize dimen variables
+- tectonic: macro-ize glue variables
+- tectonic: replace `eqtb[INT_BASE + x].cint` with symbolic macros
+- tectonic: remove local "eqtb" pointers
+- tectonic/constants.h: finish symbolic constants that go into EQTB_SIZE
+- tectonic/constants.h: more better symbolic values
+- tectonic/constants.h: more better symbolic values
+- tectonic/constants.h: better symbolic values
+- Rename emit_stringpool to emit_tex_constants.
+- tectonic/constants.h: more rearranging
+- Future-proof the string pool checksum a bit.
+- tectonic: globally substitute symbolic constants for {MIN,MAX}_HALFWORD
+- tectonic/xetexini.c: annotate some less-obvious bits of the "format" file
+  format
+- tectonic/xetexini.c: reindent automatically
+- tectonic: Remove dependence on crate md5
+- tectonic/xetexd.h: remove (now-)totally unused variables restrictedshell and
+  ipc_on
+- tectonic/xetexd.h: change some truly obscure variable names
+- tectonic: un-#define the trickier case of zzreverse()
+- tectonic: remove "z" prefixes of many functions
+- tectonic: remove eqtb-only 'regmem' defines
+- tectonic: remove mem-and-eqtb 'regmem' defines
+- tectonic: remove mem-only 'regmem' defines
+- tectonic: remove empty 'regmem' defines
+- tectonic: remove tex_input_type variable
+- tectonic: remove interaction_option variable
+- tectonic/xetexini.c: tidy up load_fmt_file()
+- tectonic/xetexini.c: tidy up store_fmt_file()
+- tectonic: remove the etex_p parameter; pretend it is always true
+- tectonic/xetexini.c: clean up some direct prints to stdout
+- tectonic/xetexini.c: finally done patching up the constants!
+- tectonic/xetexini.c: patch up more primitive args
+- README.md: tighten up
+- .travis.yml: fix this
+- .travis.yml: more fun test commits landing on master
+- tectonic/xetexini.c: a bit more grouping of primitives
+- tectonic/xetexini.c: yet more argument symbols
+- tectonic/xetexini.c: patch up CONVERT and IF_TEST args
+- xetexini: work more on primitive function selector arguments
+- tectonic/xetexini.c: patch up set_shape primitive args
+- tectonic/xetexini.c: patch up assign_dimen primitive args
+- tectonic/xetexini.c: patch up assign_int primitive args
+- tectonic/xetexini.c: patch up assign_toks primitive args
+- tectonic/xetexini.c: patch up assign_glue primitive args
+- xetexini: oh, non-TeX primitive command codes are then trivial
+- xetexini: done fixing command codes for TeX primitives
+- xetexini: work through primitive command numbers
+- xetexini: work through primitive command numbers
+- xetexini: work through primitive command numbers
+- xetexini: work through primitive command numbers
+- xetexini: work through primitive command numbers
+- xetexini: const-ify assignment primitive commands
+- tectonic/xetexini.c: begin work on properly constifying this file
+- tectonic/xetexini.c: undo spacing futzes of single-character string constants
+- tectonic/xetexini.c: fix a bunch of missed stringifications
+- tectonic/xetexini.c: fix up some const-ification corner cases
+- tectonic/constants.h: more arranging
+- tectonic/constants.h: group some more constants
+- tectonic/constants.h: start grouping some constants logically
+- Replace numeric constants in other WEB2C'd files
+- Work on replacing all WEB symbolic constants with #defines
+- Attempt to replace all string-pool magic constants with S(...) macros.
+- tectonic/synctex.c: change a non-UTF-8 character
+- Proof-of-concept of the string pool switchover.
+- Start generating the "string pool" resources ourselves.
+- Fix output of files that shrink.
+- tectonic/xetex0.c: turn the WRITE_OUT macro into a function
+- src/cli_driver.rs: CLI doesn't actually use error_chain itself
+- Bump version to 0.1.4-dev prerelease
+- Version 0.1.3
+- tectonic/dpx-mfileio.c: reindent, tidy
+- tectonic/dpx-mfileio.c: remove and static-ize non-shared functions
+- tectonic/dpx-subfont.c: untabify, reindent, delete trailing whitespace
+- tectonic/dpx-spc_misc.c: remove a FILE* usage
+- tectonic/dpx-spc_misc.c: untabify, reindent, delete trailing whitespace
+- tectonic/dpx-pdfximage.c: tidy up some dangling FILE* usage
+- tectonic/dpx-dpxfile.c: remove unused ispscmap() function
+- tectonic/io.c: clarify indentation of get_uni_c switch statement
+- Implement ungetc() in the Rusty I/O layer
+- Ugh, a gross hack to prevent circular builds.
+- cli: make the "aux" output format really only output .aux files
+- cli: use ctry! where appropriate
+- src/errors.rs: add a ctry! macro
+- tectonic/bibtex.c: bugfix error reporting when .aux open fails
+- cli: add a "bibtex_first" pass mode
+- cli: avoid circular deps in the output Makefile rules
+- src/cli_driver.rs: remove pub keywords
+- cli: nice; with new structure we can work around the borrowck annoyance
+- Change the "summaries" stuff in the engine to a pluggable IoEventBackend.
+- cli: first cut at implementing Makefile rule output
+- Start work on tracking where input files come from
+- cli: add an "aux" output format
+- tectonic/synctex.c: tidy up one more awkward code path
+- tectonic/synctex.c: tidy up synctex_dot_open()
+- tectonic/synctex.c: remove unused synctex_{char,node}
+- tectonic/synctex.c: tidy up a large number of awkward C constructions
+- tectonic/synctex.c: remove unused argument to synctexabort()
+- tectonic/synctex.c: reflect the fact that synctex_ctxt.file is definitely
+  a FILE*
+- tectonic/synctex.c: collect static function prototypes
+- tectonic/synctex.c: move very long header stuff to the footer
+- tectonic/synctex.c: remove an unused #define
+- tectonic/synctex.c: remove 'quoted' flag, unused by XeTeX
+- tectonic/synctex.c: tidy up synctex_init_command()
+- tectonic/synctex.c: and yet more
+- tectonic/synctex.c: kill yet more obfuscatory macros
+- tectonic/synctex.c: more #define bushwhacking
+- tectonic/synctex.c: simplify a whole bunch of superseded #define logic
+- tectonic/synctex.c: remove some #defines rendered inoperative by XeTeX's
+  special stuff
+- tectonic/synctex.c: expand mem=>zmem #define
+- tectonic/synctex.c: expand SYNCTEX_YES, SYNCTEX_NO = SYNCTEX_NO_ERROR =
+  SYNCTEX_NOERR
+- tectonic/XeTeX_ext.c: remove papersize and outputdriver constants
+- tectonic/XeTeX_ext.c: remove initversionstring()
+- tectonic: remove some unneccessary uses of zlib.h
+- tectonic/synctex.c: hardcode the non-generic fprintf implementation
+- tectonic/synctex.c: hardcode SYNCTEX_DEBUG = 0
+- tectonic/synctex.c: expand SYNCTEX_FILE since it's silly
+- tectonic/synctex.c: force synctex_no_gz = TRUE
+- Version 0.1.2.
+- cli: add option to fix number of TeX reruns
+- cli: tidy up CLI argument help strings
+- cli: add --keep-intermediates option
+- cli: rename --keeplog to --keeplogs
+- cli: give some feedback about why TeX was rerun
+- cli: finally wire up smart TeX rerunning in a way that I think works
+- Fix the tricky bits of input file hashing
+- Wire up digest-taking of input files
+- src/engines/mod.rs: correctness on input open
+- Turn InputHandle into a thicker wrapper class as well.
+- src/engines/mod.rs: wire up saving of output file digests
+- src/digest.rs: use SHA2-256, not SHA3-256
+- src/engines/mod.rs: re-enable access-pattern tracking
+- D'oh: now that I think about it, I/O summaries belong in ExecutionState
+- Prepare for IoStack to record digests as well as access patterns.
+- Tidy up other uses of SHA256 digests.
+- src/digest.rs: centralize SHA256 digest cruft here
+- Have ExecutionState save the digests of output files.
+- Convert OutputHandle into a thicker wrapper struct
+- Start tracking file access patterns.
+- Fix no_pdf_output = 1 in the TeX engine.
+- cli: only complain about TeX warnings once
+- cli: implement bibtex auto-detection
+- tests/xenia/paper.bbl: remove now that we're generating this
+- cli: prettier output
+- cli: suppress bibtex log file too if not given --keep-log
+- cli: wire in bibtex
+- cli: restructure main driving code
+- Rename Config to PersistentConfig
+- bibtex: one last tidy for the night
+- bibtex: more C tidying
+- bibtex: tidy the C some more
+- tests/xenia: add support files needed for bibtex testing
+- src/lib.rs: reexport BibtexEngine
+- src/engines: implement KPSE file extensions needed by bibtex
+- bibtex: hah, ANOTHER terrible C typo breaking everything
+- bibtex: classic, nasty C typo breaking everything!
+- bibtex: accidentally took out a newline when ditching version_string
+- bibtex: missed a string manipulation tweak in filename init
+- bibtex: fix error in C transcription
+- bibtex: fix some basic input I/O crashes
+- bibtex: first pass at integrating this into the Rust backend
+- bibtex: change all inputs over to Rusty I/O
+- bibtex: convert log_file and standard_output to use Rusty I/O
+- bibtex: convert bbl_file to use Rusty I/O
+- bibtex: reactivate and tidy get_the_top_level_aux_file_name()
+- bibtex: tidy up initialize()
+- bibtex: tidy up main driver routine
+- bibtex: tidy up some output functions
+- bibtex: remove unused alloc-y #defines
+- bibtex: xchr[x] => x
+- bibtex: xord(x) => x
+- bibtex: tidy up input_ln()
+- bibtex: lab15 => loop_exit
+- bibtex: kill useless braces in #defined integers
+- bibtex: alpha_file => FILE *
+- bibtex: replace other dual fprintfs with new printf_log() function
+- bibtex: remove newline-only dual fprintfs
+- bibtex: consolidate paired fputs into one function
+- bibtex: static-ize some functions
+- bibtex: use standard history enum for error state tracking
+- bibtex: replace print_a_newline() with its trivial expansion
+- bibtex: replace all paired putcs with a single helper function
+- bibtex: nice, bibtex.h no longer needed
+- bibtex: static-ize local variables
+- bibtex: reindent/static-ize low-level file IO functions
+- bibtex: remove pointless lab31 variable
+- bibtex: lab10 => exit
+- bibtex: blow away 'z' preprocessor defines
+- bibtex: pretend that NO_BIBTEX_STAT is defined
+- bibtex: get rid of #ifdef TRACE code
+- bibtex: better jmp_buf names
+- bibtex: readln() not actually used
+- bibtex: clean up malloc-y macros
+- bibtex: BIBTEX #define doesn't do anything (yay)
+- tectonic/bibtex.c: remove references to standard_input
+- Get it to just compile
+- bibtex: start this; straight copy of files from staging
+- README.md: tidy this up some more
+- README.md: add crates.io badge
+- Update Travis CI bits for repository ownership change.
+- Version 0.1.1
+- Cargo.toml: add docs
+- Partial updates for the repo move.
+- Compile fix for problem encountered in Conda packaging container
+- Cargo.toml: add some metadata
+- A little bit of API doc work.
+- Tidy up superfluous error types.
+- Tidy up error printing when there's no StatusBackend.
+- src/cli_driver.rs: add a beta warning
+- Don't create the config file by default.
+- Change the default bundle URL to a PURL.
+- Tidy up termcolor error reporting a bit more.
+- Big cleanup of status API to report errors better
+- src/io/itarbundle.rs: notice URL redirects when loading the bundle
+- src/engines/io_api.rs: more warning tidying now that we have StatusBackend
+- src/engines/mod.rs: use the Status API to report warnings
+- src/io/local_cache.rs: start using SHA256 instead of SHA1
+- One more colorization flourish: highlight names of written files
+- Aaand finally get it so that we report HTTP fetches.
+- Pass the StatusBackend through to IoProvider::input_open_name().
+- Wire in passing of the status through to the TeX engine.
+- Get generic colorized error writing to work
+- More work on prettified output; now with macros!
+- Start work on nice colorized output
+- tectonic/errors.c: grammar change for abort messages
+- Cargo.lock: update dependencies
+- Start linking with termcolor.
+- src/io/local_cache.rs: record unavailable files as well
+- Make the ITarBundle only connect lazily.
+- Implement the full local cache scheme.
+- Cargo.lock: update dependencies
+- Cargo.lock: update dependent packages
+- .travis.yml: finally! Remove diagnostics.
+- .travis.yml: try force-installing openssl as recommended by Homebrew itself
+- .travis.yml: sigh, stick some diagnostics in here
+- .travis.yml: give up on travis-cargo
+- .travis.yml: also seem to need to edit $PATH
+- .travis.yml: whoops, missed a key line
+- .travis.yml: better flailing
+- .travis.yml: some flailing to try to fix Travis
+- Cargo.lock: update dependent packages
+- Woop woop, nice local cache layer.
+- src/io/hyper_seekable.rs: likewise, 'Http' rather than 'HTTP'.
+- Be more Rusty and write 'Io', not 'IO'.
+- Move 'hyper_seekable' to be a sub-module of 'io' as well.
+- Move 'zipbundle' to be a sub-module of 'io' as well.
+- Move 'itarbundle' to be a sub-module of 'io'.
+- Start using the app_dirs crate.
+- tectonic/dpx-pdfximage.c: hack? maybe? unsure.
+- Port CIDFont_type2_dofont to Rusty IO.
+- Port CIDFont_type0_t1dofont to Rusty IO.
+- src/cli_driver.rs: quick framework to make the engine be super quiet
+- Convert PDF output to use the Rust I/O system.
+- tectonic/dpx-bmpimage.c: standard whitespace futzing
+- tectonic/dpx-pngimage.c: standard whitespace futzing
+- Coalesce the image support files
+- tectonic/jpegimage.c: fix this
+- Remove undesired xdvipdfmx 'compat_mode' variable.
+- tectonic/dpx-jpegimage.c: port over cleaner Exif code from XeTeX jpegimage.c
+- tectonic/dpx-jpegimage.c: avoid Rust read errors when copying JPEG stream
+- tectonic/dpx-jpegimage.c: standard whitespace futzing
+- Port xdvipdfmx JPEG I/O to be Rusty.
+- Silence warnings from dfont probing.
+- Port CIDFont_type0_try_open to Rust IO
+- Port otf_create_ToUnicode_stream to Rust IO
+- Port CIDFont_type2_open to Rust IO.
+- Port CIDFont_type0_open to Rust IO.
+- tectonic/dpx-dvi.c: oops, forgot to remove kpse path variable
+- tectonic/dpx-dpxfile.c: turns out "dfont" extension bit is needed
+- Start work on switching font I/O to the Rust backend.
+- tectonic/dpx-cff.c: standard whitespace futzing
+- tectonic/dpx-cff.h: standard whitespace futzing
+- tectonic/dpx-sfnt.h: standard whitespace futzing
+- tectonic/dpx-sfnt.c: standard whitespace futzing
+- tectonic/dpx-type1c.c: standard whitespace futzing
+- tectonic/dpx-cidtype0.c: standard whitespace futzing
+- tectonic/dpx-tt_cmap.c: standard whitespace futzing
+- tectonic/dpx-truetype.c: standard whitespace futzing
+- tectonic/dpx-cidtype2.c: standard whitespace tweaks
+- tectonic/dpx-dpxfile.c: standard whitespace futzing
+- tectonic/jpegimage.c: fix now that we've merged in xdvipdfmx
+- Generate PDFs directly!
+- tectonic/dpx-dvi.c: have the DVI reader use Rusty I/O
+- tectonic/dpx-dvi.c: standard whitespace adjustments
+- Turn the TeX output format into an enum, as it should be.
+- Work on separating out the TeX-specific bits from the overall backend
+  infrastructure.
+- Tidy up the modularization of the I/O subsystem.
+- src/cli_driver.rs: OK, I think I figured out how to do multiple engine passes
+- Revert "Switch the IOStack type to take a slice, not a Vec."
+- tectonic/XeTeXFontInst.cpp: make it so we can load fancy fonts from a bundle
+- src/io.rs: add option for FilesystemIO to allow absolute paths, and use it
+- Switch the IOStack type to take a slice, not a Vec.
+- Big restructure of the Rust code.
+- Split Engine away from ExecutionState when processing.
+- Start making the engine interact with IO more sensibly.
+- src/engine.rs: tidy a bit with an eye towards the future
+- Replace pointless ASSERT() with standard assert().
+- Port xdvipdfmx error handling to use _tt_abort().
+- tectonic/dpx-error.h: annotate the logging functions as taking printf
+  arguments
+- Rename WARN to dpx_warning.
+- Rename MESG to dpx_message.
+- tectonic/dpx-error.c: more tidying; warnings and errors now going through Rust
+  output system
+- tectonic/dpx-error.c: tidy up _mesg_type stuff
+- tectonic/dpx-error.c: convert standard output to use Rust stdout output
+- tectonic/dpx-error.c: standard whitespace adjustment
+- tectonic/dpx-pdfobj.c: fix another oversize read
+- tectonic/dpx-pdfobj.c: add some logic to avoid too-large reads at EOF
+- Transition DPX PDF reading to use Rusty I/O.
+- tectonic/dpx-pdfobj.c: usual whitespace futzing
+- tectonic/dpx-pdfobj.c: remove another diagnostic message
+- tectonic/dpx-dvipdfmx.c: remove a diagnostic output
+- Switch DPX CMap reading to use Rusty I/O.
+- tectonic/dpx-cmap.c: standard whitespace tidying
+- tectonic/dpx-cmap_read.c: standard whitespace tidying
+- tectonic/dpx-cmap_read.c: remove some strange preprocessing foo
+- tectonic/dpx-pdfximage.c: stub the use of Rusty I/O here
+- tectonic/dpx-pdfximage.c: usual whitespace tidying
+- xdvipdfmx: remove support for MetaPost images
+- xdvipdfmx: tidy up code related to opening CMap files
+- Support yet more kpathsea formats. I think we're done now?
+- Port over more aspects of Type 1 font loading.
+- tectonic/dpx-pdfximage.c: "fix" picture finding
+- Move basic Type1 loading to Rusty I/O.
+- tectonic/dpx-t1_load.c: tidy in the usual way
+- tectonic/dpx-type1.c: untabify, reindent, delete trailing whitespace
+- Switch DPX loading of encoding files to use Rusty I/O.
+- tectonic/dpx-pdfencoding.c: untabify, delete trailing whitespace, reindent
+- src/kpse_api.rs: update diagnostic message
+- Switch DPX fontmap loading to use Rusty I/O.
+- tectonic/dpx-fontmap.c: reindent
+- tectonic/dpx-fontmap.c: untabify and remove trailing whitespace
+- tectonic/dpx-dvipdfmx.c: emulate default TeXLive config file
+- Switch DPX VF font loading to use the Rust I/O layer.
+- Remove #if LIBDPX code
+- tectonic/dpx-vf.c: reindent
+- tectonic/dpx-vf.c: delete trailing whitespace
+- Aaand I managed to miss several other file formats that were used.
+- Start porting DPX TFM reading to Rust I/O.
+- tectonic/dpx-tfm.c: remove some #if 0'd code
+- Effectively enable the WITHOUT_ASCII_PTEX #define
+- tectonic/dpx-tfm.c: remove unused WITHOUT_OMEGA #define
+- tectonic/dpx-dvipdfmx.c: remove option spec for -M argument
+- Disable config-file loading in xdvipdfmx init.
+- Wire up the other kpathsea format types into the Rust code.
+- Rearrange the xdvipdfmx testbed to run within the Engine context.
+- tectonic/dpx-agl.c: switch the first piece of xdvipdfmx I/O to Rust
+- Move the xdvipdfmx files into the main tectonic/ directory.
+- tectonic/dpx-unicode.h: continue moving dvipdfmx headers
+- tectonic/dpx-type1.h: continue moving dvipdfmx headers
+- tectonic/dpx-type1c.h: continue moving dvipdfmx headers
+- tectonic/dpx-tt_table.h: continue moving dvipdfmx headers
+- tectonic/dpx-tt_post.h: continue moving dvipdfmx headers
+- tectonic/dpx-tt_gsub.h: continue moving dvipdfmx headers
+- tectonic/dpx-tt_glyf.h: continue moving dvipdfmx headers
+- tectonic/dpx-tt_cmap.h: continue moving dvipdfmx headers
+- tectonic/dpx-tt_aux.h: continue moving dvipdfmx headers
+- tectonic/dpx-truetype.h: continue moving dvipdfmx headers
+- tectonic/dpx-tfm.h: continue moving dvipdfmx headers
+- tectonic/dpx-t1_load.h: continue moving dvipdfmx headers
+- tectonic/dpx-t1_char.h: continue moving dvipdfmx headers
+- tectonic/dpx-subfont.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_xtx.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_util.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_tpic.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_pdfm.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_misc.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_html.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_dvips.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_dvipdfmx.h: continue moving dvipdfmx headers
+- tectonic/dpx-specials.h: continue moving dvipdfmx headers
+- tectonic/dpx-spc_color.h: continue moving dvipdfmx headers
+- tectonic/dpx-sfnt.h: continue moving dvipdfmx headers
+- tectonic/dpx-pst_obj.h: continue moving dvipdfmx headers
+- tectonic/dpx-pst.h: continue moving dvipdfmx headers
+- tectonic/dpx-pngimage.h: continue moving dvipdfmx headers
+- tectonic/dpx-pkfont.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfresource.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfparse.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfnames.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdffont.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdflimits.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfencrypt.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfencoding.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfdraw.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfdoc.h: continue moving dvipdfmx headers
+- tectonic/dpx-otl_opt.h: continue moving dvipdfmx headers
+- tectonic/dpx-otl_conf.h: continue moving dvipdfmx headers
+- tectonic/dpx-mpost.h: continue moving dvipdfmx headers
+- tectonic/dpx-mem.h: continue moving dvipdfmx headers
+- tectonic/dpx-jpegimage.h: continue moving dvipdfmx headers
+- tectonic/dpx-jp2image.h: continue moving dvipdfmx headers
+- tectonic/dpx-epdf.h: continue moving dvipdfmx headers
+- tectonic/dpx-dvipdfmx.h: continue moving dvipdfmx headers
+- tectonic/dpx-dvi.h: continue moving dvipdfmx headers
+- tectonic/dpx-error.h: continue moving dvipdfmx headers
+- tectonic/dpx-dvicodes.h: continue moving dvipdfmx headers
+- tectonic/dpx-dpxutil.h: continue moving dvipdfmx headers
+- tectonic/dpx-dpxfile.h: continue moving dvipdfmx headers
+- tectonic/dpx-dpxcrypt.h: continue moving dvipdfmx headers
+- tectonic/dpx-dpxconf.h: continue moving dvipdfmx headers
+- tectonic/dpx-cs_type2.h: continue moving dvipdfmx headers
+- tectonic/dpx-cmap_write.h: continue moving dvipdfmx headers
+- tectonic/dpx-cmap_read.h: continue moving dvipdfmx headers
+- tectonic/dpx-cmap_p.h: continue moving dvipdfmx headers
+- tectonic/dpx-cmap.h: continue moving dvipdfmx headers
+- tectonic/dpx-cidtype2.h: continue moving dvipdfmx headers
+- tectonic/dpx-cidtype0.h: continue moving dvipdfmx headers
+- tectonic/dpx-cid_p.h: continue moving dvipdfmx headers
+- tectonic/dpx-cid.h: continue moving dvipdfmx headers
+- tectonic/dpx-type0.h: continue moving dvipdfmx headers
+- tectonic/dpx-fontmap.h: continue moving dvipdfmx headers
+- tectonic/dpx-cid_basefont.h: continue moving dvipdfmx headers
+- tectonic/dpx-cff_stdstr.h: continue moving dvipdfmx headers
+- tectonic/dpx-cff_limits.h: continue moving dvipdfmx headers
+- tectonic/dpx-cff_dict.h: continue moving dvipdfmx headers
+- tectonic/dpx-cff.h: continue moving dvipdfmx headers
+- tectonic/dpx-cff_types.h: continue moving dvipdfmx headers
+- tectonic/dpx-bmpimage.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfximage.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfdev.h: continue moving dvipdfmx headers
+- tectonic/dpx-pdfobj.h, tectonic/dpx-pdfcolor.h: continue moving dvipdfmx
+  headers
+- tectonic/dpx-mfileio.h: continue moving dvipdfmx headers
+- tectonic/dpx-numbers.h: continue moving dvipdfmx headers
+- tectonic/dpx-agl.h: continue moving dvipdfmx headers
+- Begin moving xdvipdfmx headers into tectonic/
+- xdvipdfmx: remove yet more obfuscatory I/O #defines
+- xdvipdfmx: remove obfuscatory DPXFOPEN #define
+- Wire up xdvipdfmx to run through the tectonic executable.
+- xdvipdfmx: remove some Metapost-related codepaths
+- xdvipdfmx: remove #defines that are literally noops
+- Remove obfuscatory RELEASE #define.
+- .travis.yml: further attempt to fix the Travis CI
+- xdvipdfmx: remove IODEBUG #defines
+- xdvipdfmx: remove WIN32 defines
+- .travis.yml: install openssl to try to pacify Travis
+- build.rs: add some more #defines for xdvipdfmx that it might want
+- xdvipdfmx: remove HAVE_CONFIG_H #defines
+- xdvipdfmx: remove MSC_VER-related #defines
+- xdvipdfmx: remove MIKTEX-related #defines
+- xdvipdfmx: tweaks to eliminate all of the compiler warnings
+- xdvipdfmx: it links!
+- xdvipdfmx: more hack
+- xdvipdfmx: more savagery to get it to compile
+- xdvipdfmx: more grossness to get it building
+- xdvipdfmx: strip out some stuff preventing compilation
+- xdvipdfmx: remove xbb.c, which I think is not needed
+- build.rs: first-cut attempt for compiling xdvipdfmx into a library
+- Import xdvipdfmx sources.
+- Ditch the first-cut ITarBundle implementation
+- src/itarbundle.rs: restructure the backing HTTP implementation
+- src/itarbundle.rs: new bundle implementation
+- Rename Bundle to ZipBundle
+- src/cli_driver.rs: quickie change to wire up web-based bundles
+- src/bundle.rs: wire up an HTTP-backed bundle!
+- src/hyper_seekable.rs: rename to SeekableHTTPFile
+- src/hyper_seekable.rs: more tests; found another bug
+- Start work on a seekable HTTP stream.
+- If quarterword == 16 bits, then ... halfword => 32 bits.
+- Commit to quarterword === uint16_t.
+- tectonic/mathutil.c: collect more math routines here
+- tectonic/xetex0.c: turn int_error() into a static function with tidying
+- tectonic/mathutil.c: new file
+- tectonic/xetex0.c: halfhearted attempt at fixing OSX floating point error
+- tectonic/XeTeXFontMgr_FC.cpp: attempt to solve the TRIP test segfault
+- .travis.yml: work around problem in cargo-based testing on OSX
+- tectonic/pdfimage.cpp: should use delete[], not just delete
+- .travis.yml: update for new testing framework
+- Drop the "compat"; that idea is now dead
+- Woo, shut up TeX.
+- tests/trip.rs: make it explicit that these tests need halt_on_error_p=0
+- Fix setjmp() error handling.
+- tectonic/errors.c: hey let's not loop infinitely when halt_on_error_p = 1
+- Make it possible for Rust to control the `halt_on_error_p` variable.
+- Make io::IOStack take references, not owned boxes.
+- src/io.rs: bit of genericization for accessing stdout in MemoryIO
+- src/engine.rs: make 'io' a public field of Engine
+- tectonic/XeTeXFontInst.cpp: avoid common kpsezip complaints
+- src/io.rs: use buffering when reading files from the filesystem
+- Don't issue a warning when we hit EOF on a regular input file.
+- Remove remnants of first-cut test framework.
+- tests/trip.rs: merge the eTRIP test in here
+- src/engine.rs: clean up input/output files when done processing.
+- Implement the TRIP test within "cargo test" framework!
+- Start working on real tests!
+- tectonic/io.c: fix huge copy/paste thinko
+- src/io.rs: fix overlong lifetimes leading to RefCell panics
+- Make Engine::process() return Result as it should
+- src/bundle.rs: tidy a bit
+- Switch over to use the new tidied I/O system.
+- Use OsStr instead of &[u8] for IO layer names.
+- src/io.rs: first cut attempt at a memory-backed I/O layer
+- Implement some IOProviders in the cleaned-up scheme.
+- src/bundle.rs: trial implementation of IOProvider for Bundles
+- Start working on tidied-up I/O subsystem with grown-up error handling.
+- Cargo.lock: update dependency versions
+- tectonic/xetexd.h: zlib no longer needed globally
+- tectonic/XeTeX_pic.c: remove a stray kpse_find_file
+- Dead code elimination.
+- Switch text file input to use Rust-y I/O.
+- Switch all image I/O over to Rust-y I/O.
+- src/bundle.rs: whee, actually read in bundle items!
+- Prototype an fseek() API for input streams
+- tectonic/xetexini.c: use Rust I/O to read the format instead of C
+- Wire up an AFM FileFormat in Rust since it's used in C.
+- Attempt to wire up a saner input-opening framework.
+- src/engine.rs: some tidying of the I/O stuff
+- src/engine.rs: same boxification for InputItems
+- Start working on using trait objects to represent output/input streams.
+- Hook up load_mapping_file() to use Rust-y I/O.
+- Switch TFM reading to use Rust-y I/O.
+- Finish removing tfm_temp in read_font_info()
+- Work on removing pointless tfm_temp assignments in read_font_info()
+- Dedent the core of read_font_info()
+- Key inversion to dedent most of read_font_info().
+- And yet more work on read_font_info()
+- Yet more work on read_font_info()
+- Yet more work on read_font_info()
+- More work on read_font_info()
+- More tidying of read_font_info()
+- Start working on tidying read_font_info()
+- Work on wiring Rust-y input up to the C code.
+- Stub out Rusty input-file handling.
+- tectonic/XeTeXFontInst.cpp: static-ize and simplify xbasename()
+- tectonic/synctex.c: static-ize xfclose() in the only place it's used
+- tectonic/jpegimage.c: static-ize xfseek() in the only place it's used
+- tectonic/tidy_kpathutil.c: remove unused xfopen()
+- tectonic/xetexini.c: tidy pack_buffered_name() significantly
+- tectonic/xetexini.c: move and static-ize pack_buffered_name()
+- tectonic/xetexini.c: tidy up format-file loading
+- tectonic/xetexd.h: tidy and document some state structures
+- Remove unhelpful "_field" suffixes on structures in web2c code.
+- Remove now-unused 'term_in' variable.
+- Remove term_input() and calls thereto
+- Defuse the \pausing primitive.
+- tectonic/io.c: open_or_close_in belongs here
+- tectonic/xetex0.c: tfm_file can be a local variable
+- Wait, why are we handling SIGINT anyway?
+- Tidy up start_input and remove prompting for unavailable files
+- Remove now-unused open_output() C function.
+- tectonic/xetexini.c: collect and static-ize format-file related code
+- Set up to write gzipped format files using the Rust I/O layer.
+- tectonic/xetexini.c: remove unused NO_DUMP_SHARE macro
+- tectonic/xetexini.c: more centralization of format-file stuff
+- Switch DVI file output to use Rusty I/O.
+- Use a more binary-friendly API for Rust output.
+- Switch the write_file code to use Rusty I/O.
+- Route all writes to stdout through the Rust I/O layer.
+- Wire in a flush() method for output handles.
+- tectonic: set up a handle for Rusty stdout
+- Prepare to handle stdout through the Rust I/O layer too.
+- Use the new Rusty output API to write the log file.
+- More work on actually using the Rust output code.
+- Tidy up Rusty part of output_putc() function.
+- Wire up the text output API to use an Engine instance.
+- Tidy up crate-internal interfaces.
+- Biiig restructuring of the Rust Engine code.
+- tectonic/xetex0.c: tidy open_log_file()
+- tectonic/xetex0.c: tidy up make_name_string() functions
+- tectonic/internals.h: update headers for moved functions
+- tectonic/tidy_kpathutil.c: remove unused read_line()
+- tectonic/io.c: begin centralizing file I/O code here
+- tectonic/XeTeX_ext.c: remove popen()-based path to PDF output
+- Replace only usage of concat() with purpose-specific code.
+- Remove unused concatn() function.
+- tectonic/XeTeX_ext.c: move kpse_absolute_p to the one place it's used
+- tectonic/tidy_kpathutil.c: extend_filename now unused
+- tectonic/tidy_kpathutil.c: remove unused uppercasify()
+- tectonic/tidy_kpathutil.c: find_suffix() can be static
+- Tidy up the former generic_synctex_get_current_name().
+- tectonic/internals.h: remove now-unused version_string declaration
+- Remove unicodefile/unicode_file typedefs.
+- Reindent affine-transform related code.
+- tectonic/jpegimage.c: move get_unsigned* here as static functions
+- tectonic/tidy_kpathutil.c: remove more unused I/O functions
+- tectonic/tidy_kpathutil.c: remove unused fseek/ftell wrappers
+- tectonic/xetexd.h: remove unused pool_file variable
+- tectonic/internals.h: setPoint => SET_POINT for macro-ness clarity
+- tectonic/internals.h: remove yet more obfuscatory #defines
+- tectonic/internals.h: remove some unhelpful #defines
+- tectonic/internals.h: minor tidying of #ifs
+- Replace FOPEN_*_MODE #defines with actual values.
+- tectonic/internals.h: remove more unused defines
+- tectonic/XeTeX_ext.c: remove final group of calls to exit()
+- tectonic/XeTeX_mac.c: remove exit() calls
+- tectonic/XeTeXLayoutInterface.cpp: remove exit() calls
+- tectonic/XeTeXFontMgr_FC.cpp: remove exit() calls
+- Remove yet more exit() calls.
+- tectonic/bmpimage.c: remove exit() call
+- tectonic/texmfmp.c: remove exit() calls
+- Remove a few more exit()s and tidy goto labels named "exit".
+- tectonic/tidy_kpathutil.c: remove some more exit() calls
+- tectonic/internals.h: WARNING* macros were unused
+- Replace FATAL* macros with _tt_abort().
+- tectonic/xetexd.h: tidy some I/O macros
+- tectonic/errors.c: use _tt_abort() instead of exit() on fatal TeX errors
+- tectonic/errors.c: switch statement in jump_out() not actually needed
+- tectonic/errors.c: centralize error-related code
+- tectonic/errors.c: oh, jump_out() can now be made static too
+- tectonic/errors.c: normalize_selector() can now become a static function here
+- tectonic/errors.c: pdf_error() also belongs here
+- tectonic/errors.c: tidy fatal_error(), overflow(), and confusion()
+- tectonic/errors.c: remove interactive error reponse in error()
+- tectonic/errors.c: move some error handling functions here
+- tectonic/xetexini.c: remove call to jump_out in store_fmt_file, plus tidying
+- Wire up setjmp-based handling of super-fatal errors
+- tectonic/errors.c: work on an exit()-free error handling framework
+- tectonic/xetexini.c: move get_strings_started() here as a static func
+- tectonic/xetex-pool.c: tidy this up a bit
+- tectonic/output.c: print_the_digs() can be static
+- Replace selector magic constants with enumeration values.
+- tectonic/output.c: move print_ln to here from inimisc.c
+- tectonic/xetexini.c: remove debug_format_file and therefore print_csnames()
+- tectonic/output.c: 65536L -> 0x10000
+- tectonic/output.c: reindent, tidy a few unnatural web2c constructs
+- tectonic/output.c: remove "z" prefixes
+- tectonic/output.c: move a couple more functions and kill regmem #defines
+- tectonic/internals.h: also remove not-very-helpful address typedef
+- tectonic/internals.h: remove not-very-helpful void_pointer/voidpointer typedef
+- tectonic/output.c: move some printing functions here
+- Make final_cleanup() a static function.
+- Make sort_avail() a static function.
+- Remove various now-unused feature test macro definitions.
+- tectonic/tidy_kpathutil.c: remove now-unused putenv-related functions
+- OSX Travis build works! Add a badge.
+- .travis.yml: attempt 3
+- .travis.yml: whee, try again
+- .travis.yml: actually, try automated OSX builds
+- .travis.yml: Finally try out this "continuous integration" thing ...
+- README.md: fix markup and typo
+- README.md: update to say that we build on Macs!
+- Drop fontconfig requirement on MacOS.
+- build.rs: fix up new stuff to work on Linux again
+- It passes the tests on OS X, with OS-X-y features enabled!
+- Work on getting a full Mac-enabled build to work.
+- tectonic/XeTeXFontMgr_Mac.mm: new file
+- build.rs: start working on Mac-specific compilation bits
+- Copy Mac-specific files over.
+- build.rs: tweak the native-code compilation
+- Swap out the C MD5 implementation for the Rust one.
+- README.md: mention system library deps
+- README.md: add some quickie instructions for Rustup startup.
+- tectonic/synctex.c: rearrange system header #includes
+- build.rs: seems that -Itectonic is not needed anymore
+- Remove last use of __SyncTeX__ #define.
+- tectonic/synctex.c: move include of synctex.h header
+- tectonic/synctex.c: remove SYNCTEX_NO_OPTION #define
+- tectonic/synctex.c: tidy up preamble a bit
+- tectonic/synctex.c: remove SYNCTEX_RETURN_IF_DISABLED #define
+- tectonic/synctex.c: remove SYNCTEX_FREE #define
+- tectonic/synctex.c: remove W32UPTEXSYNCTEX define
+- build.rs: no need to define HAVE_CONFIG_H; not used in this tree
+- README.md: explicit link to tectonic-staging
+- Add various missing copyright headers.
+- README.md: update to reflect the new truth
+- tectonic/main.c: remove; no longer needed
+- Finally stop hardcoding the path to the bundle!
+- src/c_api.rs: centralize declarations of C/C++ API functions
+- tectonic/stubs.h: create this from the kpsezip header
+- Assign constant comment in the DVI/XDV output
+- And, yes, we pass etrip when we do this.
+- Get it so we pass TRIP again.
+- Progress toward passing the tests again.
+- Rename main_body() to tt_run_engine().
+- Get it so that the Rust-based executable doesn't crash.
+- If we're gonna commit to this, don't need these files ...
+- Experiment with a full-Rust build procedure.
+- gen-ninja.py: add -fPIC option to compiled C/C++ code
+- tectonic/xetexini.c: tidy up primitive()
+- tectonic/xetexini.c: remove final_end label in main_body()
+- Turn the "history" variable into an enum.
+- Remove the unused ready_already variable.
+- tectonic/xetexini.c: more tidying of main_body()
+- tectonic/xetexini.c: remove spaces after comments in main_body()
+- tectonic/xetexini.c: remove a big unneeded indent in main_body()
+- Work on tidying main_body.
+- tectonic/xetexini.c: tidy up the newly-renamed initialize_primitives()
+- tectonic/xetexini.c: work on tidying up the init process
+- Remove banner prints from inside the engine.
+- tectonic/xetexini.c: remove a path that (AFAICT) can't be triggered
+- Tidy up jump_out() a bit.
+- Tidy up main_body() a bit and have it return a status code instead of exiting
+- tectonic/main.c: move printversionandexit() here
+- tectonic/main.c: move usagehelp() here
+- tectonic/main.c: get rid of shared argc/argv variables
+- Use the magic of "arguments" to clean up engine initialization.
+- tectonic/main.c: tidy up the signal handler init
+- Rename ini_version variable to in_initex_mode.
+- tectonic/main.c: more option-processing tidying
+- tectonic/main.c: clean up dump_name and ready_already variable usage a bit
+  in main()
+- Remove shellenabledp and related code.
+- tectonic/main.c: collaps main() and maininit()
+- Move some of the initialization routines closer together.
+- Start untangling the initialization code
+- tectonic/inimisc.c: remove "z" prefixes
+- tectonic/inimisc.c: tidy up some of the C
+- tectonic/inimisc.c: move some miscellaneous functions that were in xetexini.c
+- tectonic/xetex0.c: remove a straggling IPC code block
+- tectonic/xetexd.h: guard against multiple inclusion
+- tectonic/xetexd.h: clean up last #includes
+- tectonic/xetexd.h: clean up more XeTeX #defines
+- tectonic/xetexd.h: clean up some XeTeX #defines
+- tectonic/xetexd.h: more tidying and eliminating unused constructs
+- Wait a minute, EXTERN doesn't do anything!
+- tectonic/xetexd.h: tidy up variable declarations
+- Remove "rh" and "lhfield" #defines.
+- Remove "b2" #define.
+- Remove "b1" #define.
+- Remove "b0" #define.
+- More typedef cleanups.
+- Rename fourquarters -> four_quarters everywhere.
+- Rename memoryword -> memory_word everywhere.
+- Tidy up some typedefs.
+- Move some more #defines to xetexini when they're local.
+- tectonic/xetexd.h: move dump-related #defines to xetexini.c
+- Remove u_open_in #define and de-prefix the real implementation.
+- tectonic/xetexd.h: remove w_* I/O macros
+- tectonic/xetexd.h: more #define cleanups
+- tectonic/xetexd.h: more #define cleanups
+- tectonic/xetexd.h: more #define cleanups
+- tectonic/xetexd.h: more #define cleanups
+- tectonic/xetexd.h: more #define cleanups
+- tectonic/xetexd.h: remove a_ I/O routines
+- tectonic/xetexd.h: remove Fputs() #define
+- tectonic/xetexd.h: and yet more #defines cleanup
+- tectonic/xetexd.h: remove addressof() macro
+- tectonic/xetexd.h: remove "text" typedef
+- tectonic/xetexd.h: remove "real" typedef
+- Replace decr() and incr() with C operators.
+- tectonic/xetexd.h: yet more #defines cleanup
+- tectonic/xetexd.h: more #defines cleanup
+- tectonic/xetexd.h: remove some more pointless #defines
+- README.md: reword the elevator pitch a bit
+- tectonic/xetexd.h: remove unused makebinaryfile() macro
+- tectonic/xetexd.h: remove anachronistic read() macro
+- Remove Xchr() spandrels.
+- tectonic/xetexd.h: remove unused INI #define too
+- Remove remaining tests for INITEX conditional.
+- Remove last uses of TeX and XeTeX #defines.
+- tectonic/xetexd.h: dead code elimination
+- tectonic/xetexd.h: remove TRIP, TRAP undefs
+- tectonic/main.c: remove unused dump_option variable
+- As advertised, translate_filename is ignored.
+- tectonic/main.c: remove unused src_specials_option variable
+- tectonic/main.c: bit more tidying of command-line args
+- tectonic/main.c: remove the -jobname option
+- tectonic/main.c: remove vestiges of the -efmt option
+- tectonic/main.c: remove the progname argument
+- tectonic/main.c: reindent and delete a lot of comments
+- tectonic/texmfmp.c: tidy up
+- tectonic/main.c: split program-launching routines into this file
+- tectonic/texmfmp.c: tidy up some statics and unused functions
+- tectonic/texmfmp.c: tidy up help text a bit
+- tectonic/texmfmp.c: clean up some #defines
+- tectonic/texmfmp.c: tidy variables
+- tectonic/texmfmp.c: remove now-pointless texmf_yesno()
+- Remove the runsystem() function.
+- tectonic/texmfmp.c: remove bits controlling shell escapes
+- tectonic/texmfmp.c: remove obfuscatory compat macro
+- Rename the executable to tectonic-compat.
+- tectonic/tectonic.h: leverage stdint.h to clean up 32-bit int definition
+- LICENSE: add this
+- README.md: update this
+- tectonic/XeTeX_ext.c: tidy up a bit
+- Attempt to clean up messy XeTeX headers
+- tectonic/XeTeX_ext.h: tidy up mutually-referencing include files
+- tectonic/XeTeX_ext.h: tidy as much as we can for now
+- tectonic/XeTeX_ext.h: work on tidying this
+- tectonic/internals.h: centralize some more typedefs
+- Get rid of mfileio.{c,h}, which were barely used.
+- tectonic/internals.h: fold in numbers.h
+- tectonic/internals.h: fold in trans.h and pdfimage.h
+- tectonic/xetexd.h: remove include of kpsezip/public.h
+- Tidy up usage of tectonic/md5.h.
+- tectonic/internals.h: fold lib.h in
+- Remove pretty-much-pointless "schar" typedef.
+- tectonic/internals.h: move some non-public stuff here
+- tectonic/internals.h: adapt from tidy_kpathutil.h
+- tectonic/tectonic.h: remove unneeded #include
+- Begin work on making the headers saner.
+- Actually, rename "engine" to "tectonic".
+- engine/XeTeXFontMgr.cpp: fix compiler warnings
+- engine/XeTeXFontMgr_FC.cpp: fix compiler warnings
+- engine/XeTeXLayoutInterface.cpp: fix compiler warnings
+- engine/XeTeXOTMath.cpp: fix compiler warnings, lamely
+- engine/tidy_kpathutil.c: fix compiler warnings
+- engine/w2c-config.h: significant tidying
+- engine/Engine.cpp: fold in teckit-config.h
+- engine/synctex.h: fold in synctex-common.h
+- kpsezip/public.h: tidy up
+- engine/tidy_kpathutil.c: fold trans.c into here
+- engine/tidy_kpathutil.c: fold printversion.c into here
+- engine/tidy_kpathutil.c: fold numbers.c into here
+- engine/tidy_kpathutil.c: fold zround.c into here
+- engine/tidy_kpathutil.c: fold usage.c into here
+- engine/synctex.c: fold in synctex-xetex.h
+- engine/{Compiler,ulong_chartraits}.h: unused; remove
+- engine/xetexd.h: fold in cpascal.h
+- engine/xetexd.h: merge in texmfmp.h
+- engine: remove all STAT code
+- Disable the optional "STAT" code.
+- engine: remove TEXMF_DEBUG stanzas
+- engine: convert uexit() into just exit()
+- engine/xetexini.c: apply some #ifs and tidy a bit
+- engine/xetexini.c: remove bounds checks on parameters that we're keeping fixed
+- engine/xetexini.c: remove now-pointless setup_bound_variable hoop-jumping
+- engine/printversion.c: fold the one-line version.c into here
+- engine/xetexd.h: fold in xetexcoerce.h
+- engine/xetexcoerce.h: fold xetex.h into here
+- engine/texmfmp.h: put all of the #includes in one place
+- engine/texmfmp.h: clean up #ifs
+- engine/texmfmp.c: rewrite convertStringToHexString to not drag in weird deps
+- engine/texmfmp.c: apply remainder of the big #ifs
+- engine/texmfmp.c: remove metafont-only code
+- engine: apply more #ifs
+- engine/texmfmp.c: defuse call_edit function
+- engine: apply more #ifs
+- engine: defuse and remove ENABLE_PIPES code
+- engine/texmfmp.c: apply some more #ifs
+- engine: whoa hey, remove IPC code
+- engine/texmfmp.c: apply some more #ifs
+- engine/texmfmp.c: apply some #ifs and defuse the system() code
+- engine/xetexcoerce.h: apply some preprocessor directives
+- engine/xetex0.c: quash a compiler warning
+- engine/xetexd.h: remove some zany chatter from the web2c conversion
+- engine/xetexd.h: fold in former texmfmem.h
+- engine/texmfmp.c: fold in xetexextra.h
+- engine/synctex-xetex.h: remove unneeded include of xetexextra.h
+- engine/texmfmp.c: fold in pointless texmfmp-help.h
+- engine/version_defs.h: unused; remove
+- engine/teckit-config.h: rename from just "config.h".
+- engine/gftodmem.h: unused; remove
+- engine: remove unused Prefix_Mac.h, Prefix_Win32.h
+- engine: fold in pointless etex_version.h and xetex_version.h
+- engine/help.h: unused; remove
+- engine: rename from xetexdir
+- Remove the "lib" subdirectory.
+- lib: remove unused routines
+- Move teckit source files into xetexdir/ as well.
+- Fold SyncTeX into the xetexdir/ source directory.
+- gen-ninja.py: remove unused U_STATIC_IMPLEMENTATION synctex macro
+- synctexdir/synctex.c: remove obfuscatory SYNCTEX_ENGINE_H macro
+- Remove the separate tidy_kpathutil/ directory.
+- Remove libmd5.
+- xetexdir: move files out of image/ subdirectory
+- lib/w2c-config.h: rename from w2c/config.h
+- Fold c-auto.h into w2c/config.h.
+- gen-ninja.py: remove unused variable
+- gen-ninja.py: oh, ninja automatically makes output directories.
+- Wire up the basic tests.
+- tests/etrip: package this up too
+- tests/trip: package up into a repeatable test
+- kpsezip: log to stderr, not stdout
+- Fix a few subtle problems exposed in the trip test.
+- Import corrections from staging commit fca0150
+- tests/etrip: update with current XeTeX results
+- tests/trip: update for current results from TeXLive XeTeX
+- lib/openclose.c: remove unused variable
+- tests/etrip: import e-trip test
+- tests/trip: import TeXLive's trip test files
+- gen-ninja.py: note a slight problem in the Ninja file
+- xetexdir/XeTeX_pic.c: update find_pic_file() to use kpsezip_get_readable_fd()
+- xetexdir/XeTeX_pic.c: tidy formatting
+- lib/texmfmp.c: remove unused function
+- xetexdir/xetex.h: remove no-longer-needed underscoreless aliases
+- kpsezip/src/find.rs: fix use of filename extensions
+- kpsezip/src/find.rs: also try adding extensions when searching in the bundle
+- kpsezip: also search on-disk with the target extension appended
+- Get file-access working, I think.
+- gen-ninja.py: add -Wall option
+- lib/texmfmp.c: remove decoy impl of input_line
+- lib/eofeoln.c: remove another unused file
+- xetexdir/xetex.web: another inadvertently committed file
+- kpsezip/src/find.rs: ah; we need to deal with SIGPIPE
+- tests/xenia: amateur hour; committed built TeX files
+- It actually runs! Crashes, though.
+- lib/coredump.c: remove; unused
+- lib/openclose.c: minor tidying
+- Remove the output-directory option and all related code.
+- lib/openclose.c: tidy up #ifdefs, etc
+- lib/openclose.c: reindent
+- xetexdir/cpascal.h: remove some underscore compatibility defines
+- Defuse bits related to the filename recorder.
+- lib/openclose.c: remove trailing whitespace
+- lib/texmfmp.c: remove trailing whitespace
+- lib/texmfmp.c: simplify get_input_file_name
+- Remove all references to kpathsea_version_string.
+- Remove all uses of kpse_find_tex macro.
+- Remove all references to kpse_out_name_ok.
+- Remove all references to kpse_in_name_ok.
+- Nothing used kpse_[pkgw_set_definst]_make_tex_discard_errors.
+- Remove all references to kpse_readable_file.
+- Remove all references to kpse_maketex_option.
+- Remove all references to kpse_set_program_basename.
+- Remove all references to kpse_set_program_enabled.
+- Remove all references to kpse_reset_program_name.
+- Remove all references to recorders and set_program_name.
+- Remove all references to kpse_invocation_name.
+- Remove all references to kpse_program_name.
+- Remove all references to kpse_var_value()
+- Get things to compile. Still don't work.
+- Initial import of kpsezip stub. Nothing will work.
+- README.md: add this
+- Start Tectonic.
 
-[branch]: https://github.com/tectonic-typesetting/tectonic/blob/release/CHANGELOG.md
-[gh-releases]: https://github.com/tectonic-typesetting/tectonic/releases
