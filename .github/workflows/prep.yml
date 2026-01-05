@@ -15,22 +15,10 @@ jobs:
       - name: Install latest Cranko
         run: |
           d="$(mktemp -d /tmp/cranko.XXXXXX)"
-          cd "$d"
-          curl --proto '=https' --tlsv1.2 -sSf https://pkgw.github.io/cranko/fetch-latest.sh | sh
-          echo "PATH=$d:$PATH" >> "$GITHUB_ENV"
-      - name: "Debug Environment"
-        run: |
-          echo "GITHUB_REF: $GITHUB_REF"
-          echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
-          echo "CRANKO_HEAD_BRANCH: $CRANKO_HEAD_BRANCH"
-          git branch -v
-          git status
-        env:
-          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
+      - name: "Checkout Branch"
+        run: git checkout -B ${{ github.ref_name }}
       - name: "cranko release-workflow apply-versions"
         run: cranko release-workflow apply-versions
-        env:
-          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
       - name: "Mini-build to freshen Cargo.lock"
         run: cargo build -p tectonic_cfg_support
       - name: Generate release commit
