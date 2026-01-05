@@ -89,6 +89,7 @@ jobs:
           git push --tags origin release:release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
   github-releases:
     runs-on: ubuntu-latest
     if: ${{ inputs.is-release }}
@@ -116,6 +117,7 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
   cargo-publish:
     runs-on: ubuntu-latest
     if: ${{ inputs.is-release }}
