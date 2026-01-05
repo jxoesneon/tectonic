@@ -52,26 +52,29 @@ unsafe impl<T> Sync for SyncPtr<T> {}
 
 // FT_Library can be used from many threads as long as a Mutex protects FT_New_Face and FT_Done_Face
 // - https://sourceforge.net/projects/freetype/files/freetype2/2.6/
-static FREE_TYPE_LIBRARY: OnceLock<SyncPtr<sys::FT_LibraryRec>> = OnceLock::new();
+static FREE_TYPE_LIBRARY: OnceLock<Result<SyncPtr<sys::FT_LibraryRec>, sys::FT_Error>> =
+    OnceLock::new();
 static FACE_MUTEX: Mutex<()> = Mutex::new(());
 
-fn ft_lib() -> sys::FT_Library {
-    FREE_TYPE_LIBRARY
-        .get_or_init(|| {
-            let mut lib = ptr::null_mut();
-            // SAFETY: FreeType initialization is always sound
-            let error = unsafe { sys::FT_Init_FreeType(&mut lib) };
-            if error != 0 {
-                panic!("FreeType initialization failed, error {error}");
-            }
-            SyncPtr(lib)
-        })
-        .0
+fn ft_lib() -> Result<sys::FT_Library, Error> {
+    match FREE_TYPE_LIBRARY.get_or_init(|| {
+        let mut lib = ptr::null_mut();
+        // SAFETY: FreeType initialization is always sound
+        let error = unsafe { sys::FT_Init_FreeType(&mut lib) };
+        if error != 0 {
+            Err(error)
+        } else {
+            Ok(SyncPtr(lib))
+        }
+    }) {
+        Ok(p) => Ok(p.0),
+        Err(e) => Err(Error(*e)),
+    }
 }
 
-/// Initialize FreeType. This function will panic if initialization fails.
-pub fn init() {
-    ft_lib();
+/// Initialize FreeType.
+pub fn init() -> Result<(), Error> {
+    ft_lib().map(|_| ())
 }
 
 /// A tag representing a specific table to load.
@@ -326,18 +329,13 @@ impl Face {
     /// Create a new [`Face`] object from the font file at a given path, plus the index of the
     /// face within the file (as single files may contain the data for multiple styles).
     pub fn new(path: &CStr, index: usize) -> Result<Face, Error> {
+        let lib = ft_lib()?;
         let _l = FACE_MUTEX.lock();
         let mut raw_face = ptr::null_mut();
         // SAFETY: We hold the FACE_MUTEX lock, so calls to FT_New_Face are guaranteed safe
         //         with our global library instance.
-        let err = unsafe {
-            sys::FT_New_Face(
-                ft_lib(),
-                path.as_ptr(),
-                index as libc::c_long,
-                &mut raw_face,
-            )
-        };
+        let err =
+            unsafe { sys::FT_New_Face(lib, path.as_ptr(), index as libc::c_long, &mut raw_face) };
         drop(_l);
         Error::or_else(err, || Face(NonNull::new(raw_face).unwrap(), Vec::new()))
     }
@@ -345,13 +343,14 @@ impl Face {
     /// Create a new [`Face`] object from an in-memory buffer containing font file data. The index
     /// selects which face to load for data with multiple faces.
     pub fn new_memory(mut data: Vec<u8>, index: usize) -> Result<Face, Error> {
+        let lib = ft_lib()?;
         let _l = FACE_MUTEX.lock();
         let mut raw_face = ptr::null_mut();
         // SAFETY: We hold the FACE_MUTEX lock, so calls to FT_New_Memory_Face are guaranteed safe
         //         with our global library instance.
         let err = unsafe {
             sys::FT_New_Memory_Face(
-                ft_lib(),
+                lib,
                 data.as_mut_ptr().cast(),
                 data.len() as libc::c_long,
                 index as libc::c_long,

@@ -93,7 +93,7 @@ impl TectonicCommand for BuildCommand {
             crate::compile::run_and_report(builder, status)?;
 
             if self.open {
-                let out_file = doc.output_main_file(output_name);
+                let out_file = doc.output_main_file(output_name)?;
 
                 if is_config_test_mode_activated() {
                     tt_note!(status, "not opening `{}` -- test mode", out_file.display());

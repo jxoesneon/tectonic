@@ -3,15 +3,6 @@
 version = 4
 
 [[package]]
-name = "addr2line"
-version = "0.25.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b5d307320b3181d6d7954e663bd7c774a838b8220fe0593c86d9fb09f498b4b"
-dependencies = [
- "gimli",
-]
-
-[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -155,21 +146,6 @@ name = "autocfg"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
-
-[[package]]
-name = "backtrace"
-version = "0.3.76"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb531853791a215d7c62a30daf0dde835f381ab5de4589cfe7c649d2cbe92bd6"
-dependencies = [
- "addr2line",
- "cfg-if",
- "libc",
- "miniz_oxide",
- "object",
- "rustc-demangle",
- "windows-link 0.2.1",
-]
 
 [[package]]
 name = "base64"
@@ -650,16 +626,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "error-chain"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d2f06b9cac1506ece98fe3231e3cc9c4410ec3d5b1f24ae1c8946f0742cdefc"
-dependencies = [
- "backtrace",
- "version_check",
-]
-
-[[package]]
 name = "event-listener"
 version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -882,12 +848,6 @@ dependencies = [
  "r-efi",
  "wasip2",
 ]
-
-[[package]]
-name = "gimli"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e629b9b98ef3dd8afe6ca2bd0f89306cec16d43d907889945bc5d6687f2f13c7"
 
 [[package]]
 name = "gix-actor"
@@ -1667,6 +1627,319 @@ dependencies = [
 ]
 
 [[package]]
+name = "jxoesneon-tectonic"
+version = "0.16.2"
+dependencies = [
+ "anyhow",
+ "byte-unit",
+ "cfg-if",
+ "clap",
+ "clap_complete",
+ "filetime",
+ "flate2",
+ "jxoesneon-tectonic-bridge_core",
+ "jxoesneon-tectonic-bundles",
+ "jxoesneon-tectonic-docmodel",
+ "jxoesneon-tectonic-engine_bibtex",
+ "jxoesneon-tectonic-engine_spx2html",
+ "jxoesneon-tectonic-engine_xdvipdfmx",
+ "jxoesneon-tectonic-engine_xetex",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-geturl",
+ "jxoesneon-tectonic-io_base",
+ "jxoesneon-tectonic-status_base",
+ "jxoesneon-tectonic-xdv",
+ "jxoesneon-tectonic-xetex_layout",
+ "lazy_static",
+ "open",
+ "quick-xml",
+ "regex",
+ "serde",
+ "sha2",
+ "tar",
+ "tempfile",
+ "termcolor",
+ "thiserror 2.0.17",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "walkdir",
+ "watchexec",
+ "watchexec-filterer-globset",
+ "watchexec-signals",
+ "watchexec-supervisor",
+ "which",
+ "zip",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_core"
+version = "0.16.2"
+dependencies = [
+ "cc",
+ "flate2",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-io_base",
+ "jxoesneon-tectonic-status_base",
+ "lazy_static",
+ "libc",
+ "md-5",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_flate"
+version = "0.16.2"
+dependencies = [
+ "flate2",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_fontconfig"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-bridge_png",
+ "jxoesneon-tectonic-dep_support",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_freetype2"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-bridge_flate",
+ "jxoesneon-tectonic-bridge_png",
+ "jxoesneon-tectonic-dep_support",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_graphite2"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-dep_support",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_harfbuzz"
+version = "0.16.2"
+dependencies = [
+ "cc",
+ "jxoesneon-tectonic-bridge_freetype2",
+ "jxoesneon-tectonic-bridge_graphite2",
+ "jxoesneon-tectonic-cfg_support",
+ "jxoesneon-tectonic-dep_support",
+ "jxoesneon-tectonic-mac_core",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_icu"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-dep_support",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bridge_png"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-dep_support",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-bundles"
+version = "0.16.2"
+dependencies = [
+ "flate2",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-geturl",
+ "jxoesneon-tectonic-io_base",
+ "jxoesneon-tectonic-status_base",
+ "url",
+ "zip",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-cfg_support"
+version = "0.16.2"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-dep_support"
+version = "0.16.2"
+dependencies = [
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-docmodel"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-errors",
+ "serde",
+ "toml",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-engine_bibtex"
+version = "0.16.2"
+dependencies = [
+ "indexmap",
+ "jxoesneon-tectonic-bridge_core",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-io_base",
+ "jxoesneon-tectonic-status_base",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-engine_spx2html"
+version = "0.16.2"
+dependencies = [
+ "byteorder",
+ "html-escape",
+ "jxoesneon-tectonic-bridge_core",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-io_base",
+ "jxoesneon-tectonic-status_base",
+ "jxoesneon-tectonic-xdv",
+ "percent-encoding",
+ "pinot",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tera",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-engine_xdvipdfmx"
+version = "0.16.2"
+dependencies = [
+ "cc",
+ "jxoesneon-tectonic-bridge_core",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-pdf_io",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-engine_xetex"
+version = "0.16.2"
+dependencies = [
+ "cc",
+ "jxoesneon-tectonic-bridge_core",
+ "jxoesneon-tectonic-bridge_flate",
+ "jxoesneon-tectonic-bridge_freetype2",
+ "jxoesneon-tectonic-bridge_graphite2",
+ "jxoesneon-tectonic-bridge_harfbuzz",
+ "jxoesneon-tectonic-bridge_icu",
+ "jxoesneon-tectonic-cfg_support",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-pdf_io",
+ "jxoesneon-tectonic-xetex_layout",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-errors"
+version = "0.16.2"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-geturl"
+version = "0.16.2"
+dependencies = [
+ "cfg-if",
+ "curl",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-status_base",
+ "reqwest",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-io_base"
+version = "0.16.2"
+dependencies = [
+ "app_dirs2",
+ "flate2",
+ "jxoesneon-tectonic-errors",
+ "jxoesneon-tectonic-status_base",
+ "libc",
+ "sha2",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-mac_core"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-cfg_support",
+ "libc",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-pdf_io"
+version = "0.16.2"
+dependencies = [
+ "cc",
+ "jxoesneon-tectonic-bridge_core",
+ "jxoesneon-tectonic-bridge_flate",
+ "jxoesneon-tectonic-bridge_png",
+ "jxoesneon-tectonic-cfg_support",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-status_base"
+version = "0.16.2"
+dependencies = [
+ "jxoesneon-tectonic-errors",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-xdv"
+version = "0.16.2"
+dependencies = [
+ "byteorder",
+ "clap",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-xetex_format"
+version = "0.16.2"
+dependencies = [
+ "byteorder",
+ "clap",
+ "jxoesneon-tectonic-errors",
+ "nom",
+]
+
+[[package]]
+name = "jxoesneon-tectonic-xetex_layout"
+version = "0.16.2"
+dependencies = [
+ "cc",
+ "enrede",
+ "jxoesneon-tectonic-bridge_core",
+ "jxoesneon-tectonic-bridge_fontconfig",
+ "jxoesneon-tectonic-bridge_freetype2",
+ "jxoesneon-tectonic-bridge_graphite2",
+ "jxoesneon-tectonic-bridge_harfbuzz",
+ "jxoesneon-tectonic-bridge_icu",
+ "jxoesneon-tectonic-cfg_support",
+ "jxoesneon-tectonic-io_base",
+ "jxoesneon-tectonic-mac_core",
+ "libc",
+]
+
+[[package]]
 name = "kqueue"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1946,15 +2219,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "object"
-version = "0.37.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff76201f031d8863c38aa7f905eca4f53abbfa15f609db4277d44cd8938f33fe"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
@@ -2557,12 +2821,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustc-demangle"
-version = "0.1.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56f7d92ca342cea22a06f2121d944b4fd82af56988c270852495420f961d4ace"
-
-[[package]]
 name = "rustix"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2955,319 +3213,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tectonic"
-version = "0.16.0"
-dependencies = [
- "anyhow",
- "byte-unit",
- "cfg-if",
- "clap",
- "clap_complete",
- "error-chain",
- "filetime",
- "flate2",
- "lazy_static",
- "open",
- "quick-xml",
- "regex",
- "serde",
- "sha2",
- "tar",
- "tectonic_bridge_core",
- "tectonic_bundles",
- "tectonic_docmodel",
- "tectonic_engine_bibtex",
- "tectonic_engine_spx2html",
- "tectonic_engine_xdvipdfmx",
- "tectonic_engine_xetex",
- "tectonic_errors",
- "tectonic_geturl",
- "tectonic_io_base",
- "tectonic_status_base",
- "tectonic_xdv",
- "tectonic_xetex_layout",
- "tempfile",
- "termcolor",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "walkdir",
- "watchexec",
- "watchexec-filterer-globset",
- "watchexec-signals",
- "watchexec-supervisor",
- "which",
- "zip",
-]
-
-[[package]]
-name = "tectonic_bridge_core"
-version = "0.0.0-dev.0"
-dependencies = [
- "cc",
- "flate2",
- "lazy_static",
- "libc",
- "md-5",
- "tectonic_errors",
- "tectonic_io_base",
- "tectonic_status_base",
-]
-
-[[package]]
-name = "tectonic_bridge_flate"
-version = "0.0.0-dev.0"
-dependencies = [
- "flate2",
- "libc",
-]
-
-[[package]]
-name = "tectonic_bridge_fontconfig"
-version = "0.0.0-dev.0"
-dependencies = [
- "libc",
- "tectonic_bridge_png",
- "tectonic_dep_support",
-]
-
-[[package]]
-name = "tectonic_bridge_freetype2"
-version = "0.0.0-dev.0"
-dependencies = [
- "libc",
- "tectonic_bridge_flate",
- "tectonic_bridge_png",
- "tectonic_dep_support",
-]
-
-[[package]]
-name = "tectonic_bridge_graphite2"
-version = "0.0.0-dev.0"
-dependencies = [
- "libc",
- "tectonic_dep_support",
-]
-
-[[package]]
-name = "tectonic_bridge_harfbuzz"
-version = "0.0.0-dev.0"
-dependencies = [
- "cc",
- "libc",
- "tectonic_bridge_freetype2",
- "tectonic_bridge_graphite2",
- "tectonic_cfg_support",
- "tectonic_dep_support",
- "tectonic_mac_core",
-]
-
-[[package]]
-name = "tectonic_bridge_icu"
-version = "0.0.0-dev.0"
-dependencies = [
- "tectonic_dep_support",
-]
-
-[[package]]
-name = "tectonic_bridge_png"
-version = "0.0.0-dev.0"
-dependencies = [
- "tectonic_dep_support",
-]
-
-[[package]]
-name = "tectonic_bundles"
-version = "0.0.0-dev.0"
-dependencies = [
- "flate2",
- "tectonic_errors",
- "tectonic_geturl",
- "tectonic_io_base",
- "tectonic_status_base",
- "url",
- "zip",
-]
-
-[[package]]
-name = "tectonic_cfg_support"
-version = "0.0.0-dev.0"
-dependencies = [
- "lazy_static",
-]
-
-[[package]]
-name = "tectonic_dep_support"
-version = "0.0.0-dev.0"
-dependencies = [
- "pkg-config",
- "vcpkg",
-]
-
-[[package]]
-name = "tectonic_docmodel"
-version = "0.0.0-dev.0"
-dependencies = [
- "serde",
- "tectonic_errors",
- "toml",
-]
-
-[[package]]
-name = "tectonic_engine_bibtex"
-version = "0.0.0-dev.0"
-dependencies = [
- "indexmap",
- "libc",
- "tectonic_bridge_core",
- "tectonic_errors",
- "tectonic_io_base",
- "tectonic_status_base",
-]
-
-[[package]]
-name = "tectonic_engine_spx2html"
-version = "0.0.0-dev.0"
-dependencies = [
- "byteorder",
- "html-escape",
- "percent-encoding",
- "pinot",
- "serde",
- "serde_json",
- "tectonic_bridge_core",
- "tectonic_errors",
- "tectonic_io_base",
- "tectonic_status_base",
- "tectonic_xdv",
- "tempfile",
- "tera",
-]
-
-[[package]]
-name = "tectonic_engine_xdvipdfmx"
-version = "0.0.0-dev.0"
-dependencies = [
- "cc",
- "libc",
- "tectonic_bridge_core",
- "tectonic_errors",
- "tectonic_pdf_io",
-]
-
-[[package]]
-name = "tectonic_engine_xetex"
-version = "0.0.0-dev.0"
-dependencies = [
- "cc",
- "libc",
- "tectonic_bridge_core",
- "tectonic_bridge_flate",
- "tectonic_bridge_freetype2",
- "tectonic_bridge_graphite2",
- "tectonic_bridge_harfbuzz",
- "tectonic_bridge_icu",
- "tectonic_cfg_support",
- "tectonic_errors",
- "tectonic_pdf_io",
- "tectonic_xetex_layout",
-]
-
-[[package]]
-name = "tectonic_errors"
-version = "0.0.0-dev.0"
-dependencies = [
- "anyhow",
-]
-
-[[package]]
-name = "tectonic_geturl"
-version = "0.0.0-dev.0"
-dependencies = [
- "cfg-if",
- "curl",
- "reqwest",
- "tectonic_errors",
- "tectonic_status_base",
-]
-
-[[package]]
-name = "tectonic_io_base"
-version = "0.0.0-dev.0"
-dependencies = [
- "app_dirs2",
- "flate2",
- "libc",
- "sha2",
- "tectonic_errors",
- "tectonic_status_base",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "tectonic_mac_core"
-version = "0.0.0-dev.0"
-dependencies = [
- "libc",
- "tectonic_cfg_support",
-]
-
-[[package]]
-name = "tectonic_pdf_io"
-version = "0.0.0-dev.0"
-dependencies = [
- "cc",
- "tectonic_bridge_core",
- "tectonic_bridge_flate",
- "tectonic_bridge_png",
- "tectonic_cfg_support",
-]
-
-[[package]]
-name = "tectonic_status_base"
-version = "0.0.0-dev.0"
-dependencies = [
- "tectonic_errors",
-]
-
-[[package]]
-name = "tectonic_xdv"
-version = "0.4.0"
-dependencies = [
- "byteorder",
- "clap",
-]
-
-[[package]]
-name = "tectonic_xetex_format"
-version = "0.0.0-dev.0"
-dependencies = [
- "byteorder",
- "clap",
- "nom",
- "tectonic_errors",
-]
-
-[[package]]
-name = "tectonic_xetex_layout"
-version = "0.0.0-dev.0"
-dependencies = [
- "cc",
- "enrede",
- "libc",
- "tectonic_bridge_core",
- "tectonic_bridge_fontconfig",
- "tectonic_bridge_freetype2",
- "tectonic_bridge_graphite2",
- "tectonic_bridge_harfbuzz",
- "tectonic_bridge_icu",
- "tectonic_cfg_support",
- "tectonic_io_base",
- "tectonic_mac_core",
-]
-
-[[package]]
 name = "tempfile"
 version = "3.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3434,9 +3379,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-stream"
-version = "0.1.17"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eca58d7bba4a75707817a2c44174253f9236b2d5fbd055602e9d5c07c139a047"
+checksum = "32da49809aab5c3bc678af03902d4ccddea2a87d028d86392a4b1560c6906c70"
 dependencies = [
  "futures-core",
  "pin-project-lite",
@@ -3445,9 +3390,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.17"
+version = "0.7.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2efa149fe76073d6e8fd97ef4f4eca7b67f599660115591483572e406e165594"
+checksum = "9ae9cec805b01e8fc3fd2fe289f89149a9b66dd16786abd8b19cfa7b48cb0098"
 dependencies = [
  "bytes",
  "futures-core",

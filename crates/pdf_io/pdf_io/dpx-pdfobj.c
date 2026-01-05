@@ -3666,8 +3666,8 @@ parse_xref_table (pdf_file *pf, size_t xref_pos)
                     free(q);
                     return -1;
                 }
-                /* FIXME: Possible overflow here. Consider using strtoll(). */
-                offset = atoi(q);
+                /* Use strtoull to avoid overflow on large offsets (max 10 digits). */
+                offset = (size_t) strtoull(q, NULL, 10);
                 free(q);
                 skip_white(&p, endptr);
 

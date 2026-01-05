@@ -19,7 +19,8 @@ use tectonic_geturl::{DefaultBackend, GetUrlBackend};
 use crate::{
     config, ctry,
     driver::{OutputFormat, PassSetting, ProcessingSessionBuilder},
-    errors::{ErrorKind, Result},
+    errmsg,
+    errors::Result,
     status::StatusBackend,
     test_util, tt_note,
     unstable_opts::UnstableOptions,
@@ -109,11 +110,10 @@ impl DocumentExt for Document {
         setup_options: &DocumentSetupOptions,
         status: &mut dyn StatusBackend,
     ) -> Result<ProcessingSessionBuilder> {
-        let profile = self.outputs.get(output_profile).ok_or_else(|| {
-            ErrorKind::Msg(format!(
-                "unrecognized output profile name \"{output_profile}\""
-            ))
-        })?;
+        let profile = self
+            .outputs
+            .get(output_profile)
+            .ok_or_else(|| errmsg!("unrecognized output profile name \"{output_profile}\""))?;
 
         let output_format = match profile.target_type {
             BuildTargetType::Html => OutputFormat::Html,
@@ -215,6 +215,6 @@ impl WorkspaceCreatorExt for WorkspaceCreator {
             gub.resolve_url(&loc)?
         };
 
-        Ok(self.create(bundle_loc, Vec::new())?)
+        self.create(bundle_loc, Vec::new())
     }
 }

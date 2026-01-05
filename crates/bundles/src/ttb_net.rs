@@ -74,11 +74,11 @@ impl TTBNetBundle<TTBFileIndex> {
     fn get_header(&mut self) -> Result<TTBv1Header> {
         self.connect_reader()?;
         let mut header: [u8; 70] = [0u8; 70];
-        self.reader
+        let reader = self
+            .reader
             .as_mut()
-            .unwrap()
-            .read_range(0, 70)?
-            .read_exact(&mut header)?;
+            .ok_or_else(|| anyhow!("failed to connect to bundle reader"))?;
+        reader.read_range(0, 70)?.read_exact(&mut header)?;
         let header = TTBv1Header::try_from(header)?;
         Ok(header)
     }
@@ -158,7 +158,9 @@ impl CachableBundle<'_, TTBFileIndex> for TTBNetBundle<TTBFileIndex> {
                 name: "".to_owned(),
                 hash: None,
             },
-            self.reader.as_mut().unwrap(),
+            self.reader
+                .as_mut()
+                .ok_or_else(|| anyhow!("failed to connect to bundle reader"))?,
         )
     }
 
@@ -182,7 +184,15 @@ impl CachableBundle<'_, TTBFileIndex> for TTBNetBundle<TTBFileIndex> {
 
         // Get file with retries
         for i in 0..NET_RETRY_ATTEMPTS {
-            let mut reader = match read_fileinfo(info, self.reader.as_mut().unwrap()) {
+            let reader = match self
+                .reader
+                .as_mut()
+                .ok_or_else(|| anyhow!("failed to connect to bundle reader"))
+            {
+                Ok(r) => r,
+                Err(e) => return OpenResult::Err(e),
+            };
+            let mut reader = match read_fileinfo(info, reader) {
                 Ok(r) => r,
                 Err(e) => {
                     tt_warning!(status,

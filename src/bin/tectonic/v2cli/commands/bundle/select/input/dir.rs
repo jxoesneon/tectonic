@@ -1,5 +1,5 @@
 use super::BundleInput;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::{
     fs::{self},
     io::Read,
@@ -12,10 +12,12 @@ pub struct DirBundleInput {
 }
 
 impl DirBundleInput {
-    pub fn new(dir: PathBuf) -> Self {
-        Self {
-            dir: dir.canonicalize().unwrap(),
-        }
+    pub fn new(dir: PathBuf) -> Result<Self> {
+        Ok(Self {
+            dir: dir
+                .canonicalize()
+                .context("failed to canonicalize bundle directory")?,
+        })
     }
 }
 
@@ -35,15 +37,25 @@ impl BundleInput for DirBundleInput {
             })
             .map(move |x| match x {
                 Ok(x) => {
-                    let path = x
-                        .into_path()
-                        .canonicalize()
-                        .unwrap()
-                        .strip_prefix(&self.dir)
-                        .unwrap()
-                        .to_str()
-                        .unwrap()
-                        .to_string();
+                    let path = x.into_path();
+                    let path = match path.canonicalize() {
+                        Ok(p) => p,
+                        Err(e) => {
+                            return Err(
+                                anyhow::Error::from(e).context("failed to canonicalize path")
+                            )
+                        }
+                    };
+                    let path = match path.strip_prefix(&self.dir) {
+                        Ok(p) => p,
+                        Err(e) => {
+                            return Err(anyhow::Error::from(e).context("failed to strip prefix"))
+                        }
+                    };
+                    let path = match path.to_str() {
+                        Some(s) => s.to_string(),
+                        None => return Err(anyhow::anyhow!("invalid non-UTF8 path")),
+                    };
 
                     Ok((
                         path.clone(),

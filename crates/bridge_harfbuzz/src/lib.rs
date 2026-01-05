@@ -173,9 +173,9 @@ impl<'a> BufferRef<'a> {
         let mut len = 0;
         // SAFETY: Internal pointer guaranteed valid
         let ptr = unsafe { sys::hb_buffer_get_glyph_infos(self.as_ptr(), &mut len) };
-        // FIXME(CraftSpider): This isn't fully sound unless we never allow `hb_buffer_reference` -
-        //       currently it's fine, but we may need to either bite the cost of cloning, force
-        //       refcounting to be on the Rust side, or do something... weird.
+        // NOTE: This borrows the buffer's internal info array.
+        // It is sound because `hb_buffer_reference` (which aliasing the buffer) is not exposed
+        // in the safe API, and the returned slice is bound to the lifetime of `self` (the BufferRef).
         if ptr.is_null() {
             None
         } else {

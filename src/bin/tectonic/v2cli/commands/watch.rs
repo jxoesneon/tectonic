@@ -192,7 +192,10 @@ impl WatchCommand {
                     .config
                     .pathset([current_dir])
                     .filterer(Arc::new(filter));
-                exec_handler.main().await.unwrap().unwrap();
+                let _ = exec_handler
+                    .main()
+                    .await
+                    .map_err(tectonic::errors::Error::new)?;
                 Ok(0)
             }
         }
@@ -206,7 +209,7 @@ impl TectonicCommand for WatchCommand {
         let rt = runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
-            .unwrap();
+            .map_err(tectonic::errors::Error::new)?;
         rt.block_on(self.execute_inner(status))
     }
 }

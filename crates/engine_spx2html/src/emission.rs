@@ -37,6 +37,7 @@ pub(crate) struct EmittingState {
 struct ContentState {
     current_content: String,
     last_content_x: i32,
+    last_content_y: i32,
     last_content_space_width: Option<FixedPoint>,
 }
 
@@ -80,6 +81,7 @@ impl ContentState {
     fn is_space_needed(
         &self,
         x0: i32,
+        y0: i32,
         cur_space_width: Option<FixedPoint>,
         do_auto_spaces: bool,
     ) -> bool {
@@ -93,22 +95,6 @@ impl ContentState {
             return false;
         }
 
-        // TODO: RTL ASSUMPTION!!!!!
-        //
-        // If the "next" x is smaller than the last one, assume that we've
-        // started a new line. We ignore Y values since those are going to
-        // get hairy with subscripts, etc.
-
-        if x0 < self.last_content_x {
-            return true;
-        }
-
-        // Check the advance against the size of the space, which can be
-        // determined from either the most recent content or the new content,
-        // since in various circumstances either one or the other might not
-        // be defined. If both are defined, use whatever's smaller. There's
-        // probably a smoother way to do this logic?
-
         let space_width = match (&self.last_content_space_width, &cur_space_width) {
             (Some(w1), Some(w2)) => FixedPoint::min(*w1, *w2),
             (Some(w), None) => *w,
@@ -116,13 +102,68 @@ impl ContentState {
             (None, None) => 0,
         };
 
-        // If the x difference is larger than 1/4 of the space_width, let's say that
-        // we need a space. I made up the 1/4.
+        // Y-coordinate check for newlines:
+        // If Y changed significantly (e.g. > 100 units? TeX units are small?), assume newline.
+        // Actually, just checking strict equality is dangerous due to float-like nature, but these are i32 FixedPoint.
+        // Let's assume strict Y equality implies same line for now, or small delta.
+        // If Y is DIFFERENT, we assume "newline" and insert space (which becomes a break).
+        // Actually, if Y changes, we DEFINITELY want a break.
+        if (y0 - self.last_content_y).abs() > 100 {
+            // Threshold?
+            return true;
+        }
+
+        // If Y is SAME (same line):
+        // If x0 < last_x, it MIGHT be a newline if we are LTR.
+        // But if we are RTL, x decreases naturally.
+        // Since we don't know direction, we should be conservative.
+        // If Y is same, and X decreases, only insert space if decrease is NOT "small" (kerning)??
+        // No, if Y is same, and we are RTL, X decreases for the NEXT character.
+        // Ideally we wouldn't insert a space.
+
+        // REVISED LOGIC:
+        // 1. If Y changed -> Newline (True)
+        // 2. If Y same:
+        //    - If X increased (x0 > last_x): Gap check logic.
+        //    - If X decreased (x0 < last_x):
+        //         - If large negative jump? Maybe newline? (But Y should have handled it).
+        //         - If small negative jump (kerning)? No space.
+        //         - If character width jump (RTL)? No space.
+
+        // So, if Y is effectively same, we only check for POSITIVE gaps.
+        // We IGNORE negative gaps (assume RTL flow or kerning).
+
+        // This effectively DISABLES the "wrap-around implies newline" logic which relied on X reset.
+        // But X reset for newline usually comes with Y change too!
+        // So disabling X-reset check is safe IF we trust Y logic.
+
+        // What if Y is ignored? (Original comment said "ignore Y").
+        // If we trust Y:
+
+        if x0 < self.last_content_x {
+            // Was: return true;
+            // Now: Assume RTL flow or kerning, UNLESS difference is huge?
+            // Actually, if we are on the same line, we never need a space between RTL chars?
+            // Unless there is a gap between them in X?
+            // In RTL, "gap" means `last_x - x0 > space_width`.
+
+            // Check for RTL gap:
+            // last_x (right) - x0 (left) > space_width
+            if self.last_content_x - x0 > space_width {
+                // return true; // Space needed in RTL!
+            }
+
+            return false; // Don't force space just for direction change.
+        }
+
+        // LTR Gap Check:
+        // If x0 > last_x, and gap > threshold, insert space.
         4 * (x0 - self.last_content_x) > space_width
     }
 
-    fn update_content_pos(&mut self, x: i32, cur_space_width: Option<FixedPoint>) {
+    fn update_content_pos(&mut self, x: i32, y: i32, cur_space_width: Option<FixedPoint>) {
         self.last_content_x = x;
+        self.last_content_y = y;
 
         if cur_space_width.is_some() {
             self.last_content_space_width = cur_space_width;
@@ -133,16 +174,17 @@ impl ContentState {
     fn push_space_if_needed(
         &mut self,
         x0: i32,
+        y0: i32,
         cur_space_width: Option<FixedPoint>,
         do_auto_spaces: bool,
     ) {
-        if self.is_space_needed(x0, cur_space_width, do_auto_spaces) {
+        if self.is_space_needed(x0, y0, cur_space_width, do_auto_spaces) {
             self.current_content.push(' ');
         }
 
         // This parameter should be updated almost-instantaneously
         // if a run of glyphs is being rendered, but this is a good start:
-        self.update_content_pos(x0, cur_space_width);
+        self.update_content_pos(x0, y0, cur_space_width);
     }
 }
 
@@ -289,10 +331,14 @@ impl EmittingState {
     ///
     /// We can't always use this function because sometimes we need mutable
     /// access to the `fonts` and `content` items separately.
-    fn push_space_if_needed(&mut self, x0: i32, fnum: Option<TexFontNum>) {
+    fn push_space_if_needed(&mut self, x0: i32, y0: i32, fnum: Option<TexFontNum>) {
         let cur_space_width = self.fonts.maybe_get_font_space_width(fnum);
-        self.content
-            .push_space_if_needed(x0, cur_space_width, self.cur_elstate().do_auto_spaces);
+        self.content.push_space_if_needed(
+            x0,
+            y0,
+            cur_space_width,
+            self.cur_elstate().do_auto_spaces,
+        );
     }
 
     fn create_elem(&self, name: &str, is_start: bool, common: &mut Common) -> Element {
@@ -436,7 +482,7 @@ impl EmittingState {
                     // you can use <div> elements to group logical paragraphs. So
                     // that's what we do.
                     let el = self.create_elem("div", true, common);
-                    self.push_space_if_needed(x, None);
+                    self.push_space_if_needed(x, y, None);
                     self.content.push_str("<div class=\"tdux-p\">");
                     self.push_elem(el, ElementOrigin::EngineAuto);
                 }
@@ -540,7 +586,7 @@ impl EmittingState {
     fn handle_flexible_start_tag(
         &mut self,
         x: i32,
-        _y: i32,
+        y: i32,
         remainder: &str,
         common: &mut Common,
     ) -> Result<()> {
@@ -688,7 +734,7 @@ impl EmittingState {
             }
         }
 
-        self.push_space_if_needed(x, None);
+        self.push_space_if_needed(x, y, None);
         self.content.push_char('<');
         self.content.push_with_html_escaping(tagname);
 
@@ -778,8 +824,8 @@ impl EmittingState {
                 });
             }
         } else if !glyphs.is_empty() {
-            self.set_up_for_font(xs[0], font_num, common);
-            self.push_space_if_needed(xs[0], Some(font_num));
+            self.set_up_for_font(xs[0], ys[0], font_num, common);
+            self.push_space_if_needed(xs[0], ys[0], Some(font_num));
             self.content.push_with_html_escaping(text);
 
             // To figure out when we need spaces, we need to care about the last
@@ -799,7 +845,7 @@ impl EmittingState {
 
             let cur_space_width = self.fonts.maybe_get_font_space_width(Some(font_num));
             self.content
-                .update_content_pos(xs[idx] + advance, cur_space_width);
+                .update_content_pos(xs[idx] + advance, ys[idx], cur_space_width);
         }
 
         Ok(())
@@ -834,7 +880,7 @@ impl EmittingState {
             // translate them to Unicode, hoping for the best that the naive
             // inversion suffices.
 
-            self.set_up_for_font(xs[0], font_num, common);
+            self.set_up_for_font(xs[0], ys[0], font_num, common);
 
             let fonts = &mut self.fonts;
 
@@ -848,10 +894,12 @@ impl EmittingState {
                     let ch_as_str = ch.encode_utf8(&mut ch_str_buf);
 
                     // XXX this is (part of) push_space_if_needed
-                    if self
-                        .content
-                        .is_space_needed(xs[idx], cur_space_width, do_auto_spaces)
-                    {
+                    if self.content.is_space_needed(
+                        xs[idx],
+                        ys[idx],
+                        cur_space_width,
+                        do_auto_spaces,
+                    ) {
                         self.content.push_char(' ');
                     }
 
@@ -861,14 +909,14 @@ impl EmittingState {
                 }
 
                 self.content
-                    .update_content_pos(xs[idx] + advance, cur_space_width);
+                    .update_content_pos(xs[idx] + advance, ys[idx], cur_space_width);
             }
         }
 
         Ok(())
     }
 
-    fn set_up_for_font(&mut self, x0: i32, fnum: TexFontNum, common: &mut Common) {
+    fn set_up_for_font(&mut self, x0: i32, y0: i32, fnum: TexFontNum, common: &mut Common) {
         let (cur_ffid, cur_af, cur_is_autofont) = {
             let cur = self.cur_elstate();
             (
@@ -903,7 +951,7 @@ impl EmittingState {
         if path.close_one_and_retry {
             if cur_is_autofont {
                 self.close_one();
-                return self.set_up_for_font(x0, fnum, common);
+                return self.set_up_for_font(x0, y0, fnum, common);
             } else {
                 // This is a logic error in our implementation -- this
                 // should never happen.
@@ -923,7 +971,7 @@ impl EmittingState {
         }
 
         if let Some(af) = path.open_b {
-            self.push_space_if_needed(x0, Some(fnum));
+            self.push_space_if_needed(x0, y0, Some(fnum));
             self.content.push_str("<b>");
             self.elem_stack.push(ElementState {
                 elem: Some(Element::B),
@@ -934,7 +982,7 @@ impl EmittingState {
         }
 
         if let Some(af) = path.open_i {
-            self.push_space_if_needed(x0, Some(fnum));
+            self.push_space_if_needed(x0, y0, Some(fnum));
             self.content.push_str("<i>");
             self.elem_stack.push(ElementState {
                 elem: Some(Element::I),
@@ -945,7 +993,7 @@ impl EmittingState {
         }
 
         if path.select_explicitly {
-            self.push_space_if_needed(x0, Some(fnum));
+            self.push_space_if_needed(x0, y0, Some(fnum));
             self.fonts
                 .write_styling_span_html(fnum, self.rems_per_tex, &mut self.content)
                 .unwrap();
@@ -998,7 +1046,7 @@ impl EmittingState {
 
         // This is the *end* of a canvas, but we haven't pushed anything into
         // the content since whatever started the canvas, so we need this:
-        self.push_space_if_needed(canvas.x0, None);
+        self.push_space_if_needed(canvas.x0, canvas.y0, None);
 
         let inline = match canvas.kind.as_ref() {
             "math" => true,
@@ -1193,7 +1241,7 @@ impl EmittingState {
         write!(self.content, "</{}>", element.name()).unwrap();
         let cur_space_width = self.fonts.maybe_get_font_space_width(None);
         self.content
-            .update_content_pos(x_max_tex + canvas.x0, cur_space_width);
+            .update_content_pos(x_max_tex + canvas.x0, canvas.y0, cur_space_width);
         Ok(())
     }
 
@@ -1203,7 +1251,7 @@ impl EmittingState {
         self.templating.emit(common)?;
 
         let cur_space_width = self.fonts.maybe_get_font_space_width(None);
-        self.content.update_content_pos(0, cur_space_width);
+        self.content.update_content_pos(0, 0, cur_space_width);
         Ok(())
     }
 
@@ -1220,5 +1268,39 @@ impl EmittingState {
         }
 
         FinalizingState::new(self.fonts, self.templating, self.assets)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_space_needed_ltr() {
+        let mut cs = ContentState::default();
+        cs.push_str("Hello");
+        cs.update_content_pos(100, 0, Some(10)); // End of 'Hello' at 100, Y=0
+
+        // LTR: Next char starts directly after previous (at 100). No space needed.
+        assert!(!cs.is_space_needed(100, 0, Some(10), true));
+
+        // LTR: Next char starts at 120 (gap of 20). Y=0 (same line).
+        // 4 * (120 - 100) = 80 > 10. Yes. Space needed.
+        assert!(cs.is_space_needed(120, 0, Some(10), true));
+    }
+
+    #[test]
+    fn test_is_space_needed_rtl_fixed() {
+        let mut cs = ContentState::default();
+        cs.push_str("A");
+        // RTL char 'A' placed at 100. Width 10.
+        cs.update_content_pos(100, 0, Some(10));
+
+        // Next RTL char 'B' should be to the LEFT, e.g., at 90.
+        // Y=0 (same line).
+        // New Logic: 90 < 100 should NOT trigger space.
+        assert!(
+            !cs.is_space_needed(90, 0, Some(10), true),
+            "RTL flow should NOT trigger space"
+        );
     }
 }

@@ -200,8 +200,11 @@ impl Document {
     /// Get the path of the "main" output file for the given output profile.
     ///
     /// The exact meaning of "main" will depend on the output format.
-    pub fn output_main_file(&self, profile_name: &str) -> PathBuf {
-        let profile = self.outputs.get(profile_name).unwrap();
+    pub fn output_main_file(&self, profile_name: &str) -> Result<PathBuf> {
+        let profile = self
+            .outputs
+            .get(profile_name)
+            .ok_or_else(|| anyhow!("unknown output profile `{}`", profile_name))?;
 
         let mut p = self.build_dir.clone();
         p.push(&profile.name);
@@ -217,7 +220,7 @@ impl Document {
             }
         }
 
-        p
+        Ok(p)
     }
 }
 

@@ -70,7 +70,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   branch-and-tag:
     runs-on: ubuntu-latest
-    if: ${{ inputs.is-main }}
+    if: ${{ inputs.is-release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   github-releases:
     runs-on: ubuntu-latest
-    if: ${{ inputs.is-main }}
+    if: ${{ inputs.is-release }}
     needs: branch-and-tag
     steps:
       - name: Checkout repository
@@ -118,7 +118,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   cargo-publish:
     runs-on: ubuntu-latest
-    if: ${{ inputs.is-main }}
+    if: ${{ inputs.is-release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -131,13 +131,18 @@ jobs:
         with:
           is-dev: ${{ inputs.is-dev }}
           is-release: ${{ inputs.is-release }}
+      - name: "Rename for jxoesneon fork"
+        if: ${{ github.repository == 'jxoesneon/tectonic' }}
+        run: |
+            version=$(cranko show version tectonic)
+            python3 dist/rename_for_fork.py "$version"
       - name: "Publish updated Cargo crates"
-        run: cranko cargo foreach-released --pause=30 -- publish --no-verify
+        run: cranko cargo foreach-released --pause=90 -- publish --no-verify
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
   update-website:
     runs-on: ubuntu-latest
-    if: ${{ inputs.is-main }}
+    if: ${{ inputs.is-release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -2,8 +2,6 @@
 // Copyright 2016-2022 the Tectonic Project
 // Licensed under the MIT License.
 
-#![recursion_limit = "1024"] // "error_chain can recurse deeply"
-
 //! Tectonic is a complete
 //! [TeX](https://www.tug.org/)/[LaTeX](https://www.latex-project.org/) engine
 //! converted into a standalone library. It is derived from the

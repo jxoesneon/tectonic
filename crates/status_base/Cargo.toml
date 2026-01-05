@@ -4,8 +4,8 @@
 lints.workspace = true
 
 [package]
-name = "tectonic_status_base"
-version = "0.0.0-dev.0"  # assigned with cranko (see README)
+name = "jxoesneon-tectonic-status_base"
+version = "0.16.2"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 Basic types for reporting status messages to a user.
@@ -18,7 +18,7 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-tectonic_errors = { path = "../errors", version = "0.0.0-dev.0" }
+jxoesneon-tectonic-errors = { path = "../errors", version = "0.16.2"  }
 
 [package.metadata.internal_dep_versions]
 tectonic_errors = "e04798bcd9b1c1d68cc0a318a710bb30230a0300"

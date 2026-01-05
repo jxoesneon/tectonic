@@ -6,8 +6,8 @@
 lints.workspace = true
 
 [package]
-name = "tectonic_engine_xetex"
-version = "0.0.0-dev.0"  # assigned with cranko (see README)
+name = "jxoesneon-tectonic-engine_xetex"
+version = "0.16.2"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 The [XeTeX](http://xetex.sourceforge.net/) engine as a reusable crate.
@@ -22,24 +22,24 @@ links = "tectonic_engine_xetex"
 
 [dependencies]
 libc = "^0.2"
-tectonic_bridge_core = { path = "../bridge_core", version = "0.0.0-dev.0" }
-tectonic_bridge_freetype2 = { path = "../bridge_freetype2", version = "0.0.0-dev.0" }
-tectonic_bridge_flate = { path = "../bridge_flate", version = "0.0.0-dev.0" }
-tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.0.0-dev.0" }
-tectonic_bridge_harfbuzz = { path = "../bridge_harfbuzz", version = "0.0.0-dev.0" }
-tectonic_bridge_icu = { path = "../bridge_icu", version = "0.0.0-dev.0" }
-tectonic_errors = { path = "../errors", version = "0.0.0-dev.0" }
-tectonic_pdf_io = { path = "../pdf_io", version = "0.0.0-dev.0" }
-tectonic_xetex_layout = { path = "../xetex_layout", version = "0.0.0-dev.0" }
+jxoesneon-tectonic-bridge_core = { path = "../bridge_core", version = "0.16.2"  }
+jxoesneon-tectonic-bridge_freetype2 = { path = "../bridge_freetype2", version = "0.16.2"  }
+jxoesneon-tectonic-bridge_flate = { path = "../bridge_flate", version = "0.16.2"  }
+jxoesneon-tectonic-bridge_graphite2 = { path = "../bridge_graphite2", version = "0.16.2"  }
+jxoesneon-tectonic-bridge_harfbuzz = { path = "../bridge_harfbuzz", version = "0.16.2"  }
+jxoesneon-tectonic-bridge_icu = { path = "../bridge_icu", version = "0.16.2"  }
+jxoesneon-tectonic-errors = { path = "../errors", version = "0.16.2"  }
+jxoesneon-tectonic-pdf_io = { path = "../pdf_io", version = "0.16.2"  }
+jxoesneon-tectonic-xetex_layout = { path = "../xetex_layout", version = "0.16.2"  }
 
 [build-dependencies]
 cc = "^1.0.66"
-tectonic_cfg_support = { path = "../cfg_support", version = "0.0.0-dev.0" }
+jxoesneon-tectonic-cfg_support = { path = "../cfg_support", version = "0.16.2"  }
 
 [features]
 external-harfbuzz = [
-    "tectonic_bridge_harfbuzz/external-harfbuzz",
-    "tectonic_xetex_layout/external-harfbuzz",
+    "jxoesneon-tectonic-bridge_harfbuzz/external-harfbuzz",
+    "jxoesneon-tectonic-xetex_layout/external-harfbuzz",
 ]
 
 [package.metadata.internal_dep_versions]

@@ -6,6 +6,7 @@ use tectonic::{
     ctry,
     docmodel::{DocumentExt, DocumentSetupOptions},
     driver::PassSetting,
+    errmsg,
     errors::Result,
     tt_error,
 };
@@ -66,8 +67,11 @@ impl TectonicCommand for DumpCommand {
         // If output profile is unspecified, just grab one at (pseudo-)random.
         let output_name = self
             .profile
-            .as_ref()
-            .unwrap_or_else(|| doc.outputs.keys().next().unwrap());
+            .as_deref()
+            .or_else(|| doc.outputs.keys().next().map(|s| s.as_str()))
+            .ok_or_else(|| {
+                errmsg!("no output profile specified and no outputs defined in the document")
+            })?;
 
         let mut builder = doc.setup_session(output_name, &setup_options, status)?;
 
@@ -102,7 +106,7 @@ impl TectonicCommand for DumpCommand {
         } else {
             let info = files
                 .get(&self.filename)
-                .ok_or_else(|| format!("no such intermediate file `{}`", self.filename))?;
+                .ok_or_else(|| errmsg!("no such intermediate file `{}`", self.filename))?;
             ctry!(
                 std::io::stdout().write_all(&info.data[..]);
                 "error dumping intermediate file `{}`", self.filename

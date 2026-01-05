@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 use std::{env, ffi::OsString, fs, path::Path, path::PathBuf, process};
 use tectonic::{
     config::PersistentConfig,
-    errors::{Result, SyncError},
+    errors::{self, Result},
     status::{termcolor::TermcolorStatusBackend, ChatterLevel, StatusBackend},
     tt_note,
 };
@@ -70,7 +70,7 @@ pub fn v2_main(effective_args: &[OsString]) {
     let config = match PersistentConfig::open(false) {
         Ok(c) => c,
         Err(ref e) => {
-            e.dump_uncolorized();
+            errors::dump_uncolorized(e);
             process::exit(1);
         }
     };
@@ -144,7 +144,7 @@ pub fn v2_main(effective_args: &[OsString]) {
     process::exit(match r {
         Ok(c) => c,
         Err(e) => {
-            status.report_error(&SyncError::new(e).into());
+            status.report_error(&e);
             1
         }
     })

@@ -13,6 +13,7 @@
 //! For an example of how to use this module, see `src/bin/tectonic/main.rs`,
 //! which contains tectonic's main CLI program.
 
+use anyhow::Context;
 use byte_unit::{Byte, UnitType};
 use quick_xml::{events::Event, NsReader};
 use std::{
@@ -39,7 +40,7 @@ use which::which;
 
 use crate::{
     ctry, errmsg,
-    errors::{ChainErrCompatExt, ErrorKind, Result},
+    errors::Result,
     io::{
         format_cache::FormatCache,
         memory::{MemoryFileCollection, MemoryIo},
@@ -334,7 +335,9 @@ impl BridgeState {
                 }
 
                 let tool_path = tempdir.path().join(name);
-                let tool_parent = tool_path.parent().unwrap();
+                let tool_parent = tool_path
+                    .parent()
+                    .expect("tool_path constructed from tempdir must have parent");
 
                 if tool_parent != tempdir.path() {
                     ctry!(
@@ -410,7 +413,10 @@ impl BridgeState {
         // Mark the input files as having been read, and we're done.
 
         for name in &read_files {
-            let summ = self.events.get_mut(name).unwrap();
+            let summ = self
+                .events
+                .get_mut(name)
+                .expect("tracked file must be in events map");
             summ.access_pattern = match summ.access_pattern {
                 AccessPattern::Written => AccessPattern::WrittenThenRead,
                 c => c, // identity mapping makes sense for remaining options
@@ -1247,7 +1253,7 @@ impl ProcessingSessionBuilder {
             pass: self.pass,
             primary_input_path,
             primary_input_tex_path: tex_input_name,
-            format_name: self.format_name.unwrap(),
+            format_name: self.format_name.expect("format_name verified in create()"),
             tex_aux_path: aux_path.display().to_string(),
             tex_xdv_path: xdv_path.display().to_string(),
             tex_pdf_path: pdf_path.display().to_string(),
@@ -1446,7 +1452,11 @@ impl ProcessingSession {
         // Do that cleanup.
 
         if clean_up_shell_escape {
-            let shell_escape_work = self.bs.shell_escape_work.take().unwrap();
+            let shell_escape_work = self
+                .bs
+                .shell_escape_work
+                .take()
+                .expect("shell_escape_work initialized if allowed");
             let shell_escape_err = std::fs::remove_dir_all(shell_escape_work.root());
 
             if let Err(e) = shell_escape_err {
@@ -1473,7 +1483,7 @@ impl ProcessingSession {
                 OpenResult::NotAvailable => true,
                 OpenResult::Err(e) => {
                     return Err(e)
-                        .chain_err(|| format!("could not open format file {}", self.format_name));
+                        .context(format!("could not open format file {}", self.format_name));
                 }
             }
         };
@@ -1542,7 +1552,7 @@ impl ProcessingSession {
             }
 
             // The check above ensures that this is never None.
-            let root = self.output_path.as_ref().unwrap();
+            let root = self.output_path.as_ref().expect("output_path initialized");
 
             for (name, info) in &self.bs.events {
                 if info.input_origin != InputOrigin::Filesystem {
@@ -1597,7 +1607,11 @@ impl ProcessingSession {
             }
 
             let sname = name;
-            let summ = self.bs.events.get_mut(name).unwrap();
+            let summ = self
+                .bs
+                .events
+                .get_mut(name)
+                .expect("event missing for output file");
 
             if !only_logs && (self.output_format == OutputFormat::Aux) {
                 // In this mode we're only writing the .aux file. I initially
@@ -1638,7 +1652,8 @@ impl ProcessingSession {
             }
 
             let real_path = root.join(name);
-            let byte_len = Byte::from_u128(file.data.len() as u128).unwrap();
+            let byte_len =
+                Byte::from_u128(file.data.len() as u128).expect("file size fits in u128");
             status.note_highlighted(
                 "Writing ",
                 &format!("`{}`", real_path.display()),
@@ -1778,13 +1793,10 @@ impl ProcessingSession {
         // PathBuf.file_stem() doesn't do what we want since it only strips
         // one extension. As of 1.17, the compiler needs a type annotation for
         // some reason, which is why we use the `r` variable.
-        let r: Result<&str> = self.format_name.split('.').next().ok_or_else(|| {
-            ErrorKind::Msg(format!(
-                "incomprehensible format file name \"{}\"",
-                self.format_name
-            ))
-            .into()
-        });
+        let r: Result<&str> =
+            self.format_name.split('.').next().ok_or_else(|| {
+                errmsg!("incomprehensible format file name \"{}\"", self.format_name)
+            });
         let stem = r?;
 
         let result = {
@@ -1808,10 +1820,10 @@ impl ProcessingSession {
             }
             Ok(TexOutcome::Errors) => {
                 tt_error!(status, "errors were issued by the TeX engine; use --print and/or --keep-logs for details.");
-                return Err(ErrorKind::Msg("unhandled TeX engine error".to_owned()).into());
+                return Err(errmsg!("unhandled TeX engine error"));
             }
             Err(e) => {
-                return Err(e.into());
+                return Err(e);
             }
         }
 
@@ -1890,7 +1902,7 @@ impl ProcessingSession {
                     Some("errors were issued by the TeX engine, but were ignored; \
                          use --print and/or --keep-logs for details."),
             Err(e) =>
-                return Err(e.into()),
+                return Err(e),
         };
 
         if !self.bs.mem.files.borrow().contains_key(&self.tex_xdv_path) {
@@ -1935,7 +1947,7 @@ impl ProcessingSession {
                 );
             }
             Err(e) => {
-                return Err(e.chain_err(|| ErrorKind::EngineError("BibTeX")));
+                return Err(e.context("the BibTeX engine had an unrecoverable error"));
             }
         }
 

@@ -15,8 +15,8 @@ pub enum Input {
 }
 
 impl<'a> Input {
-    pub fn new_dir(path: PathBuf) -> Self {
-        Self::Directory(dir::DirBundleInput::new(path))
+    pub fn new_dir(path: PathBuf) -> Result<Self> {
+        Ok(Self::Directory(dir::DirBundleInput::new(path)?))
     }
 
     pub fn new_tarball(path: PathBuf, root: Option<PathBuf>) -> Result<Self> {

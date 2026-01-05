@@ -311,14 +311,20 @@ pub fn initialize_command_code_symbols(version: FormatVersion, symbols: &mut Sym
 
     foreach_metadata(|md| {
         if version >= md.since {
-            symbols.add(SymbolCategory::Commands, md.symbol, n).unwrap();
+            symbols
+                .add(SymbolCategory::Commands, md.symbol, n)
+                .expect("failed to add symbol");
 
             if let Some(o) = md.parser_overload_name {
-                symbols.add(SymbolCategory::Commands, o, n).unwrap();
+                symbols
+                    .add(SymbolCategory::Commands, o, n)
+                    .expect("failed to add symbol");
             }
 
             if let Some(o) = md.macro_overload_name {
-                symbols.add(SymbolCategory::Commands, o, n).unwrap();
+                symbols
+                    .add(SymbolCategory::Commands, o, n)
+                    .expect("failed to add symbol");
             }
 
             let (bonus_symbol, delta) = match (prev_group, md.group) {
@@ -335,7 +341,7 @@ pub fn initialize_command_code_symbols(version: FormatVersion, symbols: &mut Sym
             if let Some(bs) = bonus_symbol {
                 symbols
                     .add(SymbolCategory::Commands, bs, n + delta)
-                    .unwrap();
+                    .expect("failed to add symbol");
             }
 
             n += 1;

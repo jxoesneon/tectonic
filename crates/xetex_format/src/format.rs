@@ -131,7 +131,8 @@ impl Format {
                 writeln!(stream)?;
             }
 
-            writeln!(stream, "{}:", CatCode::from_i32(cat).unwrap().description())?;
+            let desc = CatCode::from_i32(cat)?.description();
+            writeln!(stream, "{}:", desc)?;
 
             for block in &blocks[cat as usize] {
                 let (start, end) = *block;
@@ -190,7 +191,9 @@ impl Format {
         let single_base = self.engine.symbols.lookup("SINGLE_BASE");
         let single_letters = valid_usvs().map(move |usv| {
             (
-                char::from_u32(usv as u32).unwrap().to_string(),
+                char::from_u32(usv as u32)
+                    .unwrap_or(char::REPLACEMENT_CHARACTER)
+                    .to_string(),
                 single_base as i32 + usv,
             )
         });
@@ -216,9 +219,8 @@ impl Format {
         let mut result = String::new();
 
         if is_macro {
-            // Skip the reference count
             p = self.mem.decode_toklist(p).1;
-            writeln!(result, "~~ macro template: ~~").unwrap();
+            writeln!(result, "~~ macro template: ~~").expect("write to string failed");
         }
 
         const CCDESCS: &[&str] = &[
@@ -234,34 +236,36 @@ impl Format {
             match tok {
                 Token::Char { cmd, chr } => match (is_macro, cmd) {
                     (true, 14 /* END_MATCH */) => {
-                        writeln!(result, "~~ macro expansion: ~~").unwrap();
+                        writeln!(result, "~~ macro expansion: ~~").expect("write to string failed");
                     }
 
                     (true, 13 /* MATCH */) => {
-                        writeln!(result, "<macro parameter>").unwrap();
+                        writeln!(result, "<macro parameter>").expect("write to string failed");
                     }
 
                     (true, 5 /* OUT_PARAM */) => {
-                        writeln!(result, "#{chr}").unwrap();
+                        writeln!(result, "#{chr}").expect("write to string failed");
                     }
 
                     _ => {
                         // TODO: consider using fmt_csv
                         if let Some(c) = char::from_u32(chr as u32) {
-                            writeln!(result, "{} {{{}}}", c, CCDESCS[cmd as usize]).unwrap();
+                            writeln!(result, "{} {{{}}}", c, CCDESCS[cmd as usize])
+                                .expect("write to string failed");
                         } else {
                             writeln!(
                                 result,
                                 "[illegal USV char code 0x{:08x}] {{{}}}",
                                 chr, CCDESCS[cmd as usize]
                             )
-                            .unwrap();
+                            .expect("write to string failed");
                         }
                     }
                 },
 
                 Token::ControlSeq { ptr } => {
-                    writeln!(result, "{}", self.fmt_cs_pointer(ptr)).unwrap();
+                    writeln!(result, "{}", self.fmt_cs_pointer(ptr))
+                        .expect("write to string failed");
                 }
             }
 

@@ -1,0 +1,5 @@
+[advisories]
+ignore = [
+    "RUSTSEC-2025-0140", # gix-date: Non-utf8 String can be created with `TimeBuf::as_str`
+    "RUSTSEC-2026-0001", # rkyv: Potential Undefined Behaviors on OOM
+]

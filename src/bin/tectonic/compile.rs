@@ -216,7 +216,7 @@ pub(crate) fn run_and_report(
     let result = sess.run(status);
 
     if let Err(e) = &result {
-        if let ErrorKind::EngineError(engine) = e.kind() {
+        if let Some(ErrorKind::EngineError(engine)) = e.downcast_ref::<ErrorKind>() {
             let output = sess.get_stdout_content();
 
             if output.is_empty() {

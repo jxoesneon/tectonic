@@ -4,8 +4,8 @@
 lints.workspace = true
 
 [package]
-name = "tectonic_xdv"
-version = "0.4.0" # assigned with cranko (see README)
+name = "jxoesneon-tectonic-xdv"
+version = "0.16.2" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 A decoder for the XDV and SPX file formats used by XeTeX and Tectonic.

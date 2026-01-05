@@ -166,17 +166,23 @@ impl FilePicker {
         diffs: &HashMap<PathBuf, PathBuf>,
     ) -> Result<bool> {
         // Is this file patched?
+        // Is this file patched?
         if !diffs.contains_key(path_in_source) {
             return Ok(false);
         }
 
-        info!("patching `{}`", path_in_source.to_str().unwrap());
+        info!(
+            "patching `{}`",
+            path_in_source.to_str().unwrap_or("<invalid utf8>")
+        );
 
         self.stats.patch_applied += 1;
 
         // Discard first line of diff
-        let diff_file = fs::read_to_string(&diffs[path_in_source]).unwrap();
-        let (_, diff) = diff_file.split_once('\n').unwrap();
+        let diff_file = fs::read_to_string(&diffs[path_in_source])?;
+        let (_, diff) = diff_file
+            .split_once('\n')
+            .ok_or_else(|| anyhow::anyhow!("invalid diff file format"))?;
 
         // TODO: don't require `patch`
         let mut child = Command::new("patch")
@@ -187,7 +193,10 @@ impl FilePicker {
             .spawn()
             .context("while spawning `patch`")?;
 
-        let mut stdin = child.stdin.take().unwrap();
+        let mut stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("failed to open patch stdin"))?;
         stdin
             .write_all(diff.as_bytes())
             .context("while passing diff to `patch`")?;
@@ -317,7 +326,12 @@ impl FilePicker {
     pub fn add_source(&mut self, cli: &BundleCreateCommand, source: &str) -> Result<()> {
         info!("adding source `{source}`");
 
-        let input = self.bundle_spec.inputs.get(source).unwrap().clone();
+        let input = self
+            .bundle_spec
+            .inputs
+            .get(source)
+            .ok_or_else(|| anyhow::anyhow!("undefined source: {}", source))?
+            .clone();
         let mut added = 0usize;
 
         // Load diff files
@@ -396,7 +410,15 @@ impl FilePicker {
         };
 
         let mut source_backend = match &input.source {
-            BundleInputSource::Directory { path, .. } => Input::new_dir(self.bundle_dir.join(path)),
+            BundleInputSource::Directory { path, .. } => {
+                match Input::new_dir(self.bundle_dir.join(path)) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        error!("could not add source `{source}` from directory");
+                        return Err(e);
+                    }
+                }
+            }
             BundleInputSource::Tarball {
                 path,
                 root_dir,
@@ -410,24 +432,28 @@ impl FilePicker {
                     }
                 };
                 let hash = hash.clone();
+                let x_hash = x
+                    .hash()
+                    .ok_or_else(|| anyhow::anyhow!("tarball source `{}` has no hash", source))?;
+
                 self.add_file(
                     Path::new("TAR-SHA256SUM"),
                     source,
-                    &mut Cursor::new(format!("{}\n", x.hash().unwrap())),
+                    &mut Cursor::new(format!("{}\n", x_hash)),
                     &HashMap::new(),
                 )?;
 
-                if x.hash().unwrap() != hash {
+                if x_hash != hash {
                     if cli.allow_hash_mismatch {
                         warn!("hash of tarball for source `{source}` doesn't match expected value");
                         warn!("expected: {}", hash);
-                        warn!("got:      {}", x.hash().unwrap());
+                        warn!("got:      {}", x_hash);
                     } else {
                         error!(
                             "hash of tarball for source `{source}` doesn't match expected value"
                         );
                         error!("expected: {}", hash);
-                        error!("got:      {}", x.hash().unwrap());
+                        error!("got:      {}", x_hash);
                         bail!("hash of tarball for source `{source}` doesn't match expected value")
                     }
                 }
@@ -494,7 +520,14 @@ impl FilePicker {
                         }
                     }
                     BundleSearchOrder::Input { input } => {
-                        let s = &self.bundle_spec.inputs.get(input).unwrap().search_order;
+                        let s = &self
+                            .bundle_spec
+                            .inputs
+                            .get(input)
+                            .ok_or_else(|| {
+                                anyhow::anyhow!("undefined input in search order: {}", input)
+                            })?
+                            .search_order;
                         if let Some(s) = s {
                             for line in s {
                                 for i in Self::expand_search_line(&format!("/{input}/{line}"))? {
@@ -566,7 +599,7 @@ impl FilePicker {
                     let entry = entry
                         .into_path()
                         .strip_prefix(self.build_dir.join("content"))
-                        .unwrap()
+                        .unwrap_or(&PathBuf::new())
                         .to_owned();
                     let entry = PathBuf::from("/").join(entry);
 
@@ -582,7 +615,7 @@ impl FilePicker {
                             }
                         } else {
                             // Match full parent path
-                            if entry.to_str().unwrap() == rule {
+                            if entry.to_str().unwrap_or("") == rule {
                                 is_searched = true;
                                 break;
                             }
@@ -590,7 +623,7 @@ impl FilePicker {
                     }
 
                     if !is_searched {
-                        let s = entry.to_str().unwrap();
+                        let s = entry.to_str().unwrap_or("<invalid utf8>");
                         let t = s.matches('/').count();
                         writeln!(file, "{}{s}", "\t".repeat(t - 1))?;
                     }
