@@ -5,7 +5,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic"
+name = "tectonic"
 version = "0.16.2" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -62,6 +62,7 @@ members = [
 ]
 
 [workspace.lints.rust]
+# FIXME(CraftSpider): Switch from error-chain to a newer package, as it's a deprecated project
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_error_description_deprecated)'] }
 missing_docs = "deny"
 
@@ -83,19 +84,19 @@ quick-xml = "0.37"
 serde = { version = "^1.0", features = ["derive"], optional = true }
 sha2 = "^0.10"
 clap = { version = "4.5.1", features = ["derive"] }
-jxoesneon-tectonic-bridge_core = { path = "crates/bridge_core", version = "0.16.2"  }
-jxoesneon-tectonic-bundles = { path = "crates/bundles", version = "0.16.2", default-features = false  }
-jxoesneon-tectonic-docmodel = { path = "crates/docmodel", version = "0.16.2", optional = true  }
-jxoesneon-tectonic-engine_bibtex = { path = "crates/engine_bibtex", version = "0.16.2"  }
-jxoesneon-tectonic-engine_spx2html = { path = "crates/engine_spx2html", version = "0.16.2"  }
-jxoesneon-tectonic-engine_xdvipdfmx = { path = "crates/engine_xdvipdfmx", version = "0.16.2"  }
-jxoesneon-tectonic-engine_xetex = { path = "crates/engine_xetex", version = "0.16.2"  }
-jxoesneon-tectonic-errors = { path = "crates/errors", version = "0.16.2"  }
-jxoesneon-tectonic-geturl = { path = "crates/geturl", version = "0.16.2", default-features = false  }
-jxoesneon-tectonic-io_base = { path = "crates/io_base", version = "0.16.2"  }
-jxoesneon-tectonic-status_base = { path = "crates/status_base", version = "0.16.2"  }
-jxoesneon-tectonic-xdv = { path = "crates/xdv", version = "0.16.2"  }
-jxoesneon-tectonic-xetex_layout = { path = "crates/xetex_layout", version = "0.16.2"  }
+tectonic_bridge_core = { path = "crates/bridge_core", version = "0.0.0-dev.0" }
+tectonic_bundles = { path = "crates/bundles", version = "0.0.0-dev.0", default-features = false }
+tectonic_docmodel = { path = "crates/docmodel", version = "0.0.0-dev.0", optional = true }
+tectonic_engine_bibtex = { path = "crates/engine_bibtex", version = "0.0.0-dev.0" }
+tectonic_engine_spx2html = { path = "crates/engine_spx2html", version = "0.0.0-dev.0" }
+tectonic_engine_xdvipdfmx = { path = "crates/engine_xdvipdfmx", version = "0.0.0-dev.0" }
+tectonic_engine_xetex = { path = "crates/engine_xetex", version = "0.0.0-dev.0" }
+tectonic_errors = { path = "crates/errors", version = "0.0.0-dev.0" }
+tectonic_geturl = { path = "crates/geturl", version = "0.0.0-dev.0", default-features = false }
+tectonic_io_base = { path = "crates/io_base", version = "0.0.0-dev.0" }
+tectonic_status_base = { path = "crates/status_base", version = "0.0.0-dev.0" }
+tectonic_xdv = { path = "crates/xdv", version = "0.4.0" }
+tectonic_xetex_layout = { path = "crates/xetex_layout", version = "0.0.0-dev.0" }
 tempfile = "^3.1"
 termcolor = "^1.1"
 tokio = "^1.0"
@@ -123,16 +124,16 @@ default = ["geturl-reqwest", "serialization"]
 # cross-compilation model that allows us to have proc-macros anyway. So maybe
 # this feature should go away? It's kind of annoying to support, and at this
 # point proc-macros may have snuck into the dependency tree elsewhere, anyway.
-serialization = ["serde", "jxoesneon-tectonic-docmodel", "toml"]
+serialization = ["serde", "tectonic_docmodel", "toml"]
 
-external-harfbuzz = ["jxoesneon-tectonic-engine_xetex/external-harfbuzz"]
+external-harfbuzz = ["tectonic_engine_xetex/external-harfbuzz"]
 
-geturl-curl = ["jxoesneon-tectonic-bundles/geturl-curl", "jxoesneon-tectonic-geturl/curl"]
-geturl-reqwest = ["jxoesneon-tectonic-bundles/geturl-reqwest", "jxoesneon-tectonic-geturl/reqwest"]
+geturl-curl = ["tectonic_bundles/geturl-curl", "tectonic_geturl/curl"]
+geturl-reqwest = ["tectonic_bundles/geturl-reqwest", "tectonic_geturl/reqwest"]
 
 native-tls-vendored = [
-    "jxoesneon-tectonic-bundles/native-tls-vendored",
-    "jxoesneon-tectonic-geturl/native-tls-vendored",
+    "tectonic_bundles/native-tls-vendored",
+    "tectonic_geturl/native-tls-vendored",
 ]
 
 # developer feature to compile with the necessary flags for profiling tectonic.
