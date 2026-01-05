@@ -14,3 +14,10 @@
 
 # Misc
 *.ignore
+__pycache__/
+test_output.txt
+.DS_Store
+*.log
+*.out
+/tests/tex-outputs/*.log
+/tests/tex-outputs/*.out
