@@ -181,7 +181,7 @@ impl SymbolTable {
         *self
             .by_name
             .get(name)
-            .expect(&format!("unknown symbol `{}`", name))
+            .unwrap_or_else(|| panic!("unknown symbol `{}`", name))
     }
 
     pub fn emit_c_header_stanza<W: Write>(&self, stream: &mut W) -> Result<()> {
