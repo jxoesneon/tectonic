@@ -26,7 +26,7 @@ impl FcBackend {
         if !fc::init() {
             panic!("fontconfig initialization failed");
         }
-        ft::init();
+        let _ = ft::init();
 
         let pat = fc::Pattern::from_name(c":outline=true").unwrap();
         let os = fc::ObjectSet::new(&[
