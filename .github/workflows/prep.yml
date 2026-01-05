@@ -18,6 +18,15 @@ jobs:
           cd "$d"
           curl --proto '=https' --tlsv1.2 -sSf https://pkgw.github.io/cranko/fetch-latest.sh | sh
           echo "PATH=$d:$PATH" >> "$GITHUB_ENV"
+      - name: "Debug Environment"
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
+          echo "CRANKO_HEAD_BRANCH: $CRANKO_HEAD_BRANCH"
+          git branch -v
+          git status
+        env:
+          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
       - name: "cranko release-workflow apply-versions"
         run: cranko release-workflow apply-versions
         env:
