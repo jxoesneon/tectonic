@@ -1248,6 +1248,11 @@ pub extern "C" fn ttbc_input_close(
 }
 
 /// Trigger the "expand_on" event hook.
+///
+/// # Safety
+///
+/// This function is unsafe because it is called from C. The caller must ensure that `es`
+/// is a valid pointer to a `CoreBridgeState` structure initialized by Rust.
 #[no_mangle]
 pub unsafe extern "C" fn ttbc_event_expand_on(es: &mut CoreBridgeState) {
     es.hooks.event_expand_on();

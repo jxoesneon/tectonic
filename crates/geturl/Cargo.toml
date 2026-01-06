@@ -4,8 +4,8 @@
 lints.workspace = true
 
 [package]
-name = "tectonic_geturl"
-version = "0.16.2"  # assigned with cranko (see README)
+name = "jxoesneon-tectonic-geturl"
+version = "0.17.0"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 A generic interface for HTTP GETs and byte-range requests, with pluggable backends.
@@ -21,8 +21,8 @@ edition = "2021"
 cfg-if = "^1.0"
 curl = { version = "^0.4", optional = true }
 reqwest = { version = "^0.12", optional = true, features = ["blocking"] }
-tectonic_errors = { path = "../errors", version = "0.16.2" }
-tectonic_status_base = { path = "../status_base", version = "0.16.2" }
+jxoesneon-tectonic-errors = { path = "../errors", version = "0.17.0"  }
+jxoesneon-tectonic-status_base = { path = "../status_base", version = "0.17.0"  }
 
 [features]
 default = ["reqwest"]

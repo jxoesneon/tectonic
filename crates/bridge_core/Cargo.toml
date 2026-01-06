@@ -6,8 +6,8 @@
 lints.workspace = true
 
 [package]
-name = "tectonic_bridge_core"
-version = "0.16.2"  # assigned with cranko (see README)
+name = "jxoesneon-tectonic-bridge_core"
+version = "0.17.0"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 Exposing core backend APIs to the Tectonic C/C++ code.
@@ -25,9 +25,9 @@ flate2 = { version = "^1.0", default-features = false, features = ["zlib"] }
 lazy_static = "^1.4"
 libc = "^0.2"
 md-5 = "^0.10"
-tectonic_errors = { path = "../errors", version = "0.16.2" }
-tectonic_io_base = { path = "../io_base", version = "0.16.2" }
-tectonic_status_base = { path = "../status_base", version = "0.16.2" }
+jxoesneon-tectonic-errors = { path = "../errors", version = "0.17.0"  }
+jxoesneon-tectonic-io_base = { path = "../io_base", version = "0.17.0"  }
+jxoesneon-tectonic-status_base = { path = "../status_base", version = "0.17.0"  }
 
 [build-dependencies]
 cc = "^1.0.66"

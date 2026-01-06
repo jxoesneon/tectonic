@@ -1,3 +1,10 @@
+# Tectonic 0.17.0 -- 2026-01-06
+
+- **feat(core):** Implement native debugging hooks for macro expansion steps.
+  - Added `DriverHooks::event_expand_on` in `tectonic_bridge_core`.
+  - Injected expansion event hook in `tectonic_engine_xetex`.
+  - Enables drivers to implement breakpoints and stepping debugging capabilities.
+
 # rc: micro bump
 
 - chore(ci): align release trigger with Cranko workflow
@@ -63,7 +70,7 @@
 - Fix feature builds
 - Deploy appimage
 - Fix output ref
-- Document the TECTONIC_BUNDLE_.. variables
+- Document the TECTONIC*BUNDLE*.. variables
 - Use same name for release bundle everywhere
 - Fix artifact download for deploys
 - Fix vso
@@ -537,7 +544,7 @@
 - Port the main program to the new tectonic_bridge_core
 - tectonic: initial edits to get this to compile against tectonic_bridge_core
 - crates/engine_bibtex: import BibTeX as a standalone crate
-- crates/bridge_core: integrate the global ttstub_ APIs here
+- crates/bridge*core: integrate the global ttstub* APIs here
 - crates/bridge_core: initial creation
 - BREAKING CHANGE: stop using OsStr(ing) for internal filenames
 - tectonic: audit use of ICU headers a bit
@@ -943,7 +950,7 @@
 - .circleci: sayonara
 - build.rs: add a mode to go for "semi-static" compilation
 - Add mips-unknown-linux-gnu to the pipeline
-- tests/executable.rs: attempt to honor CARGO_TARGET_@TARGET@_RUNNER if set
+- tests/executable.rs: attempt to honor CARGO*TARGET*@TARGET@\_RUNNER if set
 - Create the x86_64-linux-musl build with Azure Pipelines / cross, not Travis
 - .azure-pipelines: deploy the semistatic macOS binary
 - .azure-pipelines: add job to build a semi-static macOS binary on PRs
@@ -1240,7 +1247,7 @@
 - enable and fix extra-semi warnings
 - fix malloc / delete[] mismatch
 - remove identity assignments
-- symbolify remaining INT_PAR__ magic
+- symbolify remaining INT_PAR\_\_ magic
 - Bump libc from 0.2.48 to 0.2.49
 - Add initial support for cargo-fuzz
 - Bump serde from 1.0.87 to 1.0.88
@@ -1318,7 +1325,7 @@
 - src/driver.rs: provide more control over where output lands
 - Add an API for the "primary input" to come from an in-memory buffer.
 - Bump byteorder from 1.2.6 to 1.2.7
--  .circle: update PowerPC chroot builder to Rust 1.27.0
+- .circle: update PowerPC chroot builder to Rust 1.27.0
 - tectonic/xetex-shipout.c: symbolic-ify and annotate new_edge()
 - tectonic/xetex-shipout.c: symbolic-ify and annotate reverse()
 - tectonic/xetex-shipout.c: symbolic-ify vlist_out()
@@ -1349,7 +1356,7 @@
 - tectonic/xetex-linebreak.c: static-ify a few more variables
 - tectonic/xetex-linebreak.c: more tidying and commenting
 - tectonic/xetex-linebreak.c: symbolic struct accesses in try_break()
-- tectonic/xetex-linebreak.c: turn some "goto continue_"-s into real continue
+- tectonic/xetex-linebreak.c: turn some "goto continue\_"-s into real continue
   statements in try_break()
 - tectonic/xetex-linebreak.c: static-ify a few functions used only here
 - tests/tex-outputs.rs: disable `the_letter_a` on Windows
@@ -1388,9 +1395,9 @@
 - tectonic/xetex-output.c: rename from output.c
 - tectonic: rename all TECKit files to a common format
 - tectonic/internals.h: sayonara
-- tectonic/xetex-*.h: remove references to internals.h
-- tectonic/dpx-*.c: remove all references to "internals.h"
-- tectonic: replace internals.h with universal dpx-core.h in dpx-*.h
+- tectonic/xetex-\*.h: remove references to internals.h
+- tectonic/dpx-\*.c: remove all references to "internals.h"
+- tectonic: replace internals.h with universal dpx-core.h in dpx-\*.h
 - tectonic: start working on excising internals.h
 - tectonic/core-memory.c: rename from core-kpathsea.c
 - tectonic/core-foundation.h: always provide M_PI
@@ -1456,7 +1463,7 @@
 - Cargo.lock: update deps
 - CHANGELOG.md: polish
 - CHANGELOG.md: update with descriptions of what's been happening
-- tectonic/dpx-pdffont.c: check windows via _WIN32 instead of _MSC_VER
+- tectonic/dpx-pdffont.c: check windows via \_WIN32 instead of \_MSC_VER
 - build.rs: actually, don't do the static linking
 - tectonic/dpx-spc_dvips.c: rip out calculate_PS for Windows
 - tectonic/dpx-dpxfile.c: rip out some cache code for Windows
@@ -1792,7 +1799,7 @@
 - tectonic/dpx-pkfont: fix old style declaration
 - tectonic: remove deadcode
 - Fix typos and minor improvements
-- Prefix TeX (Y|YZ|Z|D)_(OK|NONE|SEEN|FIXED) constants
+- Prefix TeX (Y|YZ|Z|D)\_(OK|NONE|SEEN|FIXED) constants
 - fix merge
 - fixed tests, add check if outdir exists
 - chose output name
@@ -1970,13 +1977,13 @@
 - tectonic/xetex0.c: tidy a couple more magic constants
 - tectonic: Tidy up added integer state variables
 - tectonic/xetex0.c: some more symbolic constants
-- tectonic/*: align now mis-aligned macros
-- tectonic/*: fix mixed indentation
-- tectonic/*: remove trailing whitespace
-- tectonic/dpx-*: replace remaining tabs; alignment
-- tectonic/dpx-*: fix mixed indentation
-- tectonic/dpx-*: remove trailing whitespace
-- Added  Copy derive back
+- tectonic/\*: align now mis-aligned macros
+- tectonic/\*: fix mixed indentation
+- tectonic/\*: remove trailing whitespace
+- tectonic/dpx-\*: replace remaining tabs; alignment
+- tectonic/dpx-\*: fix mixed indentation
+- tectonic/dpx-\*: remove trailing whitespace
+- Added Copy derive back
 - Replaced rust-crypto with crates from RustCrypto project
 - tectonic/XeTeX_ext.c: stop including <png.h>
 - tests/formats: add tests of reproducible format-file generation
@@ -2041,7 +2048,7 @@
 - tectonic/xetex0.c: tidy and symbolic-ify xetex_scan_dimen
 - tectonic/xetex0.c: expand lab31=done goto label
 - tectonic/xetex0.c: expand attach_sign goto label
-- tectonic/xetex0.c: better consts and tidy in dvi_{four,two}()
+- tectonic/xetex0.c: better consts and tidy in dvi\_{four,two}()
 - tectonic/constants.h: better symbolic values for token constants
 - tectonic/xetex0.c: tidy and symbolic-const-ify scan_int()
 - tectonic/xetex0.c: scan_something_internal(): final tidying
@@ -2140,7 +2147,7 @@
 - Rename emit_stringpool to emit_tex_constants.
 - tectonic/constants.h: more rearranging
 - Future-proof the string pool checksum a bit.
-- tectonic: globally substitute symbolic constants for {MIN,MAX}_HALFWORD
+- tectonic: globally substitute symbolic constants for {MIN,MAX}\_HALFWORD
 - tectonic/xetexini.c: annotate some less-obvious bits of the "format" file
   format
 - tectonic/xetexini.c: reindent automatically
@@ -2203,9 +2210,9 @@
 - tectonic/dpx-mfileio.c: reindent, tidy
 - tectonic/dpx-mfileio.c: remove and static-ize non-shared functions
 - tectonic/dpx-subfont.c: untabify, reindent, delete trailing whitespace
-- tectonic/dpx-spc_misc.c: remove a FILE* usage
+- tectonic/dpx-spc_misc.c: remove a FILE\* usage
 - tectonic/dpx-spc_misc.c: untabify, reindent, delete trailing whitespace
-- tectonic/dpx-pdfximage.c: tidy up some dangling FILE* usage
+- tectonic/dpx-pdfximage.c: tidy up some dangling FILE\* usage
 - tectonic/dpx-dpxfile.c: remove unused ispscmap() function
 - tectonic/io.c: clarify indentation of get_uni_c switch statement
 - Implement ungetc() in the Rusty I/O layer
@@ -2224,11 +2231,11 @@
 - cli: add an "aux" output format
 - tectonic/synctex.c: tidy up one more awkward code path
 - tectonic/synctex.c: tidy up synctex_dot_open()
-- tectonic/synctex.c: remove unused synctex_{char,node}
+- tectonic/synctex.c: remove unused synctex\_{char,node}
 - tectonic/synctex.c: tidy up a large number of awkward C constructions
 - tectonic/synctex.c: remove unused argument to synctexabort()
 - tectonic/synctex.c: reflect the fact that synctex_ctxt.file is definitely
-  a FILE*
+  a FILE\*
 - tectonic/synctex.c: collect static function prototypes
 - tectonic/synctex.c: move very long header stuff to the footer
 - tectonic/synctex.c: remove an unused #define
@@ -2306,7 +2313,7 @@
 - bibtex: tidy up input_ln()
 - bibtex: lab15 => loop_exit
 - bibtex: kill useless braces in #defined integers
-- bibtex: alpha_file => FILE *
+- bibtex: alpha_file => FILE \*
 - bibtex: replace other dual fprintfs with new printf_log() function
 - bibtex: remove newline-only dual fprintfs
 - bibtex: consolidate paired fputs into one function
@@ -2430,14 +2437,14 @@
 - Start making the engine interact with IO more sensibly.
 - src/engine.rs: tidy a bit with an eye towards the future
 - Replace pointless ASSERT() with standard assert().
-- Port xdvipdfmx error handling to use _tt_abort().
+- Port xdvipdfmx error handling to use \_tt_abort().
 - tectonic/dpx-error.h: annotate the logging functions as taking printf
   arguments
 - Rename WARN to dpx_warning.
 - Rename MESG to dpx_message.
 - tectonic/dpx-error.c: more tidying; warnings and errors now going through Rust
   output system
-- tectonic/dpx-error.c: tidy up _mesg_type stuff
+- tectonic/dpx-error.c: tidy up \_mesg_type stuff
 - tectonic/dpx-error.c: convert standard output to use Rust stdout output
 - tectonic/dpx-error.c: standard whitespace adjustment
 - tectonic/dpx-pdfobj.c: fix another oversize read
@@ -2666,7 +2673,7 @@
 - tectonic/xetexini.c: move and static-ize pack_buffered_name()
 - tectonic/xetexini.c: tidy up format-file loading
 - tectonic/xetexd.h: tidy and document some state structures
-- Remove unhelpful "_field" suffixes on structures in web2c code.
+- Remove unhelpful "\_field" suffixes on structures in web2c code.
 - Remove now-unused 'term_in' variable.
 - Remove term_input() and calls thereto
 - Defuse the \pausing primitive.
@@ -2708,7 +2715,7 @@
 - tectonic/internals.h: remove now-unused version_string declaration
 - Remove unicodefile/unicode_file typedefs.
 - Reindent affine-transform related code.
-- tectonic/jpegimage.c: move get_unsigned* here as static functions
+- tectonic/jpegimage.c: move get_unsigned\* here as static functions
 - tectonic/tidy_kpathutil.c: remove more unused I/O functions
 - tectonic/tidy_kpathutil.c: remove unused fseek/ftell wrappers
 - tectonic/xetexd.h: remove unused pool_file variable
@@ -2716,7 +2723,7 @@
 - tectonic/internals.h: remove yet more obfuscatory #defines
 - tectonic/internals.h: remove some unhelpful #defines
 - tectonic/internals.h: minor tidying of #ifs
-- Replace FOPEN_*_MODE #defines with actual values.
+- Replace FOPEN\_\*\_MODE #defines with actual values.
 - tectonic/internals.h: remove more unused defines
 - tectonic/XeTeX_ext.c: remove final group of calls to exit()
 - tectonic/XeTeX_mac.c: remove exit() calls
@@ -2727,10 +2734,10 @@
 - tectonic/texmfmp.c: remove exit() calls
 - Remove a few more exit()s and tidy goto labels named "exit".
 - tectonic/tidy_kpathutil.c: remove some more exit() calls
-- tectonic/internals.h: WARNING* macros were unused
-- Replace FATAL* macros with _tt_abort().
+- tectonic/internals.h: WARNING\* macros were unused
+- Replace FATAL\* macros with \_tt_abort().
 - tectonic/xetexd.h: tidy some I/O macros
-- tectonic/errors.c: use _tt_abort() instead of exit() on fatal TeX errors
+- tectonic/errors.c: use \_tt_abort() instead of exit() on fatal TeX errors
 - tectonic/errors.c: switch statement in jump_out() not actually needed
 - tectonic/errors.c: centralize error-related code
 - tectonic/errors.c: oh, jump_out() can now be made static too
@@ -2779,7 +2786,7 @@
 - README.md: add some quickie instructions for Rustup startup.
 - tectonic/synctex.c: rearrange system header #includes
 - build.rs: seems that -Itectonic is not needed anymore
-- Remove last use of __SyncTeX__ #define.
+- Remove last use of **SyncTeX** #define.
 - tectonic/synctex.c: move include of synctex.h header
 - tectonic/synctex.c: remove SYNCTEX_NO_OPTION #define
 - tectonic/synctex.c: tidy up preamble a bit
@@ -2852,13 +2859,13 @@
 - Move some more #defines to xetexini when they're local.
 - tectonic/xetexd.h: move dump-related #defines to xetexini.c
 - Remove u_open_in #define and de-prefix the real implementation.
-- tectonic/xetexd.h: remove w_* I/O macros
+- tectonic/xetexd.h: remove w\_\* I/O macros
 - tectonic/xetexd.h: more #define cleanups
 - tectonic/xetexd.h: more #define cleanups
 - tectonic/xetexd.h: more #define cleanups
 - tectonic/xetexd.h: more #define cleanups
 - tectonic/xetexd.h: more #define cleanups
-- tectonic/xetexd.h: remove a_ I/O routines
+- tectonic/xetexd.h: remove a\_ I/O routines
 - tectonic/xetexd.h: remove Fputs() #define
 - tectonic/xetexd.h: and yet more #defines cleanup
 - tectonic/xetexd.h: remove addressof() macro
@@ -3026,7 +3033,7 @@
 - Remove all uses of kpse_find_tex macro.
 - Remove all references to kpse_out_name_ok.
 - Remove all references to kpse_in_name_ok.
-- Nothing used kpse_[pkgw_set_definst]_make_tex_discard_errors.
+- Nothing used kpse\_[pkgw_set_definst]\_make_tex_discard_errors.
 - Remove all references to kpse_readable_file.
 - Remove all references to kpse_maketex_option.
 - Remove all references to kpse_set_program_basename.
@@ -3040,4 +3047,3 @@
 - Initial import of kpsezip stub. Nothing will work.
 - README.md: add this
 - Start Tectonic.
-

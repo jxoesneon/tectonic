@@ -37,32 +37,28 @@ def rename_and_update(toml_path):
 
     # 2. Update dependencies on local tectonic crates
     def rename_dep(match):
-        dep_name = match.group(1)
+        orig_name = match.group(1)
         rest = match.group(2)
-        if dep_name == "tectonic":
+        if orig_name == "tectonic":
             new_name = "jxoesneon-tectonic"
+        elif orig_name.startswith("tectonic_"):
+            new_name = f'jxoesneon-{orig_name.replace("tectonic_", "tectonic-")}'
         else:
-            new_name = f'jxoesneon-{dep_name.replace("tectonic_", "tectonic-")}'
-        # Also ensure we point to the NEW_VERSION, supporting both quote types
-        new_rest = re.sub(r"version = (['\"])[^'\"]+(['\"])", f'version = \\g<1>{NEW_VERSION}\\g<2>', rest)
-        return f'{new_name} = {{ {new_rest} }}'
+            new_name = f'jxoesneon-{orig_name}'
 
-    content = re.sub(r'^(tectonic(?:_[a-z0-9_]+)?)\s*=\s*{\s*(path\s*=\s*"[^"]+".*?)}', rename_dep, content, flags=re.MULTILINE)
+        # Use package alias so source code imports don't break
+        if 'package =' not in rest:
+            new_rest = f'package = "{new_name}", {rest}'
+        else:
+            new_rest = re.sub(r'package = "[^"]+"', f'package = "{new_name}"', rest)
 
-    # 3. Update features
-    def rename_feature(match):
-        val = match.group(0)
-        def repl_feat(m):
-            name = m.group(1)
-            suffix = m.group(2) or ""
-            if name == "tectonic":
-                return f'"jxoesneon-tectonic{suffix}"'
-            if name.startswith("tectonic_"):
-                return f'"jxoesneon-{name.replace("tectonic_", "tectonic-")}{suffix}"'
-            return f'"jxoesneon-{name}{suffix}"'
-        return re.sub(r'"(tectonic(?:_[a-z0-9_]+)?)(/[^"]+)?"', repl_feat, val)
+        # Update version
+        new_rest = re.sub(r"version = (['\"])[^'\"]+(['\"])", rf'version = \g<1>{NEW_VERSION}\g<2>', new_rest)
+        return f'{orig_name} = {{ {new_rest} }}'
 
-    content = re.sub(r'^\[features\].*?(?=\n\[|\Z)', rename_feature, content, flags=re.MULTILINE | re.DOTALL)
+    content = re.sub(r'^(\w+)\s*=\s*{\s*(path\s*=\s*"[^"]+".*?)}', rename_dep, content, flags=re.MULTILINE)
+
+    # 3. Features do NOT need renaming if we use aliases for dependencies
 
     # 4. Set version
     content = re.sub(r'^version = "[^"]+"', f'version = "{NEW_VERSION}"', content, flags=re.MULTILINE)

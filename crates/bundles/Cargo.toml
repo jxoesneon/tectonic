@@ -6,8 +6,8 @@
 lints.workspace = true
 
 [package]
-name = "tectonic_bundles"
-version = "0.16.2" # assigned with cranko (see README)
+name = "jxoesneon-tectonic-bundles"
+version = "0.17.0" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 Tectonic "bundle" (support file collection) implementations.
@@ -21,18 +21,18 @@ edition = "2021"
 
 [dependencies]
 flate2 = { version = "^1.0.19", default-features = false, features = ["zlib"] }
-tectonic_errors = { path = "../errors", version = "0.16.2" }
-tectonic_geturl = { path = "../geturl", version = "0.16.2", default-features = false }
-tectonic_io_base = { path = "../io_base", version = "0.16.2" }
-tectonic_status_base = { path = "../status_base", version = "0.16.2" }
+jxoesneon-tectonic-errors = { path = "../errors", version = "0.17.0"  }
+jxoesneon-tectonic-geturl = { path = "../geturl", version = "0.17.0", default-features = false  }
+jxoesneon-tectonic-io_base = { path = "../io_base", version = "0.17.0"  }
+jxoesneon-tectonic-status_base = { path = "../status_base", version = "0.17.0"  }
 zip = { version = "4", default-features = false, features = ["deflate"] }
 url = "^2.0"
 
 [features]
 default = ["geturl-reqwest"]
-geturl-curl = ["tectonic_geturl/curl"]
-geturl-reqwest = ["tectonic_geturl/reqwest"]
-native-tls-vendored = ["tectonic_geturl/native-tls-vendored"]
+geturl-curl = ["jxoesneon-tectonic-geturl/curl"]
+geturl-reqwest = ["jxoesneon-tectonic-geturl/reqwest"]
+native-tls-vendored = ["jxoesneon-tectonic-geturl/native-tls-vendored"]
 
 [package.metadata.internal_dep_versions]
 tectonic_errors = "5c9ba661edf5ef669f24f9904f99cca369d999e7"

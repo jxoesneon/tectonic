@@ -177,7 +177,8 @@ jobs:
             # --allow-dirty usually for local only, but in CI we modified tracked files
             # sleep to be nice to crates.io
             cargo publish --token "$CARGO_REGISTRY_TOKEN" --no-verify --allow-dirty --manifest-path "$crate/Cargo.toml" || echo "Failed to publish $crate (already exists?)"
-            sleep 10
+            # sleep to be nice to crates.io (rate limit: 5 crates / 10 min)
+            sleep 180
           done
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
