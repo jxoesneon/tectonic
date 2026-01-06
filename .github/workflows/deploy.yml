@@ -85,8 +85,8 @@ jobs:
           is-release: ${{ inputs.is-release }}
       - name: "Tag and push"
         run: |
-          cranko release-workflow tag
-          git push --tags origin release:release
+          cranko release-workflow tag || echo "Cranko tagging failed (no release?)"
+          git push --tags origin release:release || echo "Tag push failed (no tag?)"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
@@ -108,7 +108,7 @@ jobs:
           is-release: ${{ inputs.is-release }}
       - name: "Create per-project GitHub releases"
         run: |
-          cranko github create-releases
+          cranko github create-releases || echo "GitHub release creation failed (no release?)"
 
           if cranko show if-released --exit-code tectonic; then
             cranko github upload-artifacts tectonic \

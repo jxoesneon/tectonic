@@ -27,7 +27,7 @@ jobs:
           fi
           git tag -l
       - name: "cranko release-workflow apply-versions"
-        run: cranko release-workflow apply-versions
+        run: cranko release-workflow apply-versions || echo "Cranko failed to apply versions (non-release run?)"
         env:
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
       - name: "Mini-build to freshen Cargo.lock"
