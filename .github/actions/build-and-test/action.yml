@@ -1,5 +1,5 @@
-name: 'build-and-test'
-description: 'Run tectonic build and test'
+name: "build-and-test"
+description: "Run tectonic build and test"
 inputs:
   target:
     description: "Compilation target to use"
@@ -11,7 +11,7 @@ inputs:
   publish:
     description: "Whether to publish compiled binaries"
     required: false
-    default: 'false'
+    default: "false"
   executable:
     description: "The executable to invoke. Normally cargo"
     required: false
@@ -29,7 +29,7 @@ runs:
       id: set-feature-flags
       run: |
         ffs=
-        
+
         if [[ "${{ inputs.features }}" == "_none_" ]] ; then
           # We need to always enable a feature for geturl
           ffs="--no-default-features --features reqwest"
@@ -38,10 +38,10 @@ runs:
         else
           ffs="--features \"${{ inputs.features }}\""
         fi
-        
+
         echo "Cargo features for this build: $ffs"
         echo "cargo-features=$ffs" >> "$GITHUB_OUTPUT"
-        
+
         # OK, these have nothing to do with features, but if a build script fails, it
         # can be helpful to get a full backtrace.
         echo "RUST_BACKTRACE=full" >> "$GITHUB_ENV"
@@ -81,7 +81,49 @@ runs:
       run: |
         artifact_dir="binary-${{ inputs.target }}"
         mkdir -p "$artifact_dir"
-        cranko cargo package-released-binaries ${{ inputs.package-flags }} -t ${{ inputs.target }} $artifact_dir -- build --target ${{ inputs.target }} --release
+
+        # Extract version
+        ver=$(grep '^version' Cargo.toml | head -n1 | cut -d '"' -f2)
+        echo "Detected version: $ver"
+
+        # Determine binary name and extension
+        bin_name="tectonic"
+        if [[ "${{ inputs.target }}" == *"windows"* ]]; then
+          bin_name="tectonic.exe"
+        fi
+
+        # Find binary
+        src="target/${{ inputs.target }}/release/$bin_name"
+        if [ ! -f "$src" ]; then
+           # Fallback for non-cross builds that might output to target/release
+           if [ -f "target/release/$bin_name" ]; then
+             src="target/release/$bin_name"
+           else
+             echo "Error: Could not find binary $bin_name at $src or target/release/"
+             find target -name "$bin_name"
+             exit 1
+           fi
+        fi
+
+        echo "Found binary at: $src"
+        cp "$src" "$bin_name"
+
+        # Archive
+        archive_name="tectonic-$ver-${{ inputs.target }}"
+        if [[ "${{ inputs.target }}" == *"windows"* ]]; then
+          archive_name="$archive_name.zip"
+          # Try zip, fallback to tar
+          if command -v zip &> /dev/null; then
+             zip "$artifact_dir/$archive_name" "$bin_name"
+          else
+             tar -caf "$artifact_dir/$archive_name" "$bin_name"
+          fi
+        else
+          archive_name="$archive_name.tar.gz"
+          tar -czf "$artifact_dir/$archive_name" "$bin_name"
+        fi
+
+        echo "Created archive: $artifact_dir/$archive_name"
     - name: "Publish packaged binary artifact(s)"
       if: ${{ inputs.publish == 'true' }}
       uses: actions/upload-artifact@v4
