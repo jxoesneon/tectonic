@@ -2901,7 +2901,7 @@ dependencies = [
 
 [[package]]
 name = "tectonic"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "byte-unit",
@@ -2948,7 +2948,7 @@ dependencies = [
 
 [[package]]
 name = "tectonic_bridge_core"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "cc",
  "flate2",
@@ -3103,7 +3103,7 @@ dependencies = [
 
 [[package]]
 name = "tectonic_engine_xetex"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "cc",
  "libc",

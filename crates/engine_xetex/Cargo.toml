@@ -7,7 +7,7 @@ lints.workspace = true
 
 [package]
 name = "tectonic_engine_xetex"
-version = "0.16.2"  # assigned with cranko (see README)
+version = "0.17.0"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
 The [XeTeX](http://xetex.sourceforge.net/) engine as a reusable crate.
@@ -22,7 +22,7 @@ links = "tectonic_engine_xetex"
 
 [dependencies]
 libc = "^0.2"
-tectonic_bridge_core = { path = "../bridge_core", version = "0.16.2" }
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.0" }
 tectonic_bridge_freetype2 = { path = "../bridge_freetype2", version = "0.16.2" }
 tectonic_bridge_flate = { path = "../bridge_flate", version = "0.16.2" }
 tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.16.2" }

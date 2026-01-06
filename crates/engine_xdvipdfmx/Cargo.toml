@@ -22,7 +22,7 @@ links = "tectonic_engine_xdvipdfmx"
 
 [dependencies]
 libc = "^0.2"
-tectonic_bridge_core = { path = "../bridge_core", version = "0.16.2" }
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.0" }
 tectonic_errors = { path = "../errors", version = "0.16.2" }
 tectonic_pdf_io = { path = "../pdf_io", version = "0.16.2" }
 
