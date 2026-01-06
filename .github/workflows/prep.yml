@@ -26,17 +26,19 @@ jobs:
             git branch --set-upstream-to=origin/${{ github.ref_name }} ${{ github.ref_name }}
           fi
           git tag -l
-#      - name: "cranko release-workflow apply-versions"
-#        run: cranko release-workflow apply-versions
-#        env:
-#          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
+      - name: "cranko release-workflow apply-versions"
+        run: cranko release-workflow apply-versions
+        env:
+          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
       - name: "Mini-build to freshen Cargo.lock"
         run: cargo build -p tectonic_cfg_support
-#      - name: Generate release commit
-#        run: |
-#          git add .
-#          cranko release-workflow commit
-#          git show
+      - name: Generate release commit
+        run: |
+          git add .
+          cranko release-workflow commit
+          git show
+        env:
+          CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
       - name: Generate git bundle
         run: |
           git bundle create release.bundle HEAD

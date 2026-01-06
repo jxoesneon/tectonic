@@ -85,9 +85,8 @@ jobs:
           is-release: ${{ inputs.is-release }}
       - name: "Tag and push"
         run: |
-          # cranko release-workflow tag
-          echo "Skipping Cranko tagging for manual release"
-          git push --tags origin release:release || true
+          cranko release-workflow tag
+          git push --tags origin release:release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
@@ -109,7 +108,7 @@ jobs:
           is-release: ${{ inputs.is-release }}
       - name: "Create per-project GitHub releases"
         run: |
-          cranko github create-releases || echo "Skipping GitHub release creation (manual mode)"
+          cranko github create-releases
 
           if cranko show if-released --exit-code tectonic; then
             cranko github upload-artifacts tectonic \
