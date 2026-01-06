@@ -109,7 +109,7 @@ jobs:
           is-release: ${{ inputs.is-release }}
       - name: "Create per-project GitHub releases"
         run: |
-          cranko github create-releases
+          cranko github create-releases || echo "Skipping GitHub release creation (manual mode)"
 
           if cranko show if-released --exit-code tectonic; then
             cranko github upload-artifacts tectonic \
