@@ -21,8 +21,10 @@ jobs:
       - name: "Checkout Branch"
         run: |
           git fetch --tags --force origin
-          git checkout -B ${{ github.ref_name }}
-          git branch --set-upstream-to=origin/${{ github.ref_name }} ${{ github.ref_name }}
+          if [[ "${{ github.ref_type }}" == "branch" ]]; then
+            git checkout -B ${{ github.ref_name }}
+            git branch --set-upstream-to=origin/${{ github.ref_name }} ${{ github.ref_name }}
+          fi
           git tag -l
       - name: "cranko release-workflow apply-versions"
         run: cranko release-workflow apply-versions
