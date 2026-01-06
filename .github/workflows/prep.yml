@@ -39,8 +39,7 @@ jobs:
 #          git show
       - name: Generate git bundle
         run: |
-          touch release.bundle
-          # git bundle create release.bundle origin/master..HEAD
+          git bundle create release.bundle HEAD
       - name: Publish artifact
         uses: actions/upload-artifact@v4
         with:
