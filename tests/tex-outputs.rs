@@ -383,3 +383,7 @@ fn pdf_fstream() {
         .check_pdf(true)
         .go()
 }
+#[test]
+fn stress_expand() {
+    TestCase::new("stress_expand").go()
+}

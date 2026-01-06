@@ -6169,6 +6169,9 @@ expand(void)
     int32_t backup_backup;
     small_number save_scanner_status;
 
+    /* Tectonic: notify bridge of expansion start for debugging hooks */
+    ttstub_event_expand_on();
+
     expand_depth_count++;
     if (expand_depth_count >= expand_depth)
         overflow("expansion depth", expand_depth);

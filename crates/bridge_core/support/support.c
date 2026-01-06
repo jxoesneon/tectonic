@@ -335,3 +335,9 @@ ttstub_shell_escape(const unsigned short *cmd, size_t len)
 {
     return ttbc_shell_escape(tectonic_global_bridge_core, cmd, len);
 }
+
+void
+ttstub_event_expand_on(void)
+{
+    ttbc_event_expand_on(tectonic_global_bridge_core);
+}

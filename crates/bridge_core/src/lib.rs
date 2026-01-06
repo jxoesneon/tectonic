@@ -149,6 +149,13 @@ pub trait DriverHooks {
     ) {
     }
 
+    /// Called when the engine enters macro expansion.
+    ///
+    /// This hook is intended for debugging purposes, allowing the consumer to
+    /// inspect the state of the engine or pause execution (e.g., implementing
+    /// breakpoints) just before a macro is expanded.
+    fn event_expand_on(&mut self) {}
+
     /// The engine is requesting a "shell escape" evaluation.
     ///
     /// If the driver wishes to implement this request, it should run the
@@ -1238,6 +1245,12 @@ pub extern "C" fn ttbc_input_close(
         Some(handle) => libc::c_int::from(es.input_close(handle)),
         None => 0,
     }
+}
+
+/// Trigger the "expand_on" event hook.
+#[no_mangle]
+pub unsafe extern "C" fn ttbc_event_expand_on(es: &mut CoreBridgeState) {
+    es.hooks.event_expand_on();
 }
 
 /// A buffer for diagnostic messages. Rust code does not need to use this type.

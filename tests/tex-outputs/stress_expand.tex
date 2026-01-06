@@ -1,0 +1,28 @@
+% Stress test for macro expansion overhead
+% This file defines a recursive macro and runs it many times to exercise the expand() loop.
+
+\catcode`\{=1
+\catcode`\}=2
+\catcode`\#=6
+
+\def\empty{}
+
+% A macro that expands to itself N times
+\count10=0
+\def\loop{%
+  \ifnum\count10<100000 % 100k iterations
+    \advance\count10 by 1
+    \expandafter\loop
+  \fi
+}
+
+\def\complex#1{%
+    \def\inner{#1#1}%
+    \ifx\inner\empty\else\expandafter\inner\fi
+}
+
+Test Start
+\loop
+Test End
+
+\bye

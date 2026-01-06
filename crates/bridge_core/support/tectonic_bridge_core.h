@@ -252,6 +252,15 @@ int ttstub_get_file_md5(char const *path, char *digest);
 
 int ttstub_shell_escape(const unsigned short *cmd, size_t len);
 
+/**
+ * Trigger the "expand_on" event hook.
+ *
+ * This function delegates to the Rust bridge to notify the driver that macro
+ * expansion is about to occur. It is used for implementing native debugging
+ * capabilities.
+ */
+void ttstub_event_expand_on(void);
+
 END_EXTERN_C
 
 #endif /* not TECTONIC_CORE_BRIDGE_H */
