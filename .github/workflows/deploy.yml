@@ -85,7 +85,8 @@ jobs:
           is-release: ${{ inputs.is-release }}
       - name: "Tag and push"
         run: |
-          cranko release-workflow tag
+          # cranko release-workflow tag
+          echo "Skipping Cranko tagging for manual release"
           git push --tags origin release:release || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
