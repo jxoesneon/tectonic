@@ -350,6 +350,9 @@ jobs:
       # TODO: Add font files to the cross images so we can include fontconfig_bridge in tests
       # TODO: Figure out why doctests are broken so we can drop all-targets
       - name: "Build and Test"
+        env:
+          OPENSSL_NO_ASM: 1
+          PKG_CONFIG_ALLOW_CROSS: 1
         uses: ./.github/actions/build-and-test
         with:
           target: ${{ matrix.target }}
