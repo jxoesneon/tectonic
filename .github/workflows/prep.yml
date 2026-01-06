@@ -35,8 +35,12 @@ jobs:
       - name: Generate release commit
         run: |
           git add .
-          cranko release-workflow commit
-          git show
+          if ! git diff --cached --quiet; then
+            cranko release-workflow commit
+            git show
+          else
+            echo "No changes to commit from release workflow."
+          fi
         env:
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
       - name: Generate git bundle
