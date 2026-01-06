@@ -20,7 +20,7 @@ jobs:
           echo "PATH=$d:$PATH" >> "$GITHUB_ENV"
       - name: "Checkout Branch"
         run: |
-          git fetch --tags origin
+          git fetch --tags --force origin
           git checkout -B ${{ github.ref_name }}
           git branch --set-upstream-to=origin/${{ github.ref_name }} ${{ github.ref_name }}
           git tag -l
