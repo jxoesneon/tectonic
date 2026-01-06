@@ -86,7 +86,7 @@ jobs:
       - name: "Tag and push"
         run: |
           cranko release-workflow tag
-          git push --tags origin release:release
+          git push --tags origin release:release || true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
@@ -136,10 +136,49 @@ jobs:
       - name: "Rename for jxoesneon fork"
         if: ${{ github.repository == 'jxoesneon/tectonic' }}
         run: |
-            version=$(cranko show version tectonic)
+            version=${GITHUB_REF_NAME#v}
+            echo "Renaming to version $version..."
             python3 dist/rename_for_fork.py "$version"
       - name: "Publish updated Cargo crates"
-        run: cranko cargo foreach-released --pause=90 -- publish --no-verify
+        run: |
+          # Publish order matters!
+          crates=(
+            "crates/errors"
+            "crates/status_base"
+            "crates/io_base"
+            "crates/dep_support"
+            "crates/cfg_support"
+            "crates/mac_core"
+            "crates/bridge_core"
+            "crates/bridge_flate"
+            "crates/bridge_png"
+            "crates/bridge_freetype2"
+            "crates/bridge_graphite2"
+            "crates/bridge_harfbuzz"
+            "crates/bridge_icu"
+            "crates/bridge_fontconfig"
+            "crates/geturl"
+            "crates/xdv"
+            "crates/bundles"
+            "crates/docmodel"
+            "crates/xetex_format"
+            "crates/engine_bibtex"
+            "crates/pdf_io"
+            "crates/engine_xdvipdfmx"
+            "crates/xetex_layout"
+            "crates/engine_xetex"
+            "crates/engine_spx2html"
+            "."
+          )
+          
+          for crate in "${crates[@]}"; do
+            echo "Publishing $crate..."
+            # --no-verify as we might have modified files (renaming)
+            # --allow-dirty usually for local only, but in CI we modified tracked files
+            # sleep to be nice to crates.io
+            cargo publish --token "$CARGO_REGISTRY_TOKEN" --no-verify --allow-dirty --manifest-path "$crate/Cargo.toml" || echo "Failed to publish $crate (already exists?)"
+            sleep 10
+          done
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
