@@ -10,8 +10,6 @@ name = "tectonic_docmodel"
 description = "Internal crate for the Tectonic project: tectonic_docmodel"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-The Tectonic document model and its serialization into `Tectonic.toml`.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_docmodel"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

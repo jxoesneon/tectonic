@@ -10,8 +10,6 @@ name = "tectonic_xetex_layout"
 description = "Internal crate for the Tectonic project: tectonic_xetex_layout"
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-XeTeX's font loading and layout interface encapsulation, as a crate.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_xetex_layout"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

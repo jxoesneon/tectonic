@@ -8,8 +8,6 @@ name = "tectonic_xdv"
 description = "Internal crate for the Tectonic project: tectonic_xdv"
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-A decoder for the XDV and SPX file formats used by XeTeX and Tectonic.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

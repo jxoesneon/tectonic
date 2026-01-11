@@ -7,15 +7,7 @@ lints.workspace = true
 name = "tectonic_cfg_support"
 description = "Internal crate for the Tectonic project: tectonic_cfg_support"
 version = "0.17.1"  # assigned with cranko (see README)
-authors = [
-    "Matt Rice <ratmice@gmail.com>",
-    "Peter Williams <peter@newton.cx>"
-]
-A build.rs support crate that helps deal with CARGO_CFG_TARGET_* variables.
-When cross-compiling, these variables must be used instead of constructs such
-as `cfg!(target_arch = ...)` because the build.rs script is compiled to
-target the build host environment, not the true target environment.
-"""
+authors = ["Peter Williams <peter@newton.cx>"]
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

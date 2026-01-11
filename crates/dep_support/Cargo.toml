@@ -8,8 +8,6 @@ name = "tectonic_dep_support"
 description = "Internal crate for the Tectonic project: tectonic_dep_support"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-Support for finding third-party libraries using either pkg-config or vcpkg.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_dep_support"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

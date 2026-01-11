@@ -10,8 +10,6 @@ name = "tectonic_pdf_io"
 description = "Internal crate for the Tectonic project: tectonic_pdf_io"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-Xdvipdfmx’s PDF, XDV, and image I/O APIs in C, as a Rust crate.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_pdf_io"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

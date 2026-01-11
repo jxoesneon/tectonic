@@ -10,8 +10,6 @@ name = "tectonic_bridge_graphite2"
 description = "Internal crate for the Tectonic project: tectonic_bridge_graphite2"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-Expose the graphite2 library to Rust/Cargo.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_bridge_graphite2"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

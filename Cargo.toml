@@ -6,11 +6,7 @@ lints.workspace = true
 
 [package]
 name = "tectonic"
-description = """
-A modernized, complete, embeddable TeX/LaTeX engine. Tectonic is forked from the XeTeX
-extension to the classic "Web2C" implementation of TeX and uses the TeXLive distribution
-of support files.
-"""
+description = "A modernized, complete, embeddable TeX/LaTeX engine."
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 homepage = "https://tectonic-typesetting.github.io/"
@@ -71,7 +67,6 @@ undocumented_unsafe_blocks = "deny"
 
 [lib]
 name = "tectonic"
-description = "A modernized, complete, embeddable TeX/LaTeX engine."
 crate-type = ["rlib"]
 
 [dependencies]

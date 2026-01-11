@@ -10,8 +10,6 @@ name = "tectonic_bridge_harfbuzz"
 description = "Internal crate for the Tectonic project: tectonic_bridge_harfbuzz"
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-Expose the Harfbuzz C/C++ APIs to Rust/Cargo.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_bridge_harfbuzz"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

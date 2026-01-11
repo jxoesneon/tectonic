@@ -8,8 +8,6 @@ name = "tectonic_status_base"
 description = "Internal crate for the Tectonic project: tectonic_status_base"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-Basic types for reporting status messages to a user.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_status_base"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

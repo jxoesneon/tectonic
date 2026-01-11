@@ -10,8 +10,6 @@ name = "tectonic_xetex_format"
 description = "Internal crate for the Tectonic project: tectonic_xetex_format"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-Tectonic/XeTeX engine data structures and their expression in TeX "format" files.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_xetex_format"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

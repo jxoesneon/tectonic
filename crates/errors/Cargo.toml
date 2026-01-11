@@ -8,8 +8,6 @@ name = "tectonic_errors"
 description = "Internal crate for the Tectonic project: tectonic_errors"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-A boxed error type for Tectonic, with supporting utilities.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_errors"
 repository = "https://github.com/tectonic-typesetting/tectonic/"

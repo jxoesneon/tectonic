@@ -10,8 +10,6 @@ name = "tectonic_engine_bibtex"
 description = "Internal crate for the Tectonic project: tectonic_engine_bibtex"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-The `bibtex` program as a reusable crate.
-"""
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_engine_bibtex"
 repository = "https://github.com/tectonic-typesetting/tectonic/"
