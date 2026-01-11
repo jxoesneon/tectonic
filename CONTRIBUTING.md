@@ -13,19 +13,19 @@ for a bigger-picture overview.
 The only restriction for contributions is that you must abide by Tectonic’s
 [Code of Conduct](./CODE_OF_CONDUCT.md). In summary, it says that you should
 not act like a jerk. Good-faith efforts to follow the letter and spirit of the
-Code of Conduct are *required* of all Tectonic community members.
+Code of Conduct are _required_ of all Tectonic community members.
 
 ## Pull Requests
 
 Pull requests are very welcome! If you are pondering a substantial change,
 please
-[open an issue](https://github.com/tectonic-typesetting/tectonic/issues/new)
+[open an issue](https://github.com/jxoesneon/tectonic/issues/new)
 before starting work so that the design can be discussed with the development
 team.
 
 The [CI](https://en.wikipedia.org/wiki/Continuous_integration) system requires
 that all submitted Rust code be formatted according to the
-[rustfmt](https://github.com/rust-lang/rustfmt#readme) tool. We *strongly*
+[rustfmt](https://github.com/rust-lang/rustfmt#readme) tool. We _strongly_
 recommend that you achieve this by configuring your text editor to apply
 `rustfmt` formatting every time you save a file,
 [as per these instructions](https://github.com/rust-lang/rustfmt#running-rustfmt-from-your-editor).

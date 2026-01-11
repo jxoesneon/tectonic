@@ -1,0 +1,937 @@
+﻿2026-01-11T18:28:08.6718564Z Current runner version: '2.330.0'
+2026-01-11T18:28:08.6740091Z ##[group]Runner Image Provisioner
+2026-01-11T18:28:08.6740878Z Hosted Compute Agent
+2026-01-11T18:28:08.6741395Z Version: 20251211.462
+2026-01-11T18:28:08.6741924Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+2026-01-11T18:28:08.6742594Z Build Date: 2025-12-11T16:28:49Z
+2026-01-11T18:28:08.6743188Z Worker ID: {9a4f7088-b5fd-4e6d-972b-6f3f1f492312}
+2026-01-11T18:28:08.6743933Z ##[endgroup]
+2026-01-11T18:28:08.6744449Z ##[group]Operating System
+2026-01-11T18:28:08.6744944Z Ubuntu
+2026-01-11T18:28:08.6745351Z 24.04.3
+2026-01-11T18:28:08.6745809Z LTS
+2026-01-11T18:28:08.6746194Z ##[endgroup]
+2026-01-11T18:28:08.6746649Z ##[group]Runner Image
+2026-01-11T18:28:08.6747165Z Image: ubuntu-24.04
+2026-01-11T18:28:08.6747594Z Version: 20260105.202.1
+2026-01-11T18:28:08.6748481Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260105.202/images/ubuntu/Ubuntu2404-Readme.md
+2026-01-11T18:28:08.6749813Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260105.202
+2026-01-11T18:28:08.6750693Z ##[endgroup]
+2026-01-11T18:28:08.6752995Z ##[group]GITHUB_TOKEN Permissions
+2026-01-11T18:28:08.6755510Z Actions: write
+2026-01-11T18:28:08.6756032Z ArtifactMetadata: write
+2026-01-11T18:28:08.6756511Z Attestations: write
+2026-01-11T18:28:08.6756992Z Checks: write
+2026-01-11T18:28:08.6757422Z Contents: write
+2026-01-11T18:28:08.6757897Z Deployments: write
+2026-01-11T18:28:08.6758368Z Discussions: write
+2026-01-11T18:28:08.6758808Z Issues: write
+2026-01-11T18:28:08.6759256Z Metadata: read
+2026-01-11T18:28:08.6759657Z Models: read
+2026-01-11T18:28:08.6760172Z Packages: write
+2026-01-11T18:28:08.6760649Z Pages: write
+2026-01-11T18:28:08.6761062Z PullRequests: write
+2026-01-11T18:28:08.6761667Z RepositoryProjects: write
+2026-01-11T18:28:08.6762186Z SecurityEvents: write
+2026-01-11T18:28:08.6762623Z Statuses: write
+2026-01-11T18:28:08.6763120Z ##[endgroup]
+2026-01-11T18:28:08.6765426Z Secret source: Actions
+2026-01-11T18:28:08.6766018Z Prepare workflow directory
+2026-01-11T18:28:08.7067835Z Prepare all required actions
+2026-01-11T18:28:08.7105540Z Getting action download info
+2026-01-11T18:28:09.0870484Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-11T18:28:09.2545960Z Uses: jxoesneon/tectonic/.github/workflows/deploy.yml@refs/tags/v0.17.1 (4e37834f4fa5f2f87e1bb3fab3e118ed8223f467)
+2026-01-11T18:28:09.2550254Z ##[group] Inputs
+2026-01-11T18:28:09.2551077Z   is-dev: false
+2026-01-11T18:28:09.2551526Z   is-release: true
+2026-01-11T18:28:09.2552012Z ##[endgroup]
+2026-01-11T18:28:09.2552478Z Complete job name: deploy / cargo-publish
+2026-01-11T18:28:09.3149811Z ##[group]Run actions/checkout@v4
+2026-01-11T18:28:09.3150613Z with:
+2026-01-11T18:28:09.3151101Z   fetch-depth: 0
+2026-01-11T18:28:09.3151532Z   submodules: true
+2026-01-11T18:28:09.3151987Z   repository: jxoesneon/tectonic
+2026-01-11T18:28:09.3152714Z   token: ***
+2026-01-11T18:28:09.3153111Z   ssh-strict: true
+2026-01-11T18:28:09.3153574Z   ssh-user: git
+2026-01-11T18:28:09.3154108Z   persist-credentials: true
+2026-01-11T18:28:09.3154628Z   clean: true
+2026-01-11T18:28:09.3155065Z   sparse-checkout-cone-mode: true
+2026-01-11T18:28:09.3155545Z   fetch-tags: false
+2026-01-11T18:28:09.3156012Z   show-progress: true
+2026-01-11T18:28:09.3156423Z   lfs: false
+2026-01-11T18:28:09.3156839Z   set-safe-directory: true
+2026-01-11T18:28:09.3157606Z ##[endgroup]
+2026-01-11T18:28:09.4197569Z Syncing repository: jxoesneon/tectonic
+2026-01-11T18:28:09.4199436Z ##[group]Getting Git version info
+2026-01-11T18:28:09.4200189Z Working directory is '/home/runner/work/tectonic/tectonic'
+2026-01-11T18:28:09.4201369Z [command]/usr/bin/git version
+2026-01-11T18:28:09.4249784Z git version 2.52.0
+2026-01-11T18:28:09.4276248Z ##[endgroup]
+2026-01-11T18:28:09.4290462Z Temporarily overriding HOME='/home/runner/work/_temp/0c0be423-a0c6-4dfc-ba42-b01f7ea52dc3' before making global git config changes
+2026-01-11T18:28:09.4292711Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-11T18:28:09.4304000Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/tectonic/tectonic
+2026-01-11T18:28:09.4334397Z Deleting the contents of '/home/runner/work/tectonic/tectonic'
+2026-01-11T18:28:09.4337953Z ##[group]Initializing the repository
+2026-01-11T18:28:09.4342315Z [command]/usr/bin/git init /home/runner/work/tectonic/tectonic
+2026-01-11T18:28:09.4426223Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-01-11T18:28:09.4427838Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-01-11T18:28:09.4429444Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-01-11T18:28:09.4430528Z hint: call:
+2026-01-11T18:28:09.4430929Z hint:
+2026-01-11T18:28:09.4431446Z hint: 	git config --global init.defaultBranch <name>
+2026-01-11T18:28:09.4432056Z hint:
+2026-01-11T18:28:09.4432608Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-01-11T18:28:09.4433941Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-01-11T18:28:09.4434670Z hint:
+2026-01-11T18:28:09.4435157Z hint: 	git branch -m <name>
+2026-01-11T18:28:09.4435643Z hint:
+2026-01-11T18:28:09.4436212Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-01-11T18:28:09.4437216Z Initialized empty Git repository in /home/runner/work/tectonic/tectonic/.git/
+2026-01-11T18:28:09.4439168Z [command]/usr/bin/git remote add origin https://github.com/jxoesneon/tectonic
+2026-01-11T18:28:09.4465811Z ##[endgroup]
+2026-01-11T18:28:09.4466678Z ##[group]Disabling automatic garbage collection
+2026-01-11T18:28:09.4469249Z [command]/usr/bin/git config --local gc.auto 0
+2026-01-11T18:28:09.4491524Z ##[endgroup]
+2026-01-11T18:28:09.4492211Z ##[group]Setting up auth
+2026-01-11T18:28:09.4497978Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-01-11T18:28:09.4520869Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-01-11T18:28:09.4806671Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-11T18:28:09.4830596Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-01-11T18:28:09.5004647Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-11T18:28:09.5030490Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-01-11T18:28:09.5209301Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-01-11T18:28:09.5237292Z ##[endgroup]
+2026-01-11T18:28:09.5238593Z ##[group]Fetching the repository
+2026-01-11T18:28:09.5246188Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+2026-01-11T18:28:12.0735386Z From https://github.com/jxoesneon/tectonic
+2026-01-11T18:28:12.0739067Z  * [new branch]        craftspider/fix-coverage    -> origin/craftspider/fix-coverage
+2026-01-11T18:28:12.0743024Z  * [new branch]        local/ferrotex-vendor-v2    -> origin/local/ferrotex-vendor-v2
+2026-01-11T18:28:12.0746770Z  * [new branch]        master                      -> origin/master
+2026-01-11T18:28:12.0750304Z  * [new branch]        pr/msvc-build-flags         -> origin/pr/msvc-build-flags
+2026-01-11T18:28:12.0753876Z  * [new branch]        pr/remove-atty              -> origin/pr/remove-atty
+2026-01-11T18:28:12.0756723Z  * [new branch]        release                     -> origin/release
+2026-01-11T18:28:12.0759441Z  * [new branch]        release-debug               -> origin/release-debug
+2026-01-11T18:28:12.0762398Z  * [new branch]        rmdr/log                    -> origin/rmdr/log
+2026-01-11T18:28:12.0765361Z  * [new branch]        rmdr/workspace              -> origin/rmdr/workspace
+2026-01-11T18:28:12.0768193Z  * [new tag]           cfg_support-v0.0.1          -> cfg_support-v0.0.1
+2026-01-11T18:28:12.0770879Z  * [new tag]           cfg_support-v0.0.2          -> cfg_support-v0.0.2
+2026-01-11T18:28:12.0773551Z  * [new tag]           constants-with-values       -> constants-with-values
+2026-01-11T18:28:12.0776312Z  * [new tag]           continuous                  -> continuous
+2026-01-11T18:28:12.0778909Z  * [new tag]           tectonic@0.0.0              -> tectonic@0.0.0
+2026-01-11T18:28:12.0781461Z  * [new tag]           tectonic@0.1.13             -> tectonic@0.1.13
+2026-01-11T18:28:12.0784441Z  * [new tag]           tectonic@0.1.14             -> tectonic@0.1.14
+2026-01-11T18:28:12.0787174Z  * [new tag]           tectonic@0.1.15             -> tectonic@0.1.15
+2026-01-11T18:28:12.0789751Z  * [new tag]           tectonic@0.1.16             -> tectonic@0.1.16
+2026-01-11T18:28:12.0792330Z  * [new tag]           tectonic@0.1.17             -> tectonic@0.1.17
+2026-01-11T18:28:12.0795154Z  * [new tag]           tectonic@0.10.0             -> tectonic@0.10.0
+2026-01-11T18:28:12.0797708Z  * [new tag]           tectonic@0.11.0             -> tectonic@0.11.0
+2026-01-11T18:28:12.0800320Z  * [new tag]           tectonic@0.12.0             -> tectonic@0.12.0
+2026-01-11T18:28:12.0803054Z  * [new tag]           tectonic@0.13.0             -> tectonic@0.13.0
+2026-01-11T18:28:12.0805896Z  * [new tag]           tectonic@0.13.1             -> tectonic@0.13.1
+2026-01-11T18:28:12.0808619Z  * [new tag]           tectonic@0.14.0             -> tectonic@0.14.0
+2026-01-11T18:28:12.0927785Z  * [new tag]           tectonic@0.14.1             -> tectonic@0.14.1
+2026-01-11T18:28:12.0929728Z  * [new tag]           tectonic@0.15.0             -> tectonic@0.15.0
+2026-01-11T18:28:12.0931581Z  * [new tag]           tectonic@0.16.1             -> tectonic@0.16.1
+2026-01-11T18:28:12.0933554Z  * [new tag]           tectonic@0.2.0              -> tectonic@0.2.0
+2026-01-11T18:28:12.0935641Z  * [new tag]           tectonic@0.3.0              -> tectonic@0.3.0
+2026-01-11T18:28:12.0937497Z  * [new tag]           tectonic@0.3.1              -> tectonic@0.3.1
+2026-01-11T18:28:12.0939337Z  * [new tag]           tectonic@0.3.2              -> tectonic@0.3.2
+2026-01-11T18:28:12.0941137Z  * [new tag]           tectonic@0.3.3              -> tectonic@0.3.3
+2026-01-11T18:28:12.0942968Z  * [new tag]           tectonic@0.4.0              -> tectonic@0.4.0
+2026-01-11T18:28:12.0945398Z  * [new tag]           tectonic@0.4.1              -> tectonic@0.4.1
+2026-01-11T18:28:12.0947216Z  * [new tag]           tectonic@0.5.0              -> tectonic@0.5.0
+2026-01-11T18:28:12.0949030Z  * [new tag]           tectonic@0.5.1              -> tectonic@0.5.1
+2026-01-11T18:28:12.0950821Z  * [new tag]           tectonic@0.5.2              -> tectonic@0.5.2
+2026-01-11T18:28:12.0952665Z  * [new tag]           tectonic@0.6.0              -> tectonic@0.6.0
+2026-01-11T18:28:12.0954740Z  * [new tag]           tectonic@0.6.1              -> tectonic@0.6.1
+2026-01-11T18:28:12.0956564Z  * [new tag]           tectonic@0.6.2              -> tectonic@0.6.2
+2026-01-11T18:28:12.0958398Z  * [new tag]           tectonic@0.6.3              -> tectonic@0.6.3
+2026-01-11T18:28:12.0960220Z  * [new tag]           tectonic@0.6.4              -> tectonic@0.6.4
+2026-01-11T18:28:12.0962044Z  * [new tag]           tectonic@0.7.0              -> tectonic@0.7.0
+2026-01-11T18:28:12.0964124Z  * [new tag]           tectonic@0.7.1              -> tectonic@0.7.1
+2026-01-11T18:28:12.0966047Z  * [new tag]           tectonic@0.8.0              -> tectonic@0.8.0
+2026-01-11T18:28:12.0967883Z  * [new tag]           tectonic@0.8.1              -> tectonic@0.8.1
+2026-01-11T18:28:12.0969706Z  * [new tag]           tectonic@0.8.2              -> tectonic@0.8.2
+2026-01-11T18:28:12.0971516Z  * [new tag]           tectonic@0.9.0              -> tectonic@0.9.0
+2026-01-11T18:28:12.0973709Z  * [new tag]           tectonic_bridge_core@0.1.0  -> tectonic_bridge_core@0.1.0
+2026-01-11T18:28:12.0975748Z  * [new tag]           tectonic_bridge_core@0.2.0  -> tectonic_bridge_core@0.2.0
+2026-01-11T18:28:12.0977708Z  * [new tag]           tectonic_bridge_core@0.2.1  -> tectonic_bridge_core@0.2.1
+2026-01-11T18:28:12.0979659Z  * [new tag]           tectonic_bridge_core@0.2.2  -> tectonic_bridge_core@0.2.2
+2026-01-11T18:28:12.0981612Z  * [new tag]           tectonic_bridge_core@0.3.0  -> tectonic_bridge_core@0.3.0
+2026-01-11T18:28:12.0983581Z  * [new tag]           tectonic_bridge_core@0.3.1  -> tectonic_bridge_core@0.3.1
+2026-01-11T18:28:12.0985703Z  * [new tag]           tectonic_bridge_core@0.3.2  -> tectonic_bridge_core@0.3.2
+2026-01-11T18:28:12.0987670Z  * [new tag]           tectonic_bridge_core@0.4.0  -> tectonic_bridge_core@0.4.0
+2026-01-11T18:28:12.0989630Z  * [new tag]           tectonic_bridge_core@0.4.1  -> tectonic_bridge_core@0.4.1
+2026-01-11T18:28:12.0991633Z  * [new tag]           tectonic_bridge_flate@0.1.0 -> tectonic_bridge_flate@0.1.0
+2026-01-11T18:28:12.0993704Z  * [new tag]           tectonic_bridge_flate@0.1.1 -> tectonic_bridge_flate@0.1.1
+2026-01-11T18:28:12.0995733Z  * [new tag]           tectonic_bridge_flate@0.1.2 -> tectonic_bridge_flate@0.1.2
+2026-01-11T18:28:12.0997720Z  * [new tag]           tectonic_bridge_flate@0.1.3 -> tectonic_bridge_flate@0.1.3
+2026-01-11T18:28:12.0999663Z  * [new tag]           tectonic_bridge_flate@0.1.4 -> tectonic_bridge_flate@0.1.4
+2026-01-11T18:28:12.1001654Z  * [new tag]           tectonic_bridge_flate@0.1.5 -> tectonic_bridge_flate@0.1.5
+2026-01-11T18:28:12.1003781Z  * [new tag]           tectonic_bridge_flate@0.1.6 -> tectonic_bridge_flate@0.1.6
+2026-01-11T18:28:12.1005838Z  * [new tag]           tectonic_bridge_flate@0.1.7 -> tectonic_bridge_flate@0.1.7
+2026-01-11T18:28:12.1007939Z  * [new tag]           tectonic_bridge_freetype2@0.1.0 -> tectonic_bridge_freetype2@0.1.0
+2026-01-11T18:28:12.1010474Z  * [new tag]           tectonic_bridge_freetype2@0.2.0 -> tectonic_bridge_freetype2@0.2.0
+2026-01-11T18:28:12.1012847Z  * [new tag]           tectonic_bridge_graphite2@0.1.0 -> tectonic_bridge_graphite2@0.1.0
+2026-01-11T18:28:12.1015211Z  * [new tag]           tectonic_bridge_graphite2@0.1.1 -> tectonic_bridge_graphite2@0.1.1
+2026-01-11T18:28:12.1017667Z  * [new tag]           tectonic_bridge_graphite2@0.2.0 -> tectonic_bridge_graphite2@0.2.0
+2026-01-11T18:28:12.1020880Z  * [new tag]           tectonic_bridge_graphite2@0.2.1 -> tectonic_bridge_graphite2@0.2.1
+2026-01-11T18:28:12.1024688Z  * [new tag]           tectonic_bridge_graphite2@0.2.2 -> tectonic_bridge_graphite2@0.2.2
+2026-01-11T18:28:12.1027096Z  * [new tag]           tectonic_bridge_harfbuzz@0.1.0 -> tectonic_bridge_harfbuzz@0.1.0
+2026-01-11T18:28:12.1029522Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.0 -> tectonic_bridge_harfbuzz@0.2.0
+2026-01-11T18:28:12.1032496Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.1 -> tectonic_bridge_harfbuzz@0.2.1
+2026-01-11T18:28:12.1034949Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.2 -> tectonic_bridge_harfbuzz@0.2.2
+2026-01-11T18:28:12.1037841Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.3 -> tectonic_bridge_harfbuzz@0.2.3
+2026-01-11T18:28:12.1041250Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.4 -> tectonic_bridge_harfbuzz@0.2.4
+2026-01-11T18:28:12.1044873Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.5 -> tectonic_bridge_harfbuzz@0.2.5
+2026-01-11T18:28:12.1048204Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.6 -> tectonic_bridge_harfbuzz@0.2.6
+2026-01-11T18:28:12.1051599Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.7 -> tectonic_bridge_harfbuzz@0.2.7
+2026-01-11T18:28:12.1054665Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.8 -> tectonic_bridge_harfbuzz@0.2.8
+2026-01-11T18:28:12.1056788Z  * [new tag]           tectonic_bridge_harfbuzz@0.2.9 -> tectonic_bridge_harfbuzz@0.2.9
+2026-01-11T18:28:12.1059445Z  * [new tag]           tectonic_bridge_icu@0.1.0   -> tectonic_bridge_icu@0.1.0
+2026-01-11T18:28:12.1061919Z  * [new tag]           tectonic_bridge_icu@0.2.0   -> tectonic_bridge_icu@0.2.0
+2026-01-11T18:28:12.1064083Z  * [new tag]           tectonic_bridge_icu@0.2.1   -> tectonic_bridge_icu@0.2.1
+2026-01-11T18:28:12.1065925Z  * [new tag]           tectonic_bundles@0.1.0      -> tectonic_bundles@0.1.0
+2026-01-11T18:28:12.1067697Z  * [new tag]           tectonic_bundles@0.2.0      -> tectonic_bundles@0.2.0
+2026-01-11T18:28:12.1069482Z  * [new tag]           tectonic_bundles@0.3.0      -> tectonic_bundles@0.3.0
+2026-01-11T18:28:12.1071262Z  * [new tag]           tectonic_bundles@0.3.1      -> tectonic_bundles@0.3.1
+2026-01-11T18:28:12.1073963Z  * [new tag]           tectonic_cfg_support@0.0.3  -> tectonic_cfg_support@0.0.3
+2026-01-11T18:28:12.1076052Z  * [new tag]           tectonic_cfg_support@0.1.0  -> tectonic_cfg_support@0.1.0
+2026-01-11T18:28:12.1078113Z  * [new tag]           tectonic_cfg_support@0.1.1  -> tectonic_cfg_support@0.1.1
+2026-01-11T18:28:12.1080049Z  * [new tag]           tectonic_cfg_support@0.1.2  -> tectonic_cfg_support@0.1.2
+2026-01-11T18:28:12.1082454Z  * [new tag]           tectonic_cfg_support@0.1.3  -> tectonic_cfg_support@0.1.3
+2026-01-11T18:28:12.1085800Z  * [new tag]           tectonic_cfg_support@0.1.4  -> tectonic_cfg_support@0.1.4
+2026-01-11T18:28:12.1088526Z  * [new tag]           tectonic_dep_support@0.1.0  -> tectonic_dep_support@0.1.0
+2026-01-11T18:28:12.1090435Z  * [new tag]           tectonic_dep_support@0.1.1  -> tectonic_dep_support@0.1.1
+2026-01-11T18:28:12.1092804Z  * [new tag]           tectonic_docmodel@0.1.0     -> tectonic_docmodel@0.1.0
+2026-01-11T18:28:12.1095498Z  * [new tag]           tectonic_docmodel@0.1.1     -> tectonic_docmodel@0.1.1
+2026-01-11T18:28:12.1097275Z  * [new tag]           tectonic_docmodel@0.1.2     -> tectonic_docmodel@0.1.2
+2026-01-11T18:28:12.1099035Z  * [new tag]           tectonic_docmodel@0.2.0     -> tectonic_docmodel@0.2.0
+2026-01-11T18:28:12.1101147Z  * [new tag]           tectonic_docmodel@0.2.1     -> tectonic_docmodel@0.2.1
+2026-01-11T18:28:12.1104039Z  * [new tag]           tectonic_docmodel@0.2.2     -> tectonic_docmodel@0.2.2
+2026-01-11T18:28:12.1107054Z  * [new tag]           tectonic_engine_bibtex@0.1.0 -> tectonic_engine_bibtex@0.1.0
+2026-01-11T18:28:12.1110068Z  * [new tag]           tectonic_engine_bibtex@0.1.1 -> tectonic_engine_bibtex@0.1.1
+2026-01-11T18:28:12.1113138Z  * [new tag]           tectonic_engine_bibtex@0.1.2 -> tectonic_engine_bibtex@0.1.2
+2026-01-11T18:28:12.1115905Z  * [new tag]           tectonic_engine_bibtex@0.1.3 -> tectonic_engine_bibtex@0.1.3
+2026-01-11T18:28:12.1117998Z  * [new tag]           tectonic_engine_bibtex@0.1.4 -> tectonic_engine_bibtex@0.1.4
+2026-01-11T18:28:12.1120834Z  * [new tag]           tectonic_engine_bibtex@0.1.5 -> tectonic_engine_bibtex@0.1.5
+2026-01-11T18:28:12.1122841Z  * [new tag]           tectonic_engine_bibtex@0.2.0 -> tectonic_engine_bibtex@0.2.0
+2026-01-11T18:28:12.1124916Z  * [new tag]           tectonic_engine_bibtex@0.2.1 -> tectonic_engine_bibtex@0.2.1
+2026-01-11T18:28:12.1126854Z  * [new tag]           tectonic_engine_bibtex@0.2.2 -> tectonic_engine_bibtex@0.2.2
+2026-01-11T18:28:12.1128796Z  * [new tag]           tectonic_engine_spx2html@0.1.0 -> tectonic_engine_spx2html@0.1.0
+2026-01-11T18:28:12.1130816Z  * [new tag]           tectonic_engine_spx2html@0.1.1 -> tectonic_engine_spx2html@0.1.1
+2026-01-11T18:28:12.1132845Z  * [new tag]           tectonic_engine_spx2html@0.2.0 -> tectonic_engine_spx2html@0.2.0
+2026-01-11T18:28:12.1134991Z  * [new tag]           tectonic_engine_spx2html@0.2.1 -> tectonic_engine_spx2html@0.2.1
+2026-01-11T18:28:12.1136996Z  * [new tag]           tectonic_engine_spx2html@0.3.0 -> tectonic_engine_spx2html@0.3.0
+2026-01-11T18:28:12.1138989Z  * [new tag]           tectonic_engine_spx2html@0.3.1 -> tectonic_engine_spx2html@0.3.1
+2026-01-11T18:28:12.1140980Z  * [new tag]           tectonic_engine_spx2html@0.3.2 -> tectonic_engine_spx2html@0.3.2
+2026-01-11T18:28:12.1143179Z  * [new tag]           tectonic_engine_xdvipdfmx@0.1.0 -> tectonic_engine_xdvipdfmx@0.1.0
+2026-01-11T18:28:12.1145380Z  * [new tag]           tectonic_engine_xdvipdfmx@0.1.1 -> tectonic_engine_xdvipdfmx@0.1.1
+2026-01-11T18:28:12.1147430Z  * [new tag]           tectonic_engine_xdvipdfmx@0.1.2 -> tectonic_engine_xdvipdfmx@0.1.2
+2026-01-11T18:28:12.1149484Z  * [new tag]           tectonic_engine_xdvipdfmx@0.1.3 -> tectonic_engine_xdvipdfmx@0.1.3
+2026-01-11T18:28:12.1151541Z  * [new tag]           tectonic_engine_xdvipdfmx@0.2.0 -> tectonic_engine_xdvipdfmx@0.2.0
+2026-01-11T18:28:12.1153681Z  * [new tag]           tectonic_engine_xdvipdfmx@0.3.0 -> tectonic_engine_xdvipdfmx@0.3.0
+2026-01-11T18:28:12.1155737Z  * [new tag]           tectonic_engine_xdvipdfmx@0.4.0 -> tectonic_engine_xdvipdfmx@0.4.0
+2026-01-11T18:28:12.1157786Z  * [new tag]           tectonic_engine_xdvipdfmx@0.4.1 -> tectonic_engine_xdvipdfmx@0.4.1
+2026-01-11T18:28:12.1159724Z  * [new tag]           tectonic_engine_xetex@0.1.0 -> tectonic_engine_xetex@0.1.0
+2026-01-11T18:28:12.1161537Z  * [new tag]           tectonic_engine_xetex@0.1.1 -> tectonic_engine_xetex@0.1.1
+2026-01-11T18:28:12.1163351Z  * [new tag]           tectonic_engine_xetex@0.1.2 -> tectonic_engine_xetex@0.1.2
+2026-01-11T18:28:12.1165269Z  * [new tag]           tectonic_engine_xetex@0.1.3 -> tectonic_engine_xetex@0.1.3
+2026-01-11T18:28:12.1167027Z  * [new tag]           tectonic_engine_xetex@0.1.4 -> tectonic_engine_xetex@0.1.4
+2026-01-11T18:28:12.1168809Z  * [new tag]           tectonic_engine_xetex@0.2.0 -> tectonic_engine_xetex@0.2.0
+2026-01-11T18:28:12.1170604Z  * [new tag]           tectonic_engine_xetex@0.3.0 -> tectonic_engine_xetex@0.3.0
+2026-01-11T18:28:12.1172393Z  * [new tag]           tectonic_engine_xetex@0.4.0 -> tectonic_engine_xetex@0.4.0
+2026-01-11T18:28:12.1174325Z  * [new tag]           tectonic_engine_xetex@0.4.1 -> tectonic_engine_xetex@0.4.1
+2026-01-11T18:28:12.1176103Z  * [new tag]           tectonic_engine_xetex@0.4.2 -> tectonic_engine_xetex@0.4.2
+2026-01-11T18:28:12.1177883Z  * [new tag]           tectonic_engine_xetex@0.4.3 -> tectonic_engine_xetex@0.4.3
+2026-01-11T18:28:12.1179651Z  * [new tag]           tectonic_engine_xetex@0.4.4 -> tectonic_engine_xetex@0.4.4
+2026-01-11T18:28:12.1181353Z  * [new tag]           tectonic_errors@0.1.0       -> tectonic_errors@0.1.0
+2026-01-11T18:28:12.1182960Z  * [new tag]           tectonic_errors@0.2.0       -> tectonic_errors@0.2.0
+2026-01-11T18:28:12.1184714Z  * [new tag]           tectonic_errors@0.2.1       -> tectonic_errors@0.2.1
+2026-01-11T18:28:12.1186339Z  * [new tag]           tectonic_geturl@0.1.0       -> tectonic_geturl@0.1.0
+2026-01-11T18:28:12.1188062Z  * [new tag]           tectonic_geturl@0.2.0       -> tectonic_geturl@0.2.0
+2026-01-11T18:28:12.1189674Z  * [new tag]           tectonic_geturl@0.2.1       -> tectonic_geturl@0.2.1
+2026-01-11T18:28:12.1191273Z  * [new tag]           tectonic_geturl@0.3.0       -> tectonic_geturl@0.3.0
+2026-01-11T18:28:12.1192873Z  * [new tag]           tectonic_geturl@0.3.1       -> tectonic_geturl@0.3.1
+2026-01-11T18:28:12.1194651Z  * [new tag]           tectonic_geturl@0.3.2       -> tectonic_geturl@0.3.2
+2026-01-11T18:28:12.1196258Z  * [new tag]           tectonic_io_base@0.1.0      -> tectonic_io_base@0.1.0
+2026-01-11T18:28:12.1197865Z  * [new tag]           tectonic_io_base@0.2.0      -> tectonic_io_base@0.2.0
+2026-01-11T18:28:12.1199473Z  * [new tag]           tectonic_io_base@0.3.0      -> tectonic_io_base@0.3.0
+2026-01-11T18:28:12.1201074Z  * [new tag]           tectonic_io_base@0.3.1      -> tectonic_io_base@0.3.1
+2026-01-11T18:28:12.1202668Z  * [new tag]           tectonic_io_base@0.4.0      -> tectonic_io_base@0.4.0
+2026-01-11T18:28:12.1204367Z  * [new tag]           tectonic_io_base@0.4.1      -> tectonic_io_base@0.4.1
+2026-01-11T18:28:12.1205964Z  * [new tag]           tectonic_io_base@0.4.2      -> tectonic_io_base@0.4.2
+2026-01-11T18:28:12.1207571Z  * [new tag]           tectonic_io_base@0.4.3      -> tectonic_io_base@0.4.3
+2026-01-11T18:28:12.1209155Z  * [new tag]           tectonic_pdf_io@0.1.0       -> tectonic_pdf_io@0.1.0
+2026-01-11T18:28:12.1210817Z  * [new tag]           tectonic_pdf_io@0.1.1       -> tectonic_pdf_io@0.1.1
+2026-01-11T18:28:12.1212389Z  * [new tag]           tectonic_pdf_io@0.1.2       -> tectonic_pdf_io@0.1.2
+2026-01-11T18:28:12.1214021Z  * [new tag]           tectonic_pdf_io@0.2.0       -> tectonic_pdf_io@0.2.0
+2026-01-11T18:28:12.1215589Z  * [new tag]           tectonic_pdf_io@0.3.0       -> tectonic_pdf_io@0.3.0
+2026-01-11T18:28:12.1217148Z  * [new tag]           tectonic_pdf_io@0.4.0       -> tectonic_pdf_io@0.4.0
+2026-01-11T18:28:12.1218715Z  * [new tag]           tectonic_pdf_io@0.4.1       -> tectonic_pdf_io@0.4.1
+2026-01-11T18:28:12.1220365Z  * [new tag]           tectonic_status_base@0.1.0  -> tectonic_status_base@0.1.0
+2026-01-11T18:28:12.1222081Z  * [new tag]           tectonic_status_base@0.2.0  -> tectonic_status_base@0.2.0
+2026-01-11T18:28:12.1223838Z  * [new tag]           tectonic_status_base@0.2.1  -> tectonic_status_base@0.2.1
+2026-01-11T18:28:12.1225458Z  * [new tag]           tectonic_xdv@0.1.10         -> tectonic_xdv@0.1.10
+2026-01-11T18:28:12.1226966Z  * [new tag]           tectonic_xdv@0.1.11         -> tectonic_xdv@0.1.11
+2026-01-11T18:28:12.1228475Z  * [new tag]           tectonic_xdv@0.1.12         -> tectonic_xdv@0.1.12
+2026-01-11T18:28:12.1229990Z  * [new tag]           tectonic_xdv@0.1.9          -> tectonic_xdv@0.1.9
+2026-01-11T18:28:12.1231483Z  * [new tag]           tectonic_xdv@0.2.0          -> tectonic_xdv@0.2.0
+2026-01-11T18:28:12.1232982Z  * [new tag]           tectonic_xdv@0.2.1          -> tectonic_xdv@0.2.1
+2026-01-11T18:28:12.1234568Z  * [new tag]           tectonic_xdv@0.2.2          -> tectonic_xdv@0.2.2
+2026-01-11T18:28:12.1236181Z  * [new tag]           tectonic_xetex_format@0.1.0 -> tectonic_xetex_format@0.1.0
+2026-01-11T18:28:12.1237923Z  * [new tag]           tectonic_xetex_format@0.2.0 -> tectonic_xetex_format@0.2.0
+2026-01-11T18:28:12.1239626Z  * [new tag]           tectonic_xetex_format@0.3.0 -> tectonic_xetex_format@0.3.0
+2026-01-11T18:28:12.1241335Z  * [new tag]           tectonic_xetex_format@0.3.1 -> tectonic_xetex_format@0.3.1
+2026-01-11T18:28:12.1243067Z  * [new tag]           tectonic_xetex_format@0.3.2 -> tectonic_xetex_format@0.3.2
+2026-01-11T18:28:12.1244846Z  * [new tag]           tectonic_xetex_layout@0.1.0 -> tectonic_xetex_layout@0.1.0
+2026-01-11T18:28:12.1246560Z  * [new tag]           tectonic_xetex_layout@0.1.1 -> tectonic_xetex_layout@0.1.1
+2026-01-11T18:28:12.1248290Z  * [new tag]           tectonic_xetex_layout@0.2.0 -> tectonic_xetex_layout@0.2.0
+2026-01-11T18:28:12.1250109Z  * [new tag]           tectonic_xetex_layout@0.2.1 -> tectonic_xetex_layout@0.2.1
+2026-01-11T18:28:12.1251813Z  * [new tag]           tectonic_xetex_layout@0.2.2 -> tectonic_xetex_layout@0.2.2
+2026-01-11T18:28:12.1253527Z  * [new tag]           tectonic_xetex_layout@0.2.3 -> tectonic_xetex_layout@0.2.3
+2026-01-11T18:28:12.1255308Z  * [new tag]           tectonic_xetex_layout@0.2.4 -> tectonic_xetex_layout@0.2.4
+2026-01-11T18:28:12.1256816Z  * [new tag]           v0.1.0                      -> v0.1.0
+2026-01-11T18:28:12.1258076Z  * [new tag]           v0.1.1                      -> v0.1.1
+2026-01-11T18:28:12.1259339Z  * [new tag]           v0.1.10                     -> v0.1.10
+2026-01-11T18:28:12.1260614Z  * [new tag]           v0.1.11                     -> v0.1.11
+2026-01-11T18:28:12.1261880Z  * [new tag]           v0.1.12                     -> v0.1.12
+2026-01-11T18:28:12.1263169Z  * [new tag]           v0.1.2                      -> v0.1.2
+2026-01-11T18:28:12.1264511Z  * [new tag]           v0.1.3                      -> v0.1.3
+2026-01-11T18:28:12.1265776Z  * [new tag]           v0.1.4                      -> v0.1.4
+2026-01-11T18:28:12.1267041Z  * [new tag]           v0.1.5                      -> v0.1.5
+2026-01-11T18:28:12.1268296Z  * [new tag]           v0.1.6                      -> v0.1.6
+2026-01-11T18:28:12.1269554Z  * [new tag]           v0.1.7                      -> v0.1.7
+2026-01-11T18:28:12.1270812Z  * [new tag]           v0.1.8                      -> v0.1.8
+2026-01-11T18:28:12.1272138Z  * [new tag]           v0.1.9                      -> v0.1.9
+2026-01-11T18:28:12.1273416Z  * [new tag]           v0.16.1                     -> v0.16.1
+2026-01-11T18:28:12.1274800Z  * [new tag]           v0.16.2                     -> v0.16.2
+2026-01-11T18:28:12.1276053Z  * [new tag]           v0.17.0                     -> v0.17.0
+2026-01-11T18:28:12.1277312Z  * [new tag]           v0.17.1                     -> v0.17.1
+2026-01-11T18:28:12.1278603Z  * [new tag]           v0.17.2-rc.1                -> v0.17.2-rc.1
+2026-01-11T18:28:12.1279959Z  * [new tag]           v0.17.2-rc.2                -> v0.17.2-rc.2
+2026-01-11T18:28:12.1281301Z  * [new tag]           v0.17.2-rc.3                -> v0.17.2-rc.3
+2026-01-11T18:28:12.1282631Z  * [new tag]           v0.17.2-rc.4                -> v0.17.2-rc.4
+2026-01-11T18:28:12.1285473Z [command]/usr/bin/git tag --list v0.17.1
+2026-01-11T18:28:12.1286453Z v0.17.1
+2026-01-11T18:28:12.1288367Z [command]/usr/bin/git rev-parse refs/tags/v0.17.1
+2026-01-11T18:28:12.1289529Z 4e37834f4fa5f2f87e1bb3fab3e118ed8223f467
+2026-01-11T18:28:12.1292066Z ##[endgroup]
+2026-01-11T18:28:12.1293349Z ##[group]Determining the checkout info
+2026-01-11T18:28:12.1294956Z ##[endgroup]
+2026-01-11T18:28:12.1295777Z [command]/usr/bin/git sparse-checkout disable
+2026-01-11T18:28:12.1298285Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-01-11T18:28:12.1301202Z ##[group]Checking out the ref
+2026-01-11T18:28:12.1302450Z [command]/usr/bin/git checkout --progress --force refs/tags/v0.17.1
+2026-01-11T18:28:12.1829277Z Note: switching to 'refs/tags/v0.17.1'.
+2026-01-11T18:28:12.1830218Z 
+2026-01-11T18:28:12.1831070Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-01-11T18:28:12.1833189Z changes and commit them, and you can discard any commits you make in this
+2026-01-11T18:28:12.1836337Z state without impacting any branches by switching back to a branch.
+2026-01-11T18:28:12.1838266Z 
+2026-01-11T18:28:12.1839526Z If you want to create a new branch to retain commits you create, you may
+2026-01-11T18:28:12.1842683Z do so (now or later) by using -c with the switch command. Example:
+2026-01-11T18:28:12.1844788Z 
+2026-01-11T18:28:12.1845426Z   git switch -c <new-branch-name>
+2026-01-11T18:28:12.1846433Z 
+2026-01-11T18:28:12.1847019Z Or undo this operation with:
+2026-01-11T18:28:12.1847936Z 
+2026-01-11T18:28:12.1848440Z   git switch -
+2026-01-11T18:28:12.1849202Z 
+2026-01-11T18:28:12.1850379Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-01-11T18:28:12.1852084Z 
+2026-01-11T18:28:12.1853475Z HEAD is now at 4e37834f chore(rel): re-enable cargo publish for v0.17.1 release
+2026-01-11T18:28:12.1857244Z ##[endgroup]
+2026-01-11T18:28:12.1858840Z ##[group]Setting up auth for fetching submodules
+2026-01-11T18:28:12.1861571Z [command]/usr/bin/git config --global http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-01-11T18:28:12.1880204Z [command]/usr/bin/git config --global --unset-all url.https://github.com/.insteadOf
+2026-01-11T18:28:12.1905003Z [command]/usr/bin/git config --global --add url.https://github.com/.insteadOf git@github.com:
+2026-01-11T18:28:12.1928512Z [command]/usr/bin/git config --global --add url.https://github.com/.insteadOf org-615199@github.com:
+2026-01-11T18:28:12.1949423Z ##[endgroup]
+2026-01-11T18:28:12.1950761Z ##[group]Fetching submodules
+2026-01-11T18:28:12.1952000Z [command]/usr/bin/git submodule sync
+2026-01-11T18:28:12.2121291Z [command]/usr/bin/git -c protocol.version=2 submodule update --init --force
+2026-01-11T18:28:12.2282386Z Submodule 'crates/bridge_harfbuzz/harfbuzz' (https://github.com/harfbuzz/harfbuzz.git) registered for path 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T18:28:12.2286307Z Submodule 'reference_sources' (https://github.com/tectonic-typesetting/tectonic-staging) registered for path 'reference_sources'
+2026-01-11T18:28:12.2305422Z Cloning into '/home/runner/work/tectonic/tectonic/crates/bridge_harfbuzz/harfbuzz'...
+2026-01-11T18:28:18.4432278Z Cloning into '/home/runner/work/tectonic/tectonic/reference_sources'...
+2026-01-11T18:28:20.0152334Z Submodule path 'crates/bridge_harfbuzz/harfbuzz': checked out '894a1f72ee93a1fd8dc1d9218cb3fd8f048be29a'
+2026-01-11T18:28:20.0561335Z Submodule path 'reference_sources': checked out '70dbe0603c4b27f17b3b4dcb25a85e9da3050fe9'
+2026-01-11T18:28:20.0577075Z [command]/usr/bin/git submodule foreach git config --local gc.auto 0
+2026-01-11T18:28:20.0744275Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T18:28:20.0761679Z Entering 'reference_sources'
+2026-01-11T18:28:20.0785544Z ##[endgroup]
+2026-01-11T18:28:20.0786735Z ##[group]Persisting credentials for submodules
+2026-01-11T18:28:20.0793153Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'url\.https\:\/\/github\.com\/\.insteadOf' && git config --local --unset-all 'url.https://github.com/.insteadOf' || :"
+2026-01-11T18:28:20.0949110Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T18:28:20.0985328Z Entering 'reference_sources'
+2026-01-11T18:28:20.1029025Z [command]/usr/bin/git submodule foreach sh -c "git config --local 'http.https://github.com/.extraheader' 'AUTHORIZATION: basic ***' && git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2026-01-11T18:28:20.1185332Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T18:28:20.1213421Z file:/home/runner/work/tectonic/tectonic/.git/modules/crates/bridge_harfbuzz/harfbuzz/config	remote.origin.url
+2026-01-11T18:28:20.1216376Z Entering 'reference_sources'
+2026-01-11T18:28:20.1245994Z file:/home/runner/work/tectonic/tectonic/.git/modules/reference_sources/config	remote.origin.url
+2026-01-11T18:28:20.1269985Z [command]/usr/bin/git submodule foreach git config --local --add 'url.https://github.com/.insteadOf' 'git@github.com:'
+2026-01-11T18:28:20.1424118Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T18:28:20.1441650Z Entering 'reference_sources'
+2026-01-11T18:28:20.1468030Z [command]/usr/bin/git submodule foreach git config --local --add 'url.https://github.com/.insteadOf' 'org-615199@github.com:'
+2026-01-11T18:28:20.1621575Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T18:28:20.1638898Z Entering 'reference_sources'
+2026-01-11T18:28:20.1660387Z ##[endgroup]
+2026-01-11T18:28:20.1687270Z [command]/usr/bin/git log -1 --format=%H
+2026-01-11T18:28:20.1704615Z 4e37834f4fa5f2f87e1bb3fab3e118ed8223f467
+2026-01-11T18:28:20.1967364Z Prepare all required actions
+2026-01-11T18:28:20.1967848Z Getting action download info
+2026-01-11T18:28:20.3323222Z Download action repository 'actions/download-artifact@v4' (SHA:d3f86a106a0bac45b974a628896c90dbdf5c8093)
+2026-01-11T18:28:21.2265190Z ##[group]Run ./.github/actions/deploy-setup
+2026-01-11T18:28:21.2265495Z with:
+2026-01-11T18:28:21.2265722Z   is-dev: false
+2026-01-11T18:28:21.2265917Z   is-release: true
+2026-01-11T18:28:21.2266097Z   setup-git: false
+2026-01-11T18:28:21.2266288Z ##[endgroup]
+2026-01-11T18:28:21.2362324Z ##[group]Run actions/download-artifact@v4
+2026-01-11T18:28:21.2362616Z with:
+2026-01-11T18:28:21.2362804Z   merge-multiple: false
+2026-01-11T18:28:21.2363014Z   repository: jxoesneon/tectonic
+2026-01-11T18:28:21.2363239Z   run-id: 20899568323
+2026-01-11T18:28:21.2363419Z ##[endgroup]
+2026-01-11T18:28:21.6743970Z Found 11 artifact(s)
+2026-01-11T18:28:21.6745004Z No input name, artifact-ids or pattern filtered specified, downloading all artifacts
+2026-01-11T18:28:21.6745962Z An extra directory with the artifact name will be created for each download
+2026-01-11T18:28:21.6746629Z Preparing to download the following artifacts:
+2026-01-11T18:28:21.6749180Z - binary-aarch64-unknown-linux-musl (ID: 5091029441, Size: 10913820, Expected Digest: sha256:21d0569dbf750235cbc39368ae6a0ec2a6a3158c09f005d8241812661db04482)
+2026-01-11T18:28:21.6751193Z - binary-arm-unknown-linux-musleabihf (ID: 5091025205, Size: 10063821, Expected Digest: sha256:b3a63eb70c68cf34e47ef1b3d5acb95cc47b6b8d275a3d47c24c62f2c904543c)
+2026-01-11T18:28:21.6753504Z - binary-x86_64-pc-windows-msvc (ID: 5091019400, Size: 20110841, Expected Digest: sha256:edabd38a265c49efe96b2c062bd6921cc6990393a785857a7a30bc71ed5cf01d)
+2026-01-11T18:28:21.6755461Z - binary-x86_64-unknown-linux-musl (ID: 5091018822, Size: 10707270, Expected Digest: sha256:6a90e24f30f3c236d61ba5c755cc896cfe9c4d3ced36c19cc3cd237a11718339)
+2026-01-11T18:28:21.6757205Z - binary-aarch64-apple-darwin (ID: 5091011488, Size: 19615045, Expected Digest: sha256:e6ba42c4d58ca067b2a9a119d16800e1f853560a0ad5e7835f48dbb54f3dfcbe)
+2026-01-11T18:28:21.6758846Z - binary-x86_64-pc-windows-gnu (ID: 5091011102, Size: 11120875, Expected Digest: sha256:cf9608ad766007846bef6bffd601a629e8ea38aa97512214f089148c0fb88a50)
+2026-01-11T18:28:21.6760493Z - binary-x86_64-unknown-linux-gnu (ID: 5091000334, Size: 22786364, Expected Digest: sha256:eed0e1e338788a6e8b0e4711b0afad4aaed84df24f2a5b88e29780559f28c0de)
+2026-01-11T18:28:21.6762181Z - binary-x86_64-apple-darwin (ID: 5090996772, Size: 19703595, Expected Digest: sha256:3e8f378bc482ef89a401d634c3724f83adccc17ca70e19c3af637a0dcc631101)
+2026-01-11T18:28:21.6763926Z - appimage (ID: 5090979871, Size: 20545449, Expected Digest: sha256:bf40af71578e693f5849e2b94d8f6d4bb58a9d7ca3982a36d084ad88445e1077)
+2026-01-11T18:28:21.6765218Z - book (ID: 5090975761, Size: 1452386, Expected Digest: sha256:5c2ca6c650be29db5c3c922e1b99cb0e11a8cd6882c24dc9b8d85b52dfcfb924)
+2026-01-11T18:28:21.6766624Z - release-bundle (ID: 5090944985, Size: 16351901, Expected Digest: sha256:44f0139e3bb59bf049947cde12584892a3ded5cf7746381a6db644af4a607f5c)
+2026-01-11T18:28:21.8264164Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-ae87f485-f99f-5587-9d69-ed8c31eff4bd/artifacts/954f0f3cab99dad404f48bbde91af52fd74bb542c28976347809bfdbbeb4a971.zip
+2026-01-11T18:28:21.8266706Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-aarch64-unknown-linux-musl
+2026-01-11T18:28:21.9655894Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-d0d037ab-0bc4-5e5f-bbef-604d8d9be18e/artifacts/dc08eb1f5e0ddfd7a4847364fe67bcd628efb734fcceed4b2b4fbd412ca60bed.zip
+2026-01-11T18:28:21.9658437Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-x86_64-pc-windows-gnu
+2026-01-11T18:28:21.9734562Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-3bd1ef91-334e-5ea2-8dc2-adddd62f72ef/artifacts/393c5b69a245e8233dbdd6ccb96c88e2479b979f5041aaf5b8a16b03cee9a623.zip
+2026-01-11T18:28:21.9736164Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-arm-unknown-linux-musleabihf
+2026-01-11T18:28:21.9756553Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-78097f58-64af-5903-9979-4ccc7f239b6a/artifacts/03636cf42f712d4a76f865231162112bc38dbe3350ca6a30cd5fbf5d5694c0c7.zip
+2026-01-11T18:28:21.9758423Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/release-bundle
+2026-01-11T18:28:21.9854373Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-5794789d-4123-5b6b-99ff-a330d34e90ad/artifacts/31537ccb7797dae388f6b6b304794b5a239796b84c4c8b8a9cfb21e4c04ad2b7.zip
+2026-01-11T18:28:21.9857146Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-aarch64-apple-darwin
+2026-01-11T18:28:21.9883840Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-a4027a1a-3ba6-5590-be70-368a697ee64f/artifacts/f681f558f637cb8adcef72e580146f177e21d61fed04919a3cabf87e891f04ef.zip
+2026-01-11T18:28:21.9886492Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-x86_64-unknown-linux-gnu
+2026-01-11T18:28:21.9897236Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-1041ddaf-437c-5732-bf7e-0f99ceba21fb/artifacts/e7ee6eb453c9988c1d29fb205cdb57f95bb32475cd846a3725a5ee61d68cae9c.zip
+2026-01-11T18:28:21.9899739Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-x86_64-pc-windows-msvc
+2026-01-11T18:28:21.9958804Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-3a5b9ab6-1da2-5185-a56b-22d0e09488c6/artifacts/f92199df3c5f33b221f3374a109051383abe80fe69296897f8752842e4b5f226.zip
+2026-01-11T18:28:21.9961164Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-x86_64-unknown-linux-musl
+2026-01-11T18:28:21.9972437Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-bf28ad6c-e01c-5142-93a8-c242f7d5e646/artifacts/941b2714759c3fdfc8291c4cb206f930cd95829257acce06f1cb97704e432ae4.zip
+2026-01-11T18:28:21.9975021Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/binary-x86_64-apple-darwin
+2026-01-11T18:28:21.9985502Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-f80b6b82-1008-5cca-b777-082682e04918/artifacts/8b408ed68dfd56d503752ff2ee2ecb3c0ffa55a26f6fa107bd4444c3943ee6e1.zip
+2026-01-11T18:28:21.9987689Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/appimage
+2026-01-11T18:28:22.0036655Z Redirecting to blob download url: https://productionresultssa19.blob.core.windows.net/actions-results/227acfd2-fa3e-4818-be22-807cad8bca97/workflow-job-run-c634f7f9-b9c9-5ed2-98ce-9d2e73badb22/artifacts/92719fe0cf8cd51592af31ee8a5736d79f7273777fa3f7b70bfe993a4cd32180.zip
+2026-01-11T18:28:22.0039171Z Starting download of artifact to: /home/runner/work/tectonic/tectonic/book
+2026-01-11T18:28:22.1030449Z (node:2386) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+2026-01-11T18:28:22.1031578Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-01-11T18:28:22.6101501Z SHA256 digest of downloaded artifact is 5c2ca6c650be29db5c3c922e1b99cb0e11a8cd6882c24dc9b8d85b52dfcfb924
+2026-01-11T18:28:22.6102590Z Artifact download completed successfully.
+2026-01-11T18:28:22.9766629Z SHA256 digest of downloaded artifact is 21d0569dbf750235cbc39368ae6a0ec2a6a3158c09f005d8241812661db04482
+2026-01-11T18:28:22.9767413Z Artifact download completed successfully.
+2026-01-11T18:28:23.1226048Z SHA256 digest of downloaded artifact is 6a90e24f30f3c236d61ba5c755cc896cfe9c4d3ced36c19cc3cd237a11718339
+2026-01-11T18:28:23.1226736Z Artifact download completed successfully.
+2026-01-11T18:28:23.1792637Z SHA256 digest of downloaded artifact is b3a63eb70c68cf34e47ef1b3d5acb95cc47b6b8d275a3d47c24c62f2c904543c
+2026-01-11T18:28:23.1793818Z Artifact download completed successfully.
+2026-01-11T18:28:23.3638464Z SHA256 digest of downloaded artifact is 44f0139e3bb59bf049947cde12584892a3ded5cf7746381a6db644af4a607f5c
+2026-01-11T18:28:23.3639454Z Artifact download completed successfully.
+2026-01-11T18:28:23.4482796Z SHA256 digest of downloaded artifact is bf40af71578e693f5849e2b94d8f6d4bb58a9d7ca3982a36d084ad88445e1077
+2026-01-11T18:28:23.4483801Z Artifact download completed successfully.
+2026-01-11T18:28:23.4816806Z SHA256 digest of downloaded artifact is 3e8f378bc482ef89a401d634c3724f83adccc17ca70e19c3af637a0dcc631101
+2026-01-11T18:28:23.4817784Z Artifact download completed successfully.
+2026-01-11T18:28:23.5277931Z SHA256 digest of downloaded artifact is cf9608ad766007846bef6bffd601a629e8ea38aa97512214f089148c0fb88a50
+2026-01-11T18:28:23.5278725Z Artifact download completed successfully.
+2026-01-11T18:28:23.5434621Z SHA256 digest of downloaded artifact is e6ba42c4d58ca067b2a9a119d16800e1f853560a0ad5e7835f48dbb54f3dfcbe
+2026-01-11T18:28:23.5435466Z Artifact download completed successfully.
+2026-01-11T18:28:23.6450629Z SHA256 digest of downloaded artifact is eed0e1e338788a6e8b0e4711b0afad4aaed84df24f2a5b88e29780559f28c0de
+2026-01-11T18:28:23.6451217Z Artifact download completed successfully.
+2026-01-11T18:28:23.6868549Z SHA256 digest of downloaded artifact is edabd38a265c49efe96b2c062bd6921cc6990393a785857a7a30bc71ed5cf01d
+2026-01-11T18:28:23.6869146Z Artifact download completed successfully.
+2026-01-11T18:28:23.6869499Z Total of 11 artifact(s) downloaded
+2026-01-11T18:28:23.6875056Z Download artifact has finished successfully
+2026-01-11T18:28:23.6998066Z ##[group]Run git switch -c release
+2026-01-11T18:28:23.6998511Z [36;1mgit switch -c release[0m
+2026-01-11T18:28:23.6999040Z [36;1mgit pull --ff-only $GITHUB_WORKSPACE/release-bundle/release.bundle[0m
+2026-01-11T18:28:23.7025236Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-01-11T18:28:23.7025630Z ##[endgroup]
+2026-01-11T18:28:23.7102772Z Switched to a new branch 'release'
+2026-01-11T18:28:23.7223943Z From /home/runner/work/tectonic/tectonic/release-bundle/release.bundle
+2026-01-11T18:28:23.7224907Z  * branch              HEAD       -> FETCH_HEAD
+2026-01-11T18:28:23.7276913Z Already up to date.
+2026-01-11T18:28:23.7321980Z ##[group]Run d="$(mktemp -d /tmp/cranko.XXXXXX)"
+2026-01-11T18:28:23.7322393Z [36;1md="$(mktemp -d /tmp/cranko.XXXXXX)"[0m
+2026-01-11T18:28:23.7322712Z [36;1mcd "$d"[0m
+2026-01-11T18:28:23.7323190Z [36;1mcurl --proto '=https' --tlsv1.2 -sSf https://pkgw.github.io/cranko/fetch-latest.sh | sh[0m
+2026-01-11T18:28:23.7323904Z [36;1mecho "PATH=$d:$PATH" >> "$GITHUB_ENV"[0m
+2026-01-11T18:28:23.7343922Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-01-11T18:28:23.7344300Z ##[endgroup]
+2026-01-11T18:28:24.0961888Z cranko(fetch-latest.sh): downloading version 0.16.1 for architecture x86_64-unknown-linux-gnu
+2026-01-11T18:28:24.1068421Z Warning: Not enforcing strong cipher suites for TLS, this is potentially less secure
+2026-01-11T18:28:24.1107638Z Warning: Not enforcing TLS v1.2, this is potentially less secure
+2026-01-11T18:28:24.5326012Z ##[group]Run if [[ -z $GITHUB_TOKEN ]] ; then
+2026-01-11T18:28:24.5326426Z [36;1mif [[ -z $GITHUB_TOKEN ]] ; then[0m
+2026-01-11T18:28:24.5326977Z [36;1m  >&2 echo '$GITHUB_TOKEN is unset, skipping deployment'[0m
+2026-01-11T18:28:24.5327359Z [36;1m  version_text=skip[0m
+2026-01-11T18:28:24.5327677Z [36;1melif [[ "$IS_DEV" == "true" ]] ; then[0m
+2026-01-11T18:28:24.5328013Z [36;1m  version_text=latest[0m
+2026-01-11T18:28:24.5328396Z [36;1melif cranko show if-released --exit-code tectonic ; then[0m
+2026-01-11T18:28:24.5328832Z [36;1m  version_text="$(cranko show version tectonic)"[0m
+2026-01-11T18:28:24.5329183Z [36;1melse[0m
+2026-01-11T18:28:24.5329429Z [36;1m  version_text=skip[0m
+2026-01-11T18:28:24.5329700Z [36;1mfi[0m
+2026-01-11T18:28:24.5329942Z [36;1m[0m
+2026-01-11T18:28:24.5330303Z [36;1mecho "toplevel version: $IS_DEV, $IS_RELEASE => $version_text"[0m
+2026-01-11T18:28:24.5330678Z [36;1m[0m
+2026-01-11T18:28:24.5330962Z [36;1m# `set -x` messes up `setvariable` behavior:[0m
+2026-01-11T18:28:24.5331295Z [36;1mset +x[0m
+2026-01-11T18:28:24.5331614Z [36;1mecho "top-level=$version_text" >> "$GITHUB_OUTPUT"[0m
+2026-01-11T18:28:24.5350642Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-01-11T18:28:24.5351029Z env:
+2026-01-11T18:28:24.5352020Z   PATH: /tmp/cranko.umtpHE:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+2026-01-11T18:28:24.5353069Z   IS_DEV: false
+2026-01-11T18:28:24.5353314Z   IS_RELEASE: true
+2026-01-11T18:28:24.5353558Z ##[endgroup]
+2026-01-11T18:28:24.5390019Z $GITHUB_TOKEN is unset, skipping deployment
+2026-01-11T18:28:24.5391001Z toplevel version: false, true => skip
+2026-01-11T18:28:24.5426645Z ##[group]Run cranko github install-credential-helper
+2026-01-11T18:28:24.5427093Z [36;1mcranko github install-credential-helper[0m
+2026-01-11T18:28:24.5499666Z [36;1mgit config --global user.email "notifications@github.com"[0m
+2026-01-11T18:28:24.5500264Z [36;1mgit config --global user.name "Tectonic CI"[0m
+2026-01-11T18:28:24.5517878Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-01-11T18:28:24.5518244Z env:
+2026-01-11T18:28:24.5519210Z   PATH: /tmp/cranko.umtpHE:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+2026-01-11T18:28:24.5520251Z ##[endgroup]
+2026-01-11T18:28:24.5895594Z ##[group]Run version=${GITHUB_REF_NAME#v}
+2026-01-11T18:28:24.5895987Z [36;1mversion=${GITHUB_REF_NAME#v}[0m
+2026-01-11T18:28:24.5896343Z [36;1mecho "Renaming to version $version..."[0m
+2026-01-11T18:28:24.5896717Z [36;1mpython3 dist/rename_for_fork.py "$version"[0m
+2026-01-11T18:28:24.5915001Z shell: /usr/bin/bash -e {0}
+2026-01-11T18:28:24.5915311Z env:
+2026-01-11T18:28:24.5916296Z   PATH: /tmp/cranko.umtpHE:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+2026-01-11T18:28:24.5917332Z ##[endgroup]
+2026-01-11T18:28:24.5951784Z Renaming to version 0.17.1...
+2026-01-11T18:28:24.6185668Z Processing Cargo.toml...
+2026-01-11T18:28:24.6186192Z Processing crates/engine_xetex/Cargo.toml...
+2026-01-11T18:28:24.6186661Z Processing crates/bridge_fontconfig/Cargo.toml...
+2026-01-11T18:28:24.6187194Z Processing crates/bridge_harfbuzz/Cargo.toml...
+2026-01-11T18:28:24.6187802Z Processing crates/bridge_harfbuzz/harfbuzz/src/wasm/rust/harfbuzz-wasm/Cargo.toml...
+2026-01-11T18:28:24.6188545Z Processing crates/bridge_harfbuzz/harfbuzz/src/wasm/sample/rust/hello-wasm/Cargo.toml...
+2026-01-11T18:28:24.6189123Z Processing crates/bridge_core/Cargo.toml...
+2026-01-11T18:28:24.6189537Z Processing crates/docmodel/Cargo.toml...
+2026-01-11T18:28:24.6189968Z Processing crates/engine_xdvipdfmx/Cargo.toml...
+2026-01-11T18:28:24.6190395Z Processing crates/bridge_png/Cargo.toml...
+2026-01-11T18:28:24.6190801Z Processing crates/cfg_support/Cargo.toml...
+2026-01-11T18:28:24.6191212Z Processing crates/bridge_flate/Cargo.toml...
+2026-01-11T18:28:24.6191639Z Processing crates/engine_spx2html/Cargo.toml...
+2026-01-11T18:28:24.6192067Z Processing crates/engine_bibtex/Cargo.toml...
+2026-01-11T18:28:24.6192440Z Processing crates/pdf_io/Cargo.toml...
+2026-01-11T18:28:24.6192800Z Processing crates/bridge_freetype2/Cargo.toml...
+2026-01-11T18:28:24.6193154Z Processing crates/xetex_layout/Cargo.toml...
+2026-01-11T18:28:24.6193508Z Processing crates/bridge_graphite2/Cargo.toml...
+2026-01-11T18:28:24.6194091Z Processing crates/errors/Cargo.toml...
+2026-01-11T18:28:24.6194416Z Processing crates/io_base/Cargo.toml...
+2026-01-11T18:28:24.6194745Z Processing crates/bundles/Cargo.toml...
+2026-01-11T18:28:24.6195079Z Processing crates/status_base/Cargo.toml...
+2026-01-11T18:28:24.6195408Z Processing crates/xdv/Cargo.toml...
+2026-01-11T18:28:24.6195736Z Processing crates/mac_core/Cargo.toml...
+2026-01-11T18:28:24.6196069Z Processing crates/bridge_icu/Cargo.toml...
+2026-01-11T18:28:24.6196407Z Processing crates/xetex_format/Cargo.toml...
+2026-01-11T18:28:24.6196738Z Processing crates/dep_support/Cargo.toml...
+2026-01-11T18:28:24.6197064Z Processing crates/geturl/Cargo.toml...
+2026-01-11T18:28:24.6245023Z ##[group]Run # Publish order matters!
+2026-01-11T18:28:24.6245429Z [36;1m# Publish order matters![0m
+2026-01-11T18:28:24.6245736Z [36;1mcrates=([0m
+2026-01-11T18:28:24.6245983Z [36;1m  "crates/errors"[0m
+2026-01-11T18:28:24.6246379Z [36;1m  "crates/status_base"[0m
+2026-01-11T18:28:24.6246682Z [36;1m  "crates/io_base"[0m
+2026-01-11T18:28:24.6246965Z [36;1m  "crates/dep_support"[0m
+2026-01-11T18:28:24.6247259Z [36;1m  "crates/cfg_support"[0m
+2026-01-11T18:28:24.6247556Z [36;1m  "crates/mac_core"[0m
+2026-01-11T18:28:24.6247855Z [36;1m  "crates/bridge_core"[0m
+2026-01-11T18:28:24.6248146Z [36;1m  "crates/bridge_flate"[0m
+2026-01-11T18:28:24.6248450Z [36;1m  "crates/bridge_png"[0m
+2026-01-11T18:28:24.6248751Z [36;1m  "crates/bridge_freetype2"[0m
+2026-01-11T18:28:24.6249068Z [36;1m  "crates/bridge_graphite2"[0m
+2026-01-11T18:28:24.6249383Z [36;1m  "crates/bridge_harfbuzz"[0m
+2026-01-11T18:28:24.6249688Z [36;1m  "crates/bridge_icu"[0m
+2026-01-11T18:28:24.6250030Z [36;1m  "crates/bridge_fontconfig"[0m
+2026-01-11T18:28:24.6250341Z [36;1m  "crates/geturl"[0m
+2026-01-11T18:28:24.6250622Z [36;1m  "crates/xdv"[0m
+2026-01-11T18:28:24.6250891Z [36;1m  "crates/bundles"[0m
+2026-01-11T18:28:24.6251174Z [36;1m  "crates/docmodel"[0m
+2026-01-11T18:28:24.6251478Z [36;1m  "crates/xetex_format"[0m
+2026-01-11T18:28:24.6251781Z [36;1m  "crates/engine_bibtex"[0m
+2026-01-11T18:28:24.6252076Z [36;1m  "crates/pdf_io"[0m
+2026-01-11T18:28:24.6252357Z [36;1m  "crates/engine_xdvipdfmx"[0m
+2026-01-11T18:28:24.6252660Z [36;1m  "crates/xetex_layout"[0m
+2026-01-11T18:28:24.6252947Z [36;1m  "crates/engine_xetex"[0m
+2026-01-11T18:28:24.6253253Z [36;1m  "crates/engine_spx2html"[0m
+2026-01-11T18:28:24.6253534Z [36;1m  "."[0m
+2026-01-11T18:28:24.6253922Z [36;1m)[0m
+2026-01-11T18:28:24.6254151Z [36;1m[0m
+2026-01-11T18:28:24.6254389Z [36;1mfor crate in "${crates[@]}"; do[0m
+2026-01-11T18:28:24.6254721Z [36;1m  echo "Publishing $crate..."[0m
+2026-01-11T18:28:24.6255125Z [36;1m  # --no-verify as we might have modified files (renaming)[0m
+2026-01-11T18:28:24.6255644Z [36;1m  # --allow-dirty usually for local only, but in CI we modified tracked files[0m
+2026-01-11T18:28:24.6256107Z [36;1m  # sleep to be nice to crates.io[0m
+2026-01-11T18:28:24.6256827Z [36;1m  cargo publish --token "$CARGO_REGISTRY_TOKEN" --no-verify --allow-dirty --manifest-path "$crate/Cargo.toml" || echo "Failed to publish $crate (already exists?)"[0m
+2026-01-11T18:28:24.6257608Z [36;1m  # sleep to be nice to crates.io (rate limit: 5 crates / 10 min)[0m
+2026-01-11T18:28:24.6257996Z [36;1m  sleep 180[0m
+2026-01-11T18:28:24.6258250Z [36;1mdone[0m
+2026-01-11T18:28:24.6276904Z shell: /usr/bin/bash -e {0}
+2026-01-11T18:28:24.6277208Z env:
+2026-01-11T18:28:24.6278204Z   PATH: /tmp/cranko.umtpHE:/snap/bin:/home/runner/.local/bin:/opt/pipx_bin:/home/runner/.cargo/bin:/home/runner/.config/composer/vendor/bin:/usr/local/.ghcup/bin:/home/runner/.dotnet/tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+2026-01-11T18:28:24.6279729Z   CARGO_REGISTRY_TOKEN: ***
+2026-01-11T18:28:24.6280026Z   CRANKO_HEAD_BRANCH: v0.17.1
+2026-01-11T18:28:24.6280317Z ##[endgroup]
+2026-01-11T18:28:24.6316932Z Publishing crates/errors...
+2026-01-11T18:28:25.7057265Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:28:25.7315677Z     Updating crates.io index
+2026-01-11T18:28:25.9510510Z     Updating crates.io index
+2026-01-11T18:28:27.3246684Z    Packaging jxoesneon-tectonic-errors v0.17.1 (/home/runner/work/tectonic/tectonic/crates/errors)
+2026-01-11T18:28:27.3363805Z     Updating crates.io index
+2026-01-11T18:28:27.3827696Z     Packaged 7 files, 9.3KiB (3.8KiB compressed)
+2026-01-11T18:28:27.3828854Z    Uploading jxoesneon-tectonic-errors v0.17.1 (/home/runner/work/tectonic/tectonic/crates/errors)
+2026-01-11T18:28:27.8861212Z     Uploaded jxoesneon-tectonic-errors v0.17.1 to registry `crates-io`
+2026-01-11T18:28:27.8904562Z note: waiting for jxoesneon-tectonic-errors v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:28:27.8905321Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:28:29.0248344Z    Published jxoesneon-tectonic-errors v0.17.1 at registry `crates-io`
+2026-01-11T18:31:29.0346492Z Publishing crates/status_base...
+2026-01-11T18:31:29.0872755Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:31:29.0873824Z     Updating crates.io index
+2026-01-11T18:31:29.3415861Z    Packaging jxoesneon-tectonic-status_base v0.17.1 (/home/runner/work/tectonic/tectonic/crates/status_base)
+2026-01-11T18:31:29.3503188Z     Updating crates.io index
+2026-01-11T18:31:29.4265238Z     Packaged 8 files, 12.2KiB (4.3KiB compressed)
+2026-01-11T18:31:29.4266230Z    Uploading jxoesneon-tectonic-status_base v0.17.1 (/home/runner/work/tectonic/tectonic/crates/status_base)
+2026-01-11T18:31:30.1429514Z     Uploaded jxoesneon-tectonic-status_base v0.17.1 to registry `crates-io`
+2026-01-11T18:31:30.1430688Z note: waiting for jxoesneon-tectonic-status_base v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:31:30.1431862Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:31:31.2295660Z    Published jxoesneon-tectonic-status_base v0.17.1 at registry `crates-io`
+2026-01-11T18:34:31.2365354Z Publishing crates/io_base...
+2026-01-11T18:34:31.2882257Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:34:31.2883347Z     Updating crates.io index
+2026-01-11T18:34:31.5320986Z    Packaging jxoesneon-tectonic-io_base v0.17.1 (/home/runner/work/tectonic/tectonic/crates/io_base)
+2026-01-11T18:34:31.5415483Z     Updating crates.io index
+2026-01-11T18:34:31.6809319Z     Packaged 13 files, 67.2KiB (19.0KiB compressed)
+2026-01-11T18:34:31.6810306Z    Uploading jxoesneon-tectonic-io_base v0.17.1 (/home/runner/work/tectonic/tectonic/crates/io_base)
+2026-01-11T18:34:32.3092736Z     Uploaded jxoesneon-tectonic-io_base v0.17.1 to registry `crates-io`
+2026-01-11T18:34:32.3094210Z note: waiting for jxoesneon-tectonic-io_base v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:34:32.3095145Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:34:33.4358426Z    Published jxoesneon-tectonic-io_base v0.17.1 at registry `crates-io`
+2026-01-11T18:37:33.4429147Z Publishing crates/dep_support...
+2026-01-11T18:37:33.4952900Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:37:33.4954044Z     Updating crates.io index
+2026-01-11T18:37:33.7285053Z    Packaging jxoesneon-tectonic-dep_support v0.17.1 (/home/runner/work/tectonic/tectonic/crates/dep_support)
+2026-01-11T18:37:33.7375071Z     Updating crates.io index
+2026-01-11T18:37:33.7833464Z     Packaged 7 files, 12.5KiB (4.5KiB compressed)
+2026-01-11T18:37:33.7835077Z    Uploading jxoesneon-tectonic-dep_support v0.17.1 (/home/runner/work/tectonic/tectonic/crates/dep_support)
+2026-01-11T18:37:34.3360849Z     Uploaded jxoesneon-tectonic-dep_support v0.17.1 to registry `crates-io`
+2026-01-11T18:37:34.3362073Z note: waiting for jxoesneon-tectonic-dep_support v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:37:34.3363253Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:37:35.4688304Z    Published jxoesneon-tectonic-dep_support v0.17.1 at registry `crates-io`
+2026-01-11T18:40:35.4757418Z Publishing crates/cfg_support...
+2026-01-11T18:40:35.5278516Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:40:35.5279366Z     Updating crates.io index
+2026-01-11T18:40:35.9174053Z    Packaging jxoesneon-tectonic-cfg_support v0.17.1 (/home/runner/work/tectonic/tectonic/crates/cfg_support)
+2026-01-11T18:40:35.9266461Z     Updating crates.io index
+2026-01-11T18:40:35.9728349Z     Packaged 8 files, 18.4KiB (6.2KiB compressed)
+2026-01-11T18:40:35.9729141Z    Uploading jxoesneon-tectonic-cfg_support v0.17.1 (/home/runner/work/tectonic/tectonic/crates/cfg_support)
+2026-01-11T18:40:36.5609139Z     Uploaded jxoesneon-tectonic-cfg_support v0.17.1 to registry `crates-io`
+2026-01-11T18:40:36.5610855Z note: waiting for jxoesneon-tectonic-cfg_support v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:40:36.5612010Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:40:37.6716505Z    Published jxoesneon-tectonic-cfg_support v0.17.1 at registry `crates-io`
+2026-01-11T18:43:37.6791812Z Publishing crates/mac_core...
+2026-01-11T18:43:37.7326397Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:43:37.7327526Z     Updating crates.io index
+2026-01-11T18:43:37.9277017Z warning: manifest has no description, documentation, homepage or repository
+2026-01-11T18:43:37.9277800Z   |
+2026-01-11T18:43:37.9278326Z   = note: see https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info
+2026-01-11T18:43:37.9633029Z    Packaging jxoesneon-tectonic-mac_core v0.17.1 (/home/runner/work/tectonic/tectonic/crates/mac_core)
+2026-01-11T18:43:37.9733997Z     Updating crates.io index
+2026-01-11T18:43:38.0510333Z     Packaged 15 files, 36.4KiB (9.1KiB compressed)
+2026-01-11T18:43:38.0511266Z    Uploading jxoesneon-tectonic-mac_core v0.17.1 (/home/runner/work/tectonic/tectonic/crates/mac_core)
+2026-01-11T18:43:38.3527197Z error: failed to publish jxoesneon-tectonic-mac_core v0.17.1 to registry at https://crates.io
+2026-01-11T18:43:38.3528065Z 
+2026-01-11T18:43:38.3528268Z Caused by:
+2026-01-11T18:43:38.3529659Z   the remote server responded with an error (status 400 Bad Request): missing or empty metadata fields: description. Please see https://doc.rust-lang.org/cargo/reference/manifest.html for more information on configuring these fields
+2026-01-11T18:43:38.3558469Z Failed to publish crates/mac_core (already exists?)
+2026-01-11T18:46:38.3574251Z Publishing crates/bridge_core...
+2026-01-11T18:46:38.4106713Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:46:38.4107634Z     Updating crates.io index
+2026-01-11T18:46:38.6463931Z    Packaging jxoesneon-tectonic-bridge_core v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_core)
+2026-01-11T18:46:38.6562924Z     Updating crates.io index
+2026-01-11T18:46:38.9339633Z     Packaged 12 files, 91.2KiB (24.7KiB compressed)
+2026-01-11T18:46:38.9340419Z    Uploading jxoesneon-tectonic-bridge_core v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_core)
+2026-01-11T18:46:39.4377558Z     Uploaded jxoesneon-tectonic-bridge_core v0.17.1 to registry `crates-io`
+2026-01-11T18:46:39.4378798Z note: waiting for jxoesneon-tectonic-bridge_core v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:46:39.4379991Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:46:40.5658539Z    Published jxoesneon-tectonic-bridge_core v0.17.1 at registry `crates-io`
+2026-01-11T18:49:40.5742845Z Publishing crates/bridge_flate...
+2026-01-11T18:49:40.6267782Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:49:40.6268640Z     Updating crates.io index
+2026-01-11T18:49:40.8456001Z    Packaging jxoesneon-tectonic-bridge_flate v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_flate)
+2026-01-11T18:49:40.8558857Z     Updating crates.io index
+2026-01-11T18:49:40.9137645Z     Packaged 10 files, 16.4KiB (5.5KiB compressed)
+2026-01-11T18:49:40.9138505Z    Uploading jxoesneon-tectonic-bridge_flate v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_flate)
+2026-01-11T18:49:41.4159480Z     Uploaded jxoesneon-tectonic-bridge_flate v0.17.1 to registry `crates-io`
+2026-01-11T18:49:41.4161101Z note: waiting for jxoesneon-tectonic-bridge_flate v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:49:41.4161886Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:49:42.5427614Z    Published jxoesneon-tectonic-bridge_flate v0.17.1 at registry `crates-io`
+2026-01-11T18:52:42.5506146Z Publishing crates/bridge_png...
+2026-01-11T18:52:42.6061036Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:52:42.6062350Z     Updating crates.io index
+2026-01-11T18:52:42.8136026Z warning: manifest has no description, license, license-file, documentation, homepage or repository
+2026-01-11T18:52:42.8136889Z   |
+2026-01-11T18:52:42.8137580Z   = note: see https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info
+2026-01-11T18:52:42.8519647Z    Packaging jxoesneon-tectonic-bridge_png v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_png)
+2026-01-11T18:52:42.8617635Z     Updating crates.io index
+2026-01-11T18:52:42.9900764Z     Packaged 6 files, 3.5KiB (1.9KiB compressed)
+2026-01-11T18:52:42.9901664Z    Uploading jxoesneon-tectonic-bridge_png v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_png)
+2026-01-11T18:52:43.2949041Z error: failed to publish jxoesneon-tectonic-bridge_png v0.17.1 to registry at https://crates.io
+2026-01-11T18:52:43.2949597Z 
+2026-01-11T18:52:43.2949719Z Caused by:
+2026-01-11T18:52:43.2971907Z   the remote server responded with an error (status 400 Bad Request): missing or empty metadata fields: description, license. Please see https://doc.rust-lang.org/cargo/reference/manifest.html for more information on configuring these fields
+2026-01-11T18:52:43.2985700Z Failed to publish crates/bridge_png (already exists?)
+2026-01-11T18:55:43.2999562Z Publishing crates/bridge_freetype2...
+2026-01-11T18:55:43.3537501Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:55:43.3538507Z     Updating crates.io index
+2026-01-11T18:55:43.5721434Z    Packaging jxoesneon-tectonic-bridge_freetype2 v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_freetype2)
+2026-01-11T18:55:43.5819631Z     Updating crates.io index
+2026-01-11T18:55:43.6301962Z error: failed to prepare local package for uploading
+2026-01-11T18:55:43.6302480Z 
+2026-01-11T18:55:43.6302630Z Caused by:
+2026-01-11T18:55:43.6303282Z   failed to select a version for the requirement `jxoesneon-tectonic-bridge_png = "^0.17.1"`
+2026-01-11T18:55:43.6304359Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T18:55:43.6305044Z   location searched: crates.io index
+2026-01-11T18:55:43.6306082Z   required by package `jxoesneon-tectonic-bridge_freetype2 v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_freetype2)`
+2026-01-11T18:55:43.6334160Z Failed to publish crates/bridge_freetype2 (already exists?)
+2026-01-11T18:58:43.6346963Z Publishing crates/bridge_graphite2...
+2026-01-11T18:58:43.6874821Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T18:58:43.6875576Z     Updating crates.io index
+2026-01-11T18:58:43.9413852Z    Packaging jxoesneon-tectonic-bridge_graphite2 v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_graphite2)
+2026-01-11T18:58:43.9507681Z     Updating crates.io index
+2026-01-11T18:58:44.2446378Z     Packaged 9 files, 23.8KiB (6.9KiB compressed)
+2026-01-11T18:58:44.2447298Z    Uploading jxoesneon-tectonic-bridge_graphite2 v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_graphite2)
+2026-01-11T18:58:44.7919877Z     Uploaded jxoesneon-tectonic-bridge_graphite2 v0.17.1 to registry `crates-io`
+2026-01-11T18:58:44.7921181Z note: waiting for jxoesneon-tectonic-bridge_graphite2 v0.17.1 to be available at registry `crates-io`
+2026-01-11T18:58:44.7922343Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T18:58:45.9523964Z    Published jxoesneon-tectonic-bridge_graphite2 v0.17.1 at registry `crates-io`
+2026-01-11T19:01:45.9600011Z Publishing crates/bridge_harfbuzz...
+2026-01-11T19:01:46.0119168Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:01:46.0120199Z     Updating crates.io index
+2026-01-11T19:01:46.2857265Z    Packaging jxoesneon-tectonic-bridge_harfbuzz v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_harfbuzz)
+2026-01-11T19:01:46.2954726Z     Updating crates.io index
+2026-01-11T19:01:46.4151585Z error: failed to prepare local package for uploading
+2026-01-11T19:01:46.4151995Z 
+2026-01-11T19:01:46.4152123Z Caused by:
+2026-01-11T19:01:46.4152653Z   failed to select a version for the requirement `jxoesneon-tectonic-bridge_freetype2 = "^0.17.1"`
+2026-01-11T19:01:46.4153365Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T19:01:46.4154035Z   location searched: crates.io index
+2026-01-11T19:01:46.4154785Z   required by package `jxoesneon-tectonic-bridge_harfbuzz v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_harfbuzz)`
+2026-01-11T19:01:46.4185672Z Failed to publish crates/bridge_harfbuzz (already exists?)
+2026-01-11T19:04:46.4199127Z Publishing crates/bridge_icu...
+2026-01-11T19:04:46.4727064Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:04:46.4727892Z     Updating crates.io index
+2026-01-11T19:04:46.8738758Z    Packaging jxoesneon-tectonic-bridge_icu v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_icu)
+2026-01-11T19:04:46.8826169Z     Updating crates.io index
+2026-01-11T19:04:47.0063833Z     Packaged 8 files, 7.3KiB (3.4KiB compressed)
+2026-01-11T19:04:47.0066399Z    Uploading jxoesneon-tectonic-bridge_icu v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_icu)
+2026-01-11T19:04:47.5244214Z     Uploaded jxoesneon-tectonic-bridge_icu v0.17.1 to registry `crates-io`
+2026-01-11T19:04:47.5245433Z note: waiting for jxoesneon-tectonic-bridge_icu v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:04:47.5246416Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:04:48.6538262Z    Published jxoesneon-tectonic-bridge_icu v0.17.1 at registry `crates-io`
+2026-01-11T19:07:48.6611260Z Publishing crates/bridge_fontconfig...
+2026-01-11T19:07:48.7133258Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:07:48.7134387Z     Updating crates.io index
+2026-01-11T19:07:48.9113949Z warning: manifest has no description, license, license-file, documentation, homepage or repository
+2026-01-11T19:07:48.9114850Z   |
+2026-01-11T19:07:48.9115520Z   = note: see https://doc.rust-lang.org/cargo/reference/manifest.html#package-metadata for more info
+2026-01-11T19:07:48.9453809Z    Packaging jxoesneon-tectonic-bridge_fontconfig v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_fontconfig)
+2026-01-11T19:07:48.9545329Z     Updating crates.io index
+2026-01-11T19:07:49.0540157Z error: failed to prepare local package for uploading
+2026-01-11T19:07:49.0540568Z 
+2026-01-11T19:07:49.0540695Z Caused by:
+2026-01-11T19:07:49.0541194Z   failed to select a version for the requirement `jxoesneon-tectonic-bridge_png = "^0.17.1"`
+2026-01-11T19:07:49.0541885Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T19:07:49.0542377Z   location searched: crates.io index
+2026-01-11T19:07:49.0543110Z   required by package `jxoesneon-tectonic-bridge_fontconfig v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bridge_fontconfig)`
+2026-01-11T19:07:49.0573917Z Failed to publish crates/bridge_fontconfig (already exists?)
+2026-01-11T19:10:49.0589020Z Publishing crates/geturl...
+2026-01-11T19:10:49.1121780Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:10:49.1122921Z     Updating crates.io index
+2026-01-11T19:10:49.3669692Z    Packaging jxoesneon-tectonic-geturl v0.17.1 (/home/runner/work/tectonic/tectonic/crates/geturl)
+2026-01-11T19:10:49.3768513Z     Updating crates.io index
+2026-01-11T19:10:49.6851280Z     Packaged 10 files, 56.3KiB (16.2KiB compressed)
+2026-01-11T19:10:49.6852008Z    Uploading jxoesneon-tectonic-geturl v0.17.1 (/home/runner/work/tectonic/tectonic/crates/geturl)
+2026-01-11T19:10:50.1762958Z     Uploaded jxoesneon-tectonic-geturl v0.17.1 to registry `crates-io`
+2026-01-11T19:10:50.1764730Z note: waiting for jxoesneon-tectonic-geturl v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:10:50.1765484Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:10:51.2720574Z    Published jxoesneon-tectonic-geturl v0.17.1 at registry `crates-io`
+2026-01-11T19:13:51.2796686Z Publishing crates/xdv...
+2026-01-11T19:13:51.3319546Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:13:51.3320981Z     Updating crates.io index
+2026-01-11T19:13:51.5598525Z    Packaging jxoesneon-tectonic-xdv v0.17.1 (/home/runner/work/tectonic/tectonic/crates/xdv)
+2026-01-11T19:13:51.5702939Z     Updating crates.io index
+2026-01-11T19:13:51.6261527Z     Packaged 8 files, 57.9KiB (12.9KiB compressed)
+2026-01-11T19:13:51.6262395Z    Uploading jxoesneon-tectonic-xdv v0.17.1 (/home/runner/work/tectonic/tectonic/crates/xdv)
+2026-01-11T19:13:52.1640921Z     Uploaded jxoesneon-tectonic-xdv v0.17.1 to registry `crates-io`
+2026-01-11T19:13:52.1641802Z note: waiting for jxoesneon-tectonic-xdv v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:13:52.1642546Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:13:53.2986602Z    Published jxoesneon-tectonic-xdv v0.17.1 at registry `crates-io`
+2026-01-11T19:16:53.3061588Z Publishing crates/bundles...
+2026-01-11T19:16:53.3588177Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:16:53.6136057Z     Updating crates.io index
+2026-01-11T19:16:53.6137199Z    Packaging jxoesneon-tectonic-bundles v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bundles)
+2026-01-11T19:16:53.6230617Z     Updating crates.io index
+2026-01-11T19:16:53.9446321Z     Packaged 14 files, 115.2KiB (30.3KiB compressed)
+2026-01-11T19:16:53.9447228Z    Uploading jxoesneon-tectonic-bundles v0.17.1 (/home/runner/work/tectonic/tectonic/crates/bundles)
+2026-01-11T19:16:54.7914763Z     Uploaded jxoesneon-tectonic-bundles v0.17.1 to registry `crates-io`
+2026-01-11T19:16:54.7915524Z note: waiting for jxoesneon-tectonic-bundles v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:16:54.7916247Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:16:55.9314547Z    Published jxoesneon-tectonic-bundles v0.17.1 at registry `crates-io`
+2026-01-11T19:19:55.9390027Z Publishing crates/docmodel...
+2026-01-11T19:19:55.9916183Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:19:55.9918761Z     Updating crates.io index
+2026-01-11T19:19:56.2102326Z    Packaging jxoesneon-tectonic-docmodel v0.17.1 (/home/runner/work/tectonic/tectonic/crates/docmodel)
+2026-01-11T19:19:56.2197375Z     Updating crates.io index
+2026-01-11T19:19:56.3294408Z     Packaged 10 files, 34.7KiB (10.0KiB compressed)
+2026-01-11T19:19:56.3295387Z    Uploading jxoesneon-tectonic-docmodel v0.17.1 (/home/runner/work/tectonic/tectonic/crates/docmodel)
+2026-01-11T19:19:56.8674169Z     Uploaded jxoesneon-tectonic-docmodel v0.17.1 to registry `crates-io`
+2026-01-11T19:19:56.8674939Z note: waiting for jxoesneon-tectonic-docmodel v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:19:56.8675680Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:19:58.0058359Z    Published jxoesneon-tectonic-docmodel v0.17.1 at registry `crates-io`
+2026-01-11T19:22:58.0137584Z Publishing crates/xetex_format...
+2026-01-11T19:22:58.0657941Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:22:58.0659204Z     Updating crates.io index
+2026-01-11T19:22:58.3240334Z    Packaging jxoesneon-tectonic-xetex_format v0.17.1 (/home/runner/work/tectonic/tectonic/crates/xetex_format)
+2026-01-11T19:22:58.3338473Z     Updating crates.io index
+2026-01-11T19:22:58.5210173Z     Packaged 35 files, 198.2KiB (43.8KiB compressed)
+2026-01-11T19:22:58.5211462Z    Uploading jxoesneon-tectonic-xetex_format v0.17.1 (/home/runner/work/tectonic/tectonic/crates/xetex_format)
+2026-01-11T19:22:59.2777334Z     Uploaded jxoesneon-tectonic-xetex_format v0.17.1 to registry `crates-io`
+2026-01-11T19:22:59.2778199Z note: waiting for jxoesneon-tectonic-xetex_format v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:22:59.2778941Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:23:00.3986393Z    Published jxoesneon-tectonic-xetex_format v0.17.1 at registry `crates-io`
+2026-01-11T19:26:00.4060215Z Publishing crates/engine_bibtex...
+2026-01-11T19:26:00.4587658Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:26:00.4588480Z     Updating crates.io index
+2026-01-11T19:26:00.6837458Z    Packaging jxoesneon-tectonic-engine_bibtex v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_bibtex)
+2026-01-11T19:26:00.6931183Z     Updating crates.io index
+2026-01-11T19:26:00.9117931Z     Packaged 23 files, 307.6KiB (50.9KiB compressed)
+2026-01-11T19:26:00.9118886Z    Uploading jxoesneon-tectonic-engine_bibtex v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_bibtex)
+2026-01-11T19:26:01.7597712Z     Uploaded jxoesneon-tectonic-engine_bibtex v0.17.1 to registry `crates-io`
+2026-01-11T19:26:01.7598760Z note: waiting for jxoesneon-tectonic-engine_bibtex v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:26:01.7599510Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:26:02.8958356Z    Published jxoesneon-tectonic-engine_bibtex v0.17.1 at registry `crates-io`
+2026-01-11T19:29:02.9033009Z Publishing crates/pdf_io...
+2026-01-11T19:29:02.9561808Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:29:02.9562954Z     Updating crates.io index
+2026-01-11T19:29:03.2306620Z    Packaging jxoesneon-tectonic-pdf_io v0.17.1 (/home/runner/work/tectonic/tectonic/crates/pdf_io)
+2026-01-11T19:29:03.2404464Z     Updating crates.io index
+2026-01-11T19:29:03.3446148Z error: failed to prepare local package for uploading
+2026-01-11T19:29:03.3446622Z 
+2026-01-11T19:29:03.3446779Z Caused by:
+2026-01-11T19:29:03.3447477Z   failed to select a version for the requirement `jxoesneon-tectonic-bridge_png = "^0.17.1"`
+2026-01-11T19:29:03.3448552Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T19:29:03.3449276Z   location searched: crates.io index
+2026-01-11T19:29:03.3450219Z   required by package `jxoesneon-tectonic-pdf_io v0.17.1 (/home/runner/work/tectonic/tectonic/crates/pdf_io)`
+2026-01-11T19:29:03.3484734Z Failed to publish crates/pdf_io (already exists?)
+2026-01-11T19:32:03.3498574Z Publishing crates/engine_xdvipdfmx...
+2026-01-11T19:32:03.4032565Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:32:03.4034011Z     Updating crates.io index
+2026-01-11T19:32:03.8119191Z    Packaging jxoesneon-tectonic-engine_xdvipdfmx v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_xdvipdfmx)
+2026-01-11T19:32:03.8218467Z     Updating crates.io index
+2026-01-11T19:32:03.8693852Z error: failed to prepare local package for uploading
+2026-01-11T19:32:03.8694338Z 
+2026-01-11T19:32:03.8694487Z Caused by:
+2026-01-11T19:32:03.8695149Z   failed to select a version for the requirement `jxoesneon-tectonic-pdf_io = "^0.17.1"`
+2026-01-11T19:32:03.8696101Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T19:32:03.8696817Z   location searched: crates.io index
+2026-01-11T19:32:03.8698059Z   required by package `jxoesneon-tectonic-engine_xdvipdfmx v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_xdvipdfmx)`
+2026-01-11T19:32:03.8727114Z Failed to publish crates/engine_xdvipdfmx (already exists?)
+2026-01-11T19:35:03.8741751Z Publishing crates/xetex_layout...
+2026-01-11T19:35:03.9268016Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:35:03.9268913Z     Updating crates.io index
+2026-01-11T19:35:04.1686455Z    Packaging jxoesneon-tectonic-xetex_layout v0.17.1 (/home/runner/work/tectonic/tectonic/crates/xetex_layout)
+2026-01-11T19:35:04.1777770Z     Updating crates.io index
+2026-01-11T19:35:04.2884006Z error: failed to prepare local package for uploading
+2026-01-11T19:35:04.2884577Z 
+2026-01-11T19:35:04.2884707Z Caused by:
+2026-01-11T19:35:04.2885240Z   failed to select a version for the requirement `jxoesneon-tectonic-bridge_freetype2 = "^0.17.1"`
+2026-01-11T19:35:04.2885970Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T19:35:04.2886473Z   location searched: crates.io index
+2026-01-11T19:35:04.2887155Z   required by package `jxoesneon-tectonic-xetex_layout v0.17.1 (/home/runner/work/tectonic/tectonic/crates/xetex_layout)`
+2026-01-11T19:35:04.2916021Z Failed to publish crates/xetex_layout (already exists?)
+2026-01-11T19:38:04.2931193Z Publishing crates/engine_xetex...
+2026-01-11T19:38:04.3452625Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:38:04.3453463Z     Updating crates.io index
+2026-01-11T19:38:04.5679381Z    Packaging jxoesneon-tectonic-engine_xetex v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_xetex)
+2026-01-11T19:38:04.5775378Z     Updating crates.io index
+2026-01-11T19:38:04.6818809Z error: failed to prepare local package for uploading
+2026-01-11T19:38:04.6819326Z 
+2026-01-11T19:38:04.6819478Z Caused by:
+2026-01-11T19:38:04.6820219Z   failed to select a version for the requirement `jxoesneon-tectonic-bridge_freetype2 = "^0.17.1"`
+2026-01-11T19:38:04.6821161Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T19:38:04.6821882Z   location searched: crates.io index
+2026-01-11T19:38:04.6822818Z   required by package `jxoesneon-tectonic-engine_xetex v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_xetex)`
+2026-01-11T19:38:04.6857198Z Failed to publish crates/engine_xetex (already exists?)
+2026-01-11T19:41:04.6870126Z Publishing crates/engine_spx2html...
+2026-01-11T19:41:04.7392460Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:41:04.7393354Z     Updating crates.io index
+2026-01-11T19:41:04.9659714Z    Packaging jxoesneon-tectonic-engine_spx2html v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_spx2html)
+2026-01-11T19:41:04.9754339Z     Updating crates.io index
+2026-01-11T19:41:05.3937415Z     Packaged 16 files, 211.0KiB (52.5KiB compressed)
+2026-01-11T19:41:05.3938226Z    Uploading jxoesneon-tectonic-engine_spx2html v0.17.1 (/home/runner/work/tectonic/tectonic/crates/engine_spx2html)
+2026-01-11T19:41:06.1837891Z     Uploaded jxoesneon-tectonic-engine_spx2html v0.17.1 to registry `crates-io`
+2026-01-11T19:41:06.1839164Z note: waiting for jxoesneon-tectonic-engine_spx2html v0.17.1 to be available at registry `crates-io`
+2026-01-11T19:41:06.1840387Z help: you may press ctrl-c to skip waiting; the crate should be available shortly
+2026-01-11T19:41:07.3029205Z    Published jxoesneon-tectonic-engine_spx2html v0.17.1 at registry `crates-io`
+2026-01-11T19:44:07.3099445Z Publishing ....
+2026-01-11T19:44:07.3634213Z warning: `cargo publish --token` is deprecated in favor of using `cargo login` and environment variables
+2026-01-11T19:44:07.3635096Z     Updating crates.io index
+2026-01-11T19:44:07.6660698Z    Packaging jxoesneon-tectonic v0.17.1 (/home/runner/work/tectonic/tectonic)
+2026-01-11T19:44:07.6837162Z     Updating crates.io index
+2026-01-11T19:44:07.8390222Z error: failed to prepare local package for uploading
+2026-01-11T19:44:07.8391119Z 
+2026-01-11T19:44:07.8391321Z Caused by:
+2026-01-11T19:44:07.8392149Z   failed to select a version for the requirement `jxoesneon-tectonic-engine_xdvipdfmx = "^0.17.1"`
+2026-01-11T19:44:07.8392868Z   candidate versions found which didn't match: 0.17.0, 0.16.1, 0.16.0
+2026-01-11T19:44:07.8393514Z   location searched: crates.io index
+2026-01-11T19:44:07.8394238Z   required by package `jxoesneon-tectonic v0.17.1 (/home/runner/work/tectonic/tectonic)`
+2026-01-11T19:44:07.8422639Z Failed to publish . (already exists?)
+2026-01-11T19:47:07.8507610Z Post job cleanup.
+2026-01-11T19:47:07.9390419Z [command]/usr/bin/git version
+2026-01-11T19:47:07.9425922Z git version 2.52.0
+2026-01-11T19:47:07.9458397Z Copying '/home/runner/.gitconfig' to '/home/runner/work/_temp/28ad88d6-a2f5-4ff4-a85b-203f4ace1d25/.gitconfig'
+2026-01-11T19:47:07.9467948Z Temporarily overriding HOME='/home/runner/work/_temp/28ad88d6-a2f5-4ff4-a85b-203f4ace1d25' before making global git config changes
+2026-01-11T19:47:07.9468916Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-11T19:47:07.9481180Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/tectonic/tectonic
+2026-01-11T19:47:07.9511557Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-01-11T19:47:07.9538308Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-01-11T19:47:07.9704918Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T19:47:07.9743112Z Entering 'reference_sources'
+2026-01-11T19:47:07.9790897Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-11T19:47:07.9809935Z http.https://github.com/.extraheader
+2026-01-11T19:47:07.9818897Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-01-11T19:47:07.9845612Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-01-11T19:47:08.0007977Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T19:47:08.0027459Z http.https://github.com/.extraheader
+2026-01-11T19:47:08.0057769Z Entering 'reference_sources'
+2026-01-11T19:47:08.0077115Z http.https://github.com/.extraheader
+2026-01-11T19:47:08.0116427Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-11T19:47:08.0146378Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-01-11T19:47:08.0310473Z Entering 'crates/bridge_harfbuzz/harfbuzz'
+2026-01-11T19:47:08.0326392Z file:/home/runner/work/tectonic/tectonic/.git/modules/crates/bridge_harfbuzz/harfbuzz/config	remote.origin.url
+2026-01-11T19:47:08.0344719Z Entering 'reference_sources'
+2026-01-11T19:47:08.0360878Z file:/home/runner/work/tectonic/tectonic/.git/modules/reference_sources/config	remote.origin.url
+2026-01-11T19:47:08.0388970Z [command]/usr/bin/git config --file /home/runner/work/tectonic/tectonic/.git/modules/crates/bridge_harfbuzz/harfbuzz/config --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-11T19:47:08.0414232Z [command]/usr/bin/git config --file /home/runner/work/tectonic/tectonic/.git/modules/reference_sources/config --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-11T19:47:08.0550552Z Cleaning up orphan processes

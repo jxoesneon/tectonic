@@ -2,8 +2,10 @@ lints.workspace = true
 
 [package]
 name = "tectonic_bridge_fontconfig"
+description = "Internal crate for the Tectonic project: tectonic_bridge_fontconfig"
 version = "0.17.1"
 edition = "2021"
+license = "MIT"
 links = "fontconfig"
 
 [dependencies]

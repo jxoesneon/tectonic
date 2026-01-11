@@ -7,9 +7,9 @@ lints.workspace = true
 
 [package]
 name = "tectonic_engine_spx2html"
+description = "Internal crate for the Tectonic project: tectonic_engine_spx2html"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-description = """
 The Tectonic engine that converts SPX output to HTML.
 """
 homepage = "https://tectonic-typesetting.github.io/"

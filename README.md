@@ -1,13 +1,19 @@
-[![Build Status](https://dev.azure.com/tectonic-typesetting/tectonic/_apis/build/status/tectonic-typesetting.tectonic?branchName=master)](https://dev.azure.com/tectonic-typesetting/tectonic/_build/latest?definitionId=11&branchName=master)
-[![](http://meritbadge.herokuapp.com/tectonic)](https://crates.io/crates/tectonic)
-[![codecov](https://codecov.io/gh/tectonic-typesetting/tectonic/branch/master/graph/badge.svg)](https://codecov.io/gh/tectonic-typesetting/tectonic)
+# Tectonic (FerroTeX Fork)
 
-# Tectonic
+> [!IMPORTANT]
+> This is a specialized fork of Tectonic maintained for the **FerroTeX** project.
+> It includes mission-critical enhancements for **Native Debugging**, **LSP stability**, and **CI/CD robustness**.
 
 Tectonic is a modernized, complete, self-contained
 [TeX](https://en.wikipedia.org/wiki/TeX)/[LaTeX](https://www.latex-project.org/)
 engine, powered by [XeTeX](http://xetex.sourceforge.net/) and
 [TeXLive](https://www.tug.org/texlive/).
+
+## FerroTeX Enhancements
+
+- **Native Debugging Hooks**: Direct integration with engine execution for real-time inspection.
+- **Enhanced Stability**: Hardened CI/CD pipeline with crate-io rate-limit protection.
+- **Optimized for LSP**: Improvements specifically tailored for the FerroTeX Language Server.
 
 ## Read this first
 
@@ -38,9 +44,9 @@ README](./CARGO_README.md).
 If you’re interested in Tectonic as a software tool, you might also want to check out:
 
 - One of the following [GitHub Actions](https://github.com/features/actions)
-    - [setup-tectonic](https://github.com/marketplace/actions/setup-tectonic), which lets you use tectonic directly in your workflows (supports caching + optionally biber)
-    - [compile-latex](https://github.com/marketplace/actions/compile-latex) contributed by [Vinay
-  Sharma](https://github.com/vinay0410), which is powered by Tectonic.
+  - [setup-tectonic](https://github.com/marketplace/actions/setup-tectonic), which lets you use tectonic directly in your workflows (supports caching + optionally biber)
+  - [compile-latex](https://github.com/marketplace/actions/compile-latex) contributed by [Vinay
+    Sharma](https://github.com/vinay0410), which is powered by Tectonic.
 - [tt.ente.ninja](https://tt.ente.ninja), which runs Tectonic against a subset
   of the [arxiv.org](https://arxiv.org/) corpus à la the Rust tool
   [Crater](https://github.com/rust-lang/crater) — a
@@ -53,7 +59,7 @@ Much of the core code of Tectonic is derived from
 [XeTeX](http://xetex.sourceforge.net/), and we strive to track and maintain
 compatibility with upstream as much as possible. However, the nature of the
 Tectonic project is such that its source code is going to diverge from that of
-XeTeX over time. We can do our best to track the *semantics* of changes to
+XeTeX over time. We can do our best to track the _semantics_ of changes to
 XeTeX, but the expression of those changes in source form may well change
 greatly over time.
 
@@ -61,7 +67,7 @@ In this repository, the Git submodule `reference_sources` links to the
 ["staging repository"](https://github.com/tectonic-typesetting/tectonic-staging)
 that tracks the XeTeX source
 code that we use as a reference. In particular, the version of the reference
-code in the submodule is the most recent code whose semantics are *guaranteed*
+code in the submodule is the most recent code whose semantics are _guaranteed_
 to be expressed in Tectonic, to the best of our efforts. You don’t need to
 clone `reference_sources` to build Tectonic (which is good because everyone is
 always super confused by how Git submodules work!). It just provides a

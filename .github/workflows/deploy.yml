@@ -172,13 +172,25 @@ jobs:
           )
           
           for crate in "${crates[@]}"; do
-            echo "Publishing $crate..."
+            pkg_name=$(grep "^name =" "$crate/Cargo.toml" | head -1 | cut -d '"' -f 2)
+            pkg_version=$(grep "^version =" "$crate/Cargo.toml" | head -1 | cut -d '"' -f 2)
+            
+            echo "Checking if $pkg_name $pkg_version is already published..."
+            # Simple check via crates.io API
+            if curl -sL "https://crates.io/api/v1/crates/$pkg_name/$pkg_version" | grep -q "\"version\":\"$pkg_version\""; then
+              echo "$pkg_name $pkg_version already exists on crates.io, skipping."
+              continue
+            fi
+
+            echo "Publishing $pkg_name ($crate)..."
             # --no-verify as we might have modified files (renaming)
             # --allow-dirty usually for local only, but in CI we modified tracked files
-            # sleep to be nice to crates.io
-            cargo publish --token "$CARGO_REGISTRY_TOKEN" --no-verify --allow-dirty --manifest-path "$crate/Cargo.toml" || echo "Failed to publish $crate (already exists?)"
+            cargo publish --token "$CARGO_REGISTRY_TOKEN" --no-verify --allow-dirty --manifest-path "$crate/Cargo.toml"
+            
             # sleep to be nice to crates.io (rate limit: 5 crates / 10 min)
-            sleep 180
+            # User requested at least 90s; 120s is safer.
+            echo "Waiting 120s for index propagation and rate limiting..."
+            sleep 120
           done
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

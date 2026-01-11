@@ -7,9 +7,9 @@ lints.workspace = true
 
 [package]
 name = "tectonic_xetex_format"
+description = "Internal crate for the Tectonic project: tectonic_xetex_format"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
-description = """
 Tectonic/XeTeX engine data structures and their expression in TeX "format" files.
 """
 homepage = "https://tectonic-typesetting.github.io/"

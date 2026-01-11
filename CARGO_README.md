@@ -1,4 +1,10 @@
-# The Tectonic Typesetting System
+# Tectonic (FerroTeX Fork)
+
+> [!NOTE]
+> This is a specialized fork of Tectonic maintained for the **FerroTeX** project.
+> It includes mission-critical enhancements for native debugging and LSP stability.
+>
+> **Packages in this fork are published to crates.io with the `jxoesneon-` prefix.**
 
 The `tectonic` crate delivers a modernized, complete, self-contained
 [TeX](https://en.wikipedia.org/wiki/TeX)/[LaTeX](https://www.latex-project.org/)
@@ -6,16 +12,16 @@ engine, powered by [XeTeX](http://xetex.sourceforge.net/) and
 [TeXLive](https://www.tug.org/texlive/). It provides a CLI and ties together the
 functionality of a large collection of sub-crates.
 
+- [FerroTeX Project](https://github.com/jxoesneon/tectonic)
+- [Issues](https://github.com/jxoesneon/tectonic/issues/)
+- [Changelog](https://github.com/jxoesneon/tectonic/blob/master/CHANGELOG.md)
 - [User Website](https://tectonic-typesetting.github.io/)
 - [The Tectonic Book](https://tectonic-typesetting.github.io/book/latest/)
 - [Installation](https://tectonic-typesetting.github.io/book/latest/installation/) of the CLI
 - [Detailed Build Instructions][build-inst]
 - [API Documentation](https://docs.rs/tectonic/)
-- [Issues](https://github.com/tectonic-typesetting/tectonic/issues/)
-- [Changelog](https://github.com/tectonic-typesetting/tectonic/blob/release/CHANGELOG.md)
 
 [build-inst]: https://tectonic-typesetting.github.io/book/latest/howto/build-tectonic/
-
 
 ## Building Tectonic
 
@@ -44,7 +50,6 @@ The crate build can be customized with the following [Cargo features]:
 
 [The Book][build-inst] describes some less-used features and provides a bit more
 detail.
-
 
 ## Sub-crates
 
