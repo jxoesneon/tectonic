@@ -1627,53 +1627,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jxoesneon-tectonic"
-version = "0.17.1"
-dependencies = [
- "anyhow",
- "byte-unit",
- "cfg-if",
- "clap",
- "clap_complete",
- "filetime",
- "flate2",
- "lazy_static",
- "open",
- "quick-xml",
- "regex",
- "serde",
- "sha2",
- "tar",
- "tectonic_bridge_core",
- "tectonic_bundles",
- "tectonic_docmodel",
- "tectonic_engine_bibtex",
- "tectonic_engine_spx2html",
- "tectonic_engine_xdvipdfmx",
- "tectonic_engine_xetex",
- "tectonic_errors",
- "tectonic_geturl",
- "tectonic_io_base",
- "tectonic_status_base",
- "tectonic_xdv",
- "tectonic_xetex_layout",
- "tempfile",
- "termcolor",
- "thiserror 2.0.17",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "walkdir",
- "watchexec",
- "watchexec-filterer-globset",
- "watchexec-signals",
- "watchexec-supervisor",
- "which",
- "zip",
-]
-
-[[package]]
 name = "kqueue"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2944,6 +2897,53 @@ dependencies = [
  "filetime",
  "libc",
  "xattr",
+]
+
+[[package]]
+name = "tectonic"
+version = "0.17.1"
+dependencies = [
+ "anyhow",
+ "byte-unit",
+ "cfg-if",
+ "clap",
+ "clap_complete",
+ "filetime",
+ "flate2",
+ "lazy_static",
+ "open",
+ "quick-xml",
+ "regex",
+ "serde",
+ "sha2",
+ "tar",
+ "tectonic_bridge_core",
+ "tectonic_bundles",
+ "tectonic_docmodel",
+ "tectonic_engine_bibtex",
+ "tectonic_engine_spx2html",
+ "tectonic_engine_xdvipdfmx",
+ "tectonic_engine_xetex",
+ "tectonic_errors",
+ "tectonic_geturl",
+ "tectonic_io_base",
+ "tectonic_status_base",
+ "tectonic_xdv",
+ "tectonic_xetex_layout",
+ "tempfile",
+ "termcolor",
+ "thiserror 2.0.17",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "walkdir",
+ "watchexec",
+ "watchexec-filterer-globset",
+ "watchexec-signals",
+ "watchexec-supervisor",
+ "which",
+ "zip",
 ]
 
 [[package]]
