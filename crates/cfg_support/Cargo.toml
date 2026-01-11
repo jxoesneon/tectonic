@@ -4,7 +4,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic-cfg_support"
+name = "tectonic-cfg_support"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = [
     "Matt Rice <ratmice@gmail.com>",

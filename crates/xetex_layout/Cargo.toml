@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic-xetex_layout"
+name = "tectonic-xetex_layout"
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """

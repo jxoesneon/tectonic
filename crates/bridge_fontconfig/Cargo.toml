@@ -1,7 +1,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic-bridge_fontconfig"
+name = "tectonic-bridge_fontconfig"
 version = "0.17.1"
 edition = "2021"
 links = "fontconfig"

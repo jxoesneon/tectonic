@@ -4,7 +4,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic-io_base"
+name = "tectonic-io_base"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """

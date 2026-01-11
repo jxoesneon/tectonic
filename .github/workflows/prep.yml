@@ -31,7 +31,10 @@ jobs:
         env:
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
       - name: "Mini-build to freshen Cargo.lock"
-        run: cargo build -p tectonic_cfg_support
+        run: |
+           echo "Debug: Listing Cargo.toml content before build"
+           grep -r "tectonic_" Cargo.toml crates/bridge_core/Cargo.toml || true
+           cargo build -p tectonic_cfg_support
       - name: Generate release commit
         run: |
           git add .

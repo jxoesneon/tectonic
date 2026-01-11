@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic-pdf_io"
+name = "tectonic-pdf_io"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """

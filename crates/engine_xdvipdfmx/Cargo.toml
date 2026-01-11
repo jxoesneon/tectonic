@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic-engine_xdvipdfmx"
+name = "tectonic-engine_xdvipdfmx"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """

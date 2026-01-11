@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "jxoesneon-tectonic-bridge_harfbuzz"
+name = "tectonic-bridge_harfbuzz"
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
