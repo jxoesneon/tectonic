@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-bridge_flate"
+name = "tectonic_bridge_flate"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """

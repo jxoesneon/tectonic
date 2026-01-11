@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-pdf_io"
+name = "tectonic_pdf_io"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -21,13 +21,13 @@ edition = "2021"
 links = "tectonic_pdf_io"
 
 [dependencies]
-tectonic_bridge_core = { package = "jxoesneon-tectonic-bridge_core", path = "../bridge_core", version = "0.17.1"  }
-tectonic_bridge_flate = { package = "jxoesneon-tectonic-bridge_flate", path = "../bridge_flate", version = "0.17.1"  }
-tectonic_bridge_png = { package = "jxoesneon-tectonic-bridge_png", path = "../bridge_png", version = "0.17.1"  }
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.1"  }
+tectonic_bridge_flate = { path = "../bridge_flate", version = "0.17.1"  }
+tectonic_bridge_png = { path = "../bridge_png", version = "0.17.1"  }
 
 [build-dependencies]
 cc = "^1.0.66"
-tectonic_cfg_support = { package = "jxoesneon-tectonic-cfg_support", path = "../cfg_support", version = "0.17.1"  }
+tectonic_cfg_support = { path = "../cfg_support", version = "0.17.1"  }
 
 [package.metadata.internal_dep_versions]
 tectonic_bridge_core = "925a9a1566aaa4a55d4468d7bf239319828722fb"

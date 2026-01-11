@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-bundles"
+name = "tectonic_bundles"
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -21,10 +21,10 @@ edition = "2021"
 
 [dependencies]
 flate2 = { version = "^1.0.19", default-features = false, features = ["zlib"] }
-tectonic_errors = { package = "jxoesneon-tectonic-errors", path = "../errors", version = "0.17.1"  }
-tectonic_geturl = { package = "jxoesneon-tectonic-geturl", path = "../geturl", version = "0.17.1", default-features = false  }
-tectonic_io_base = { package = "jxoesneon-tectonic-io_base", path = "../io_base", version = "0.17.1"  }
-tectonic_status_base = { package = "jxoesneon-tectonic-status_base", path = "../status_base", version = "0.17.1"  }
+tectonic_errors = { path = "../errors", version = "0.17.1"  }
+tectonic_geturl = { path = "../geturl", version = "0.17.1", default-features = false  }
+tectonic_io_base = { path = "../io_base", version = "0.17.1"  }
+tectonic_status_base = { path = "../status_base", version = "0.17.1"  }
 zip = { version = "4", default-features = false, features = ["deflate"] }
 url = "^2.0"
 

@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-engine_xdvipdfmx"
+name = "tectonic_engine_xdvipdfmx"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -22,9 +22,9 @@ links = "tectonic_engine_xdvipdfmx"
 
 [dependencies]
 libc = "^0.2"
-tectonic_bridge_core = { package = "jxoesneon-tectonic-bridge_core", path = "../bridge_core", version = "0.17.1"  }
-tectonic_errors = { package = "jxoesneon-tectonic-errors", path = "../errors", version = "0.17.1"  }
-tectonic_pdf_io = { package = "jxoesneon-tectonic-pdf_io", path = "../pdf_io", version = "0.17.1"  }
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.1"  }
+tectonic_errors = { path = "../errors", version = "0.17.1"  }
+tectonic_pdf_io = { path = "../pdf_io", version = "0.17.1"  }
 
 [build-dependencies]
 cc = "^1.0.66"

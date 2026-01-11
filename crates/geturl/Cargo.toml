@@ -4,7 +4,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-geturl"
+name = "tectonic_geturl"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -21,8 +21,8 @@ edition = "2021"
 cfg-if = "^1.0"
 curl = { version = "^0.4", optional = true }
 reqwest = { version = "^0.12", optional = true, features = ["blocking"] }
-tectonic_errors = { package = "jxoesneon-tectonic-errors", path = "../errors", version = "0.17.1"  }
-tectonic_status_base = { package = "jxoesneon-tectonic-status_base", path = "../status_base", version = "0.17.1"  }
+tectonic_errors = { path = "../errors", version = "0.17.1"  }
+tectonic_status_base = { path = "../status_base", version = "0.17.1"  }
 
 [features]
 default = ["reqwest"]

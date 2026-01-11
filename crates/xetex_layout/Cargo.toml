@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-xetex_layout"
+name = "tectonic_xetex_layout"
 version = "0.17.1" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -21,24 +21,24 @@ edition = "2021"
 links = "tectonic_xetex_layout"
 
 [dependencies]
-tectonic_bridge_core = { package = "jxoesneon-tectonic-bridge_core", path = "../bridge_core", version = "0.17.1"  }
-tectonic_bridge_freetype2 = { package = "jxoesneon-tectonic-bridge_freetype2", path = "../bridge_freetype2", version = "0.17.1"  }
-tectonic_bridge_graphite2 = { package = "jxoesneon-tectonic-bridge_graphite2", path = "../bridge_graphite2", version = "0.17.1"  }
-tectonic_bridge_harfbuzz = { package = "jxoesneon-tectonic-bridge_harfbuzz", path = "../bridge_harfbuzz", version = "0.17.1"  }
-tectonic_bridge_icu = { package = "jxoesneon-tectonic-bridge_icu", path = "../bridge_icu", version = "0.17.1"  }
-tectonic_io_base = { package = "jxoesneon-tectonic-io_base", path = "../io_base", version = "0.17.1"  }
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.1"  }
+tectonic_bridge_freetype2 = { path = "../bridge_freetype2", version = "0.17.1"  }
+tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.17.1"  }
+tectonic_bridge_harfbuzz = { path = "../bridge_harfbuzz", version = "0.17.1"  }
+tectonic_bridge_icu = { path = "../bridge_icu", version = "0.17.1"  }
+tectonic_io_base = { path = "../io_base", version = "0.17.1"  }
 libc = "0.2"
 enrede = { version = "0.2", features = ["alloc"] }
 
 [build-dependencies]
 cc = "^1.0.66"
-tectonic_cfg_support = { package = "jxoesneon-tectonic-cfg_support", path = "../cfg_support", version = "0.17.1"  }
+tectonic_cfg_support = { path = "../cfg_support", version = "0.17.1"  }
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
-tectonic_bridge_fontconfig = { package = "jxoesneon-tectonic-bridge_fontconfig", path = "../bridge_fontconfig", version = "0.17.1"  }
+tectonic_bridge_fontconfig = { path = "../bridge_fontconfig", version = "0.17.1"  }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-tectonic_mac_core = { package = "jxoesneon-tectonic-mac_core", path = "../mac_core", version = "0.17.1"  }
+tectonic_mac_core = { path = "../mac_core", version = "0.17.1"  }
 
 [features]
 external-harfbuzz = ["tectonic_bridge_harfbuzz/external-harfbuzz"]

@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-xetex_format"
+name = "tectonic_xetex_format"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -22,7 +22,7 @@ edition = "2021"
 [dependencies]
 byteorder = "^1"
 nom = "8"
-tectonic_errors = { package = "jxoesneon-tectonic-errors", path = "../errors", version = "0.17.1"  }
+tectonic_errors = { path = "../errors", version = "0.17.1"  }
 
 [dev-dependencies]
 clap = { version = "4.5", features = ["derive"] }

@@ -6,7 +6,7 @@
 lints.workspace = true
 
 [package]
-name = "tectonic-bridge_freetype2"
+name = "tectonic_bridge_freetype2"
 version = "0.17.1"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 description = """
@@ -22,11 +22,11 @@ links = "freetype2"
 
 [dependencies]
 libc = "0.2"
-tectonic_bridge_png = { package = "jxoesneon-tectonic-bridge_png", path = "../bridge_png", version = "0.17.1"  }
-tectonic_bridge_flate = { package = "jxoesneon-tectonic-bridge_flate", path = "../bridge_flate", version = "0.17.1"  }
+tectonic_bridge_png = { path = "../bridge_png", version = "0.17.1"  }
+tectonic_bridge_flate = { path = "../bridge_flate", version = "0.17.1"  }
 
 [build-dependencies]
-tectonic_dep_support = { package = "jxoesneon-tectonic-dep_support", path = "../dep_support", version = "0.17.1"  }
+tectonic_dep_support = { path = "../dep_support", version = "0.17.1"  }
 
 [package.metadata.internal_dep_versions]
 tectonic_dep_support = "5faf4205bdd3d31101b749fc32857dd746f9e5bc"
