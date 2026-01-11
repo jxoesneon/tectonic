@@ -1,4 +1,15 @@
+# Tectonic 0.17.1 -- 2026-01-11
+
+This patch release addresses infrastructure and publication issues to ensure stable deployment to Crates.io.
+
+- **fix(infra):** Resolve crate naming conflicts in the release pipeline.
+- **fix(deploy):** Increase publication timeout to respect Crates.io rate limits.
+- **fix(metadata):** Add missing package metadata (descriptions, URLs) to all crates.
+- **chore:** Standardize all internal workspace dependencies to v0.17.1.
+
 # Tectonic 0.17.0 -- 2026-01-06
+
+This release introduces significant improvements to the engine's debugging capabilities and internal architecture.
 
 - **feat(core):** Implement native debugging hooks for macro expansion steps.
   - Added `DriverHooks::event_expand_on` in `tectonic_bridge_core`.
