@@ -17,54 +17,92 @@ for root, dirs, files in os.walk("crates"):
     if "Cargo.toml" in files:
         TOML_FILES.append(os.path.join(root, "Cargo.toml"))
 
+def process_line(line, in_package_section):
+    # 1. Rename package name in [package]
+    if in_package_section and line.strip().startswith("name ="):
+        # Match name = "tectonic..."
+        m = re.match(r'^\s*name\s*=\s*"(tectonic(?:_[a-z0-9_]+)?)"', line)
+        if m:
+            name = m.group(1)
+            if name == "tectonic":
+                new_name = "jxoesneon-tectonic"
+            elif name.startswith("tectonic_"):
+                new_name = f'jxoesneon-{name.replace("tectonic_", "tectonic-")}'
+            else:
+                new_name = f'jxoesneon-{name}'
+            return f'name = "{new_name}"\n'
+    
+    # 2. Update version in [package]
+    if in_package_section and line.strip().startswith("version ="):
+        # We replace the entire line with the new version
+        # Preserving comments if possible? 
+        # The user file has: version = "master" # comment
+        # We just overwrite it.
+        return f'version = "{NEW_VERSION}"\n'
+
+    # 3. Rename dependencies (anywhere, usually [dependencies])
+    # path = "..." implies internal dep
+    if "path =" in line and "tectonic" in line:
+        # Match dependency definition
+        # dep = { path = "...", version = "..." }
+        # or dep = { version = "...", path = "..." }
+        
+        # Regex to capture the dependency name and the content inside braces
+        # Note: This handles single-line deps. Multi-line deps are harder but Tectonic uses single-line for internal deps.
+        m = re.match(r'^\s*(\w+)\s*=\s*{(.*)}', line)
+        if m:
+            orig_name = m.group(1)
+            rest = m.group(2)
+            
+            if "path" in rest and orig_name.startswith("tectonic"):
+                # Calculate new package name
+                if orig_name == "tectonic":
+                    new_pkg = "jxoesneon-tectonic"
+                elif orig_name.startswith("tectonic_"):
+                    new_pkg = f'jxoesneon-{orig_name.replace("tectonic_", "tectonic-")}'
+                else:
+                    new_pkg = f'jxoesneon-{orig_name}'
+                
+                # Replace/Insert package key
+                if 'package =' not in rest:
+                    # Insert at start of braces
+                    rest = f' package = "{new_pkg}",{rest}'
+                else:
+                    # Replace existing
+                    rest = re.sub(r'package\s*=\s*"[^"]+"', f'package = "{new_pkg}"', rest)
+                
+                # Update version
+                # Only if version key exists
+                if 'version =' in rest:
+                    rest = re.sub(r'version\s*=\s*([\'"])[^"\']+\1', f'version = "{NEW_VERSION}"', rest)
+                
+                return f'{orig_name} = {{{rest}}}\n'
+
+    return line
+
 def rename_and_update(toml_path):
     print(f"Processing {toml_path}...")
     with open(toml_path, "r") as f:
-        content = f.read()
+        lines = f.readlines()
 
-    # 1. Rename the package itself
-    def rename_pkg(match):
-        name = match.group(1)
-        if name == "tectonic":
-            new_name = "jxoesneon-tectonic"
-        elif name.startswith("tectonic_"):
-            new_name = f'jxoesneon-{name.replace("tectonic_", "tectonic-")}'
-        else:
-            new_name = f'jxoesneon-{name}'
-        return f'[package]\nname = "{new_name}"'
-
-    content = re.sub(r'\[package\]\nname = "(tectonic(?:_[a-z0-9_]+)?)"', rename_pkg, content)
-
-    # 2. Update dependencies on local tectonic crates
-    def rename_dep(match):
-        orig_name = match.group(1)
-        rest = match.group(2)
-        if orig_name == "tectonic":
-            new_name = "jxoesneon-tectonic"
-        elif orig_name.startswith("tectonic_"):
-            new_name = f'jxoesneon-{orig_name.replace("tectonic_", "tectonic-")}'
-        else:
-            new_name = f'jxoesneon-{orig_name}'
-
-        # Use package alias so source code imports don't break
-        if 'package =' not in rest:
-            new_rest = f'package = "{new_name}", {rest}'
-        else:
-            new_rest = re.sub(r'package = "[^"]+"', f'package = "{new_name}"', rest)
-
-        # Update version
-        new_rest = re.sub(r"version = (['\"])[^'\"]+(['\"])", rf'version = \g<1>{NEW_VERSION}\g<2>', new_rest)
-        return f'{orig_name} = {{ {new_rest} }}'
-
-    content = re.sub(r'^(\w+)\s*=\s*{\s*(path\s*=\s*"[^"]+".*?)}', rename_dep, content, flags=re.MULTILINE)
-
-    # 3. Features do NOT need renaming if we use aliases for dependencies
-
-    # 4. Set version
-    content = re.sub(r'^\s*version\s*=\s*"[^"]+"', f'version = "{NEW_VERSION}"', content, flags=re.MULTILINE)
+    new_lines = []
+    in_package_section = False
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # Detect sections
+        if stripped.startswith("[") and stripped.endswith("]"):
+            if stripped == "[package]":
+                in_package_section = True
+            else:
+                in_package_section = False
+        
+        new_line = process_line(line, in_package_section)
+        new_lines.append(new_line)
 
     with open(toml_path, "w") as f:
-        f.write(content)
+        f.writelines(new_lines)
 
 for toml in TOML_FILES:
     rename_and_update(toml)
