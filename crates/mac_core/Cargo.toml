@@ -4,14 +4,14 @@ lints.workspace = true
 name = "tectonic_mac_core"
 description = "Internal crate for the Tectonic project: tectonic_mac_core"
 license = "MIT"
-version = "0.17.2"
+version = "0.17.3"
 edition = "2021"
 
 [dependencies]
 libc = "0.2"
 
 [build-dependencies]
-tectonic_cfg_support = { path = "../cfg_support", version = "0.17.2"  }
+tectonic_cfg_support = { path = "../cfg_support", version = "0.17.3"  }
 
 [package.metadata.internal_dep_versions]
 tectonic_cfg_support = "thiscommit:aeRoo7oa"
