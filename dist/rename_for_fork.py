@@ -19,26 +19,24 @@ for root, dirs, files in os.walk("crates"):
 
 def process_line(line, in_package_section):
     # 1. Rename package name in [package]
-    if in_package_section and line.strip().startswith("name ="):
-        # Match name = "tectonic..."
-        m = re.match(r'^\s*name\s*=\s*"(tectonic(?:_[a-z0-9_]+)?)"', line)
-        if m:
-            name = m.group(1)
+    if in_package_section:
+        m_name = re.match(r'^\s*name\s*=\s*"(tectonic(?:_[a-z0-9_]+)?)"', line)
+        if m_name:
+            name = m_name.group(1)
             if name == "tectonic":
                 new_name = "jxoesneon-tectonic"
             elif name.startswith("tectonic_"):
                 new_name = f'jxoesneon-{name.replace("tectonic_", "tectonic-")}'
             else:
                 new_name = f'jxoesneon-{name}'
+            print(f"  Rewriting name: {name} -> {new_name}")
             return f'name = "{new_name}"\n'
     
-    # 2. Update version in [package]
-    if in_package_section and line.strip().startswith("version ="):
-        # We replace the entire line with the new version
-        # Preserving comments if possible? 
-        # The user file has: version = "master" # comment
-        # We just overwrite it.
-        return f'version = "{NEW_VERSION}"\n'
+        # 2. Update version in [package]
+        # Use regex to be robust against whitespace
+        if re.match(r'^\s*version\s*=', line):
+            print(f"  Rewriting version: {line.strip()} -> {NEW_VERSION}")
+            return f'version = "{NEW_VERSION}"\n'
 
     # 3. Rename dependencies (anywhere, usually [dependencies])
     # path = "..." implies internal dep
