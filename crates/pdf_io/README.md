@@ -1,6 +1,10 @@
 # The `tectonic_pdf_io` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_pdf_io)](https://crates.io/crates/tectonic_pdf_io)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-pdf_io)](https://crates.io/crates/jxoesneon-tectonic-pdf_io)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-pdf_io`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It provides the PDF,
@@ -10,7 +14,7 @@ providing only a C API*.
 [XeTeX]: http://xetex.sourceforge.net/
 
 - [API documentation](https://docs.rs/tectonic_pdf_io/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 This crate depends on [libpng], which it attempts to find externally using
 [pkg-config] or [vcpkg]. It should be possible to create another "bridge" crate

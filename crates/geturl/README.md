@@ -1,3 +1,11 @@
+# The `tectonic_geturl` crate
+
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-geturl)](https://crates.io/crates/jxoesneon-tectonic-geturl)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-geturl`.
+
 # The `tectonic_geturl` create
 
 This crate is part of [the Tectonic
@@ -7,7 +15,7 @@ interface for fetching URLs using one of several HTTP backends.
 [![](http://meritbadge.herokuapp.com/tectonic_geturl)](https://crates.io/crates/tectonic_geturl)
 
 - [API documentation](https://docs.rs/tectonic_geturl/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 
 ## Cargo features

@@ -1,13 +1,17 @@
 # The `tectonic_bundles` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_bundles)](https://crates.io/crates/tectonic_bundles)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-bundles)](https://crates.io/crates/jxoesneon-tectonic-bundles)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-bundles`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It implements various
 Tectonic "bundles" that provide access to collections of TeX support files.
 
 - [API documentation](https://docs.rs/tectonic_bundles/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 
 ## Cargo features

@@ -1,6 +1,10 @@
 # The `tectonic_bridge_freetype2` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_bridge_freetype2)](https://crates.io/crates/tectonic_bridge_freetype2)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-bridge_freetype2)](https://crates.io/crates/jxoesneon-tectonic-bridge_freetype2)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-bridge_freetype2`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It exposes the *C* API
@@ -10,7 +14,7 @@ of the [FreeType] font rendering engine within the Rust/Cargo build framework,
 [FreeType]: https://www.freetype.org/
 
 - [API documentation](https://docs.rs/tectonic_bridge_freetype2/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 There are a variety of other low-level FreeType-related crates available, including:
 

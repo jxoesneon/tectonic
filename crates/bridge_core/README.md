@@ -1,6 +1,10 @@
 # The `tectonic_bridge_core` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_bridge_core)](https://crates.io/crates/tectonic_bridge_core)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-bridge_core)](https://crates.io/crates/jxoesneon-tectonic-bridge_core)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-bridge_core`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It provides a C API to
@@ -8,7 +12,7 @@ core I/O services provided by the Tectonic Rust code. This API is then consumed
 by the various C/C++ "engines" implementing the TeX software.
 
 - [API documentation](https://docs.rs/tectonic_bridge_core/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 If your project depends on this crate, Cargo will export for your build script
 an environment variable named `DEP_TECTONIC_BRIDGE_CORE_INCLUDE`, which will be

@@ -1,6 +1,10 @@
 # The `tectonic_xetex_layout` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_xetex_layout)](https://crates.io/crates/tectonic_xetex_layout)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-xetex_layout)](https://crates.io/crates/jxoesneon-tectonic-xetex_layout)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-xetex_layout`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It provides the font
@@ -10,7 +14,7 @@ API*.
 [XeTeX]: http://xetex.sourceforge.net/
 
 - [API documentation](https://docs.rs/tectonic_xetex_layout/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 If your project depends on this crate, Cargo will export for your build script
 an environment variable named `DEP_TECTONIC_XETEX_LAYOUT_INCLUDE_PATH`, which

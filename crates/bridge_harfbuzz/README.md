@@ -1,6 +1,10 @@
 # The `tectonic_bridge_harfbuzz` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_bridge_harfbuzz)](https://crates.io/crates/tectonic_bridge_harfbuzz)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-bridge_harfbuzz)](https://crates.io/crates/jxoesneon-tectonic-bridge_harfbuzz)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-bridge_harfbuzz`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It exposes the *C* API
@@ -11,7 +15,7 @@ built.
 [Harfbuzz]: https://harfbuzz.github.io/
 
 - [API documentation](https://docs.rs/tectonic_bridge_harfbuzz/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 While there are a variety of other Harfbuzz-related crates in the Rust
 ecosystem, Tectonic has specialized needs (e.g. support for the [graphite2]
@@ -46,4 +50,3 @@ This crate provides the following [Cargo features][features]:
   by the `tectonic_dep_support` crate. This requires that all libraries upon
   which Harfbuzz depends also be found externally, since the external library can't
   then link against a local vendored version.
-

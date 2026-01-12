@@ -1,5 +1,11 @@
 # The `tectonic_cfg_support` crate
 
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-cfg_support)](https://crates.io/crates/jxoesneon-tectonic-cfg_support)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-cfg_support`.
+
 This crate helps `build.rs` files deal with `CARGO_CFG_TARGET_*` variables. When
 cross-compiling, these variables must be used instead of constructs such as
 `cfg!(target_arch = ...)` because the `build.rs` script is compiled to target
@@ -9,4 +15,4 @@ of [the Tectonic project](https://tectonic-typesetting.github.io/).
 [![](http://meritbadge.herokuapp.com/tectonic_cfg_support)](https://crates.io/crates/tectonic_cfg_support)
 
 - [API documentation](https://docs.rs/tectonic_cfg_support/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).

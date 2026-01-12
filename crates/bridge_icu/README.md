@@ -1,6 +1,10 @@
 # The `tectonic_bridge_icu` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_bridge_icu)](https://crates.io/crates/tectonic_bridge_icu)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-bridge_icu)](https://crates.io/crates/jxoesneon-tectonic-bridge_icu)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-bridge_icu`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It exposes the *C* API
@@ -10,7 +14,7 @@ bindings**.
 [ICU4C]: https://unicode-org.github.io/icu/userguide/icu4c-readme.html
 
 - [API documentation](https://docs.rs/tectonic_bridge_icu/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 There are a variety of other low-level ICU-related crates available, with
 [rust_icu](https://crates.io/crates/rust_icu) perhaps taking the most systematic

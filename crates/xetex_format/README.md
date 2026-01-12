@@ -1,6 +1,10 @@
 # The `tectonic_xetex_format` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_xetex_format)](https://crates.io/crates/tectonic_xetex_format)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-xetex_format)](https://crates.io/crates/jxoesneon-tectonic-xetex_format)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-xetex_format`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It provides
@@ -10,7 +14,7 @@ their serialization into "format files".
 [XeTeX]: http://xetex.sourceforge.net/
 
 - [API documentation](https://docs.rs/tectonic_xetex_format/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 This crate has two main uses: you can use it to decode an existing format file
 and introspect the detailed setup that it encodes; or you can use it to emit a C

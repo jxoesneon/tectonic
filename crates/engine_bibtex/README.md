@@ -1,6 +1,10 @@
 # The `tectonic_engine_bibtex` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_engine_bibtex)](https://crates.io/crates/tectonic_engine_bibtex)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-engine_bibtex)](https://crates.io/crates/jxoesneon-tectonic-engine_bibtex)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-engine_bibtex`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It provides the
@@ -9,7 +13,7 @@ project](https://tectonic-typesetting.github.io/en-US/). It provides the
 [bibtex]: http://www.bibtex.org/
 
 - [API documentation](https://docs.rs/tectonic_engine_bibtex/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 
 ## Cargo features

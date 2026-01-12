@@ -1,3 +1,11 @@
+# The `tectonic_io_base` crate
+
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-io_base)](https://crates.io/crates/jxoesneon-tectonic-io_base)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-io_base`.
+
 # The `tectonic_io_base` create
 
 This crate is part of [the Tectonic
@@ -8,4 +16,4 @@ types as well as `flate2` gzip streams.
 [![](http://meritbadge.herokuapp.com/tectonic_io_base)](https://crates.io/crates/tectonic_io_base)
 
 - [API documentation](https://docs.rs/tectonic_io_base/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).

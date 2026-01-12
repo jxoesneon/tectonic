@@ -1,6 +1,10 @@
 # The `tectonic_bridge_graphite2` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_bridge_graphite2)](https://crates.io/crates/tectonic_bridge_graphite2)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-bridge_graphite2)](https://crates.io/crates/jxoesneon-tectonic-bridge_graphite2)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-bridge_graphite2`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It exposes the *C* API
@@ -10,7 +14,7 @@ of the [graphite2] "smart font" system within the Rust/Cargo build framework,
 [graphite2]: https://graphite.sil.org/
 
 - [API documentation](https://docs.rs/tectonic_bridge_graphite2/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 The intention is that eventually this crate will provide the option of
 "vendoring" the graphite2 library, so that the Tectonic C code can use the

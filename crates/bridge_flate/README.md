@@ -1,6 +1,10 @@
 # The `tectonic_bridge_flate` crate
 
-[![](http://meritbadge.herokuapp.com/tectonic_bridge_flate)](https://crates.io/crates/tectonic_bridge_flate)
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic-bridge_flate)](https://crates.io/crates/jxoesneon-tectonic-bridge_flate)
+
+> [!NOTE]
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic-bridge_flate`.
 
 This crate is part of [the Tectonic
 project](https://tectonic-typesetting.github.io/en-US/). It provides a limited C
@@ -10,7 +14,7 @@ include C code that require flate2 functionality.
 [flate2]: https://github.com/rust-lang/flate2-rs
 
 - [API documentation](https://docs.rs/tectonic_bridge_flate/).
-- [Main Git repository](https://github.com/tectonic-typesetting/tectonic/).
+- [Main Git repository](https://github.com/jxoesneon/tectonic/).
 
 If your project depends on this crate, Cargo will export for your build script
 an environment variable named `DEP_TECTONIC_BRIDGE_FLATE_INCLUDE`, which will be
