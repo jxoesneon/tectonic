@@ -85,9 +85,10 @@ def get_pkg_info(crate_path):
     
     with open(toml_path, "r") as f:
         for line in f:
-            if line.strip().startswith("name ="):
+            line = line.split('#')[0].strip()
+            if line.startswith("name ="):
                 name = line.split('=')[1].strip().strip('"')
-            elif line.strip().startswith("version ="):
+            elif line.startswith("version ="):
                 version = line.split('=')[1].strip().strip('"')
             
             if name and version:

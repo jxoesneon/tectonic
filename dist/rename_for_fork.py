@@ -61,7 +61,7 @@ def rename_and_update(toml_path):
     # 3. Features do NOT need renaming if we use aliases for dependencies
 
     # 4. Set version
-    content = re.sub(r'^version = "[^"]+"', f'version = "{NEW_VERSION}"', content, flags=re.MULTILINE)
+    content = re.sub(r'^\s*version\s*=\s*"[^"]+"', f'version = "{NEW_VERSION}"', content, flags=re.MULTILINE)
 
     with open(toml_path, "w") as f:
         f.write(content)
