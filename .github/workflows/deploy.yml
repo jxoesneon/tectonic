@@ -139,59 +139,10 @@ jobs:
             version=${GITHUB_REF_NAME#v}
             echo "Renaming to version $version..."
             python3 dist/rename_for_fork.py "$version"
-      - name: "Publish updated Cargo crates"
+      - name: "Publish updated Cargo crates (Smart Publish)"
         run: |
-          # Publish order matters!
-          crates=(
-            "crates/errors"
-            "crates/status_base"
-            "crates/io_base"
-            "crates/dep_support"
-            "crates/cfg_support"
-            "crates/mac_core"
-            "crates/bridge_core"
-            "crates/bridge_flate"
-            "crates/bridge_png"
-            "crates/bridge_freetype2"
-            "crates/bridge_graphite2"
-            "crates/bridge_harfbuzz"
-            "crates/bridge_icu"
-            "crates/bridge_fontconfig"
-            "crates/geturl"
-            "crates/xdv"
-            "crates/bundles"
-            "crates/docmodel"
-            "crates/xetex_format"
-            "crates/engine_bibtex"
-            "crates/pdf_io"
-            "crates/engine_xdvipdfmx"
-            "crates/xetex_layout"
-            "crates/engine_xetex"
-            "crates/engine_spx2html"
-            "."
-          )
-          
-          for crate in "${crates[@]}"; do
-            pkg_name=$(grep "^name =" "$crate/Cargo.toml" | head -1 | cut -d '"' -f 2)
-            pkg_version=$(grep "^version =" "$crate/Cargo.toml" | head -1 | cut -d '"' -f 2)
-            
-            echo "Checking if $pkg_name $pkg_version is already published..."
-            # Simple check via crates.io API
-            if curl -sL "https://crates.io/api/v1/crates/$pkg_name/$pkg_version" | grep -q "\"version\":\"$pkg_version\""; then
-              echo "$pkg_name $pkg_version already exists on crates.io, skipping."
-              continue
-            fi
-
-            echo "Publishing $pkg_name ($crate)..."
-            # --no-verify as we might have modified files (renaming)
-            # --allow-dirty usually for local only, but in CI we modified tracked files
-            cargo publish --token "$CARGO_REGISTRY_TOKEN" --no-verify --allow-dirty --manifest-path "$crate/Cargo.toml"
-            
-            # sleep to be nice to crates.io (rate limit: 5 crates / 10 min)
-            # User requested at least 90s; 120s is safer.
-            echo "Waiting 120s for index propagation and rate limiting..."
-            sleep 120
-          done
+          # Use optimized python script (Burst: 30, Refill: 1/60s)
+          python3 dist/smart_publish.py "$CARGO_REGISTRY_TOKEN"
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           CRANKO_HEAD_BRANCH: ${{ github.ref_name }}
