@@ -3,17 +3,17 @@ lints.workspace = true
 [package]
 name = "tectonic_bridge_fontconfig"
 description = "Internal crate for the Tectonic project: tectonic_bridge_fontconfig"
-version = "0.17.1"
+version = "0.17.2"
 edition = "2021"
 license = "MIT"
 links = "fontconfig"
 
 [dependencies]
 libc = "0.2"
-tectonic_bridge_png = { path = "../bridge_png", version = "0.17.1"  }
+tectonic_bridge_png = { path = "../bridge_png", version = "0.17.2"  }
 
 [build-dependencies]
-tectonic_dep_support = { path = "../dep_support", version = "0.17.1"  }
+tectonic_dep_support = { path = "../dep_support", version = "0.17.2"  }
 
 [package.metadata.internal_dep_versions]
 tectonic_dep_support = "5faf4205bdd3d31101b749fc32857dd746f9e5bc"
