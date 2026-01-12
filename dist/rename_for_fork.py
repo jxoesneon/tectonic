@@ -1,4 +1,5 @@
 import os
+import glob
 import re
 import sys
 
@@ -12,10 +13,7 @@ if len(sys.argv) < 2:
 NEW_VERSION = sys.argv[1]
 
 # We search for all Cargo.toml files in the workspace
-TOML_FILES = ["Cargo.toml"]
-for root, dirs, files in os.walk("crates"):
-    if "Cargo.toml" in files:
-        TOML_FILES.append(os.path.join(root, "Cargo.toml"))
+TOML_FILES = ["Cargo.toml"] + glob.glob("crates/*/Cargo.toml")
 
 def process_line(line, in_package_section):
     # 1. Rename package name in [package]
