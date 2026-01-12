@@ -12,7 +12,7 @@ import json
 # API: 1 req/sec.
 
 BURST_LIMIT = 30
-REFILL_RATE_SEC = 60 # 1 token per 60 seconds
+REFILL_RATE_SEC = 61 # 1 token per 61 seconds for safety
 API_DELAY_SEC = 1.0 # 1 second between API calls
 
 # Topological order of crates to publish
