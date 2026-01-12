@@ -1,10 +1,10 @@
-# Tectonic (FerroTeX Fork)
+# The `tectonic` crate
+
+[![](http://meritbadge.herokuapp.com/jxoesneon-tectonic)](https://crates.io/crates/jxoesneon-tectonic)
 
 > [!NOTE]
-> This is a specialized fork of Tectonic maintained for the **FerroTeX** project.
-> It includes mission-critical enhancements for native debugging and LSP stability.
->
-> **Packages in this fork are published to crates.io with the `jxoesneon-` prefix.**
+> This crate is part of the **FerroTeX** project, a specialized fork of Tectonic.
+> It is published to crates.io as `jxoesneon-tectonic`.
 
 The `tectonic` crate delivers a modernized, complete, self-contained
 [TeX](https://en.wikipedia.org/wiki/TeX)/[LaTeX](https://www.latex-project.org/)

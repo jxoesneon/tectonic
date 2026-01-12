@@ -22,3 +22,9 @@ test_output.txt
 /tests/tex-outputs/*.log
 /tests/tex-outputs/*.out
 .agent/
+
+# Dist/Audit scripts
+dist/audit_report.txt
+dist/batch_yank_completed.py
+dist/debug_regex.py
+deploy_log*.txt
