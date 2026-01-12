@@ -8,7 +8,7 @@ lints.workspace = true
 [package]
 name = "tectonic_xetex_layout"
 description = "Internal crate for the Tectonic project: tectonic_xetex_layout"
-version = "0.17.2" # assigned with cranko (see README)
+version = "0.17.3" # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_xetex_layout"
@@ -19,24 +19,24 @@ edition = "2021"
 links = "tectonic_xetex_layout"
 
 [dependencies]
-tectonic_bridge_core = { path = "../bridge_core", version = "0.17.2"  }
-tectonic_bridge_freetype2 = { path = "../bridge_freetype2", version = "0.17.2"  }
-tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.17.2"  }
-tectonic_bridge_harfbuzz = { path = "../bridge_harfbuzz", version = "0.17.2"  }
-tectonic_bridge_icu = { path = "../bridge_icu", version = "0.17.2"  }
-tectonic_io_base = { path = "../io_base", version = "0.17.2"  }
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.3"  }
+tectonic_bridge_freetype2 = { path = "../bridge_freetype2", version = "0.17.3"  }
+tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.17.3"  }
+tectonic_bridge_harfbuzz = { path = "../bridge_harfbuzz", version = "0.17.3"  }
+tectonic_bridge_icu = { path = "../bridge_icu", version = "0.17.3"  }
+tectonic_io_base = { path = "../io_base", version = "0.17.3"  }
 libc = "0.2"
 enrede = { version = "0.2", features = ["alloc"] }
 
 [build-dependencies]
 cc = "^1.0.66"
-tectonic_cfg_support = { path = "../cfg_support", version = "0.17.2"  }
+tectonic_cfg_support = { path = "../cfg_support", version = "0.17.3"  }
 
 [target.'cfg(not(target_os = "macos"))'.dependencies]
-tectonic_bridge_fontconfig = { path = "../bridge_fontconfig", version = "0.17.2"  }
+tectonic_bridge_fontconfig = { path = "../bridge_fontconfig", version = "0.17.3"  }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-tectonic_mac_core = { path = "../mac_core", version = "0.17.2"  }
+tectonic_mac_core = { path = "../mac_core", version = "0.17.3"  }
 
 [features]
 external-harfbuzz = ["tectonic_bridge_harfbuzz/external-harfbuzz"]

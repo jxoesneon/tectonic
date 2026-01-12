@@ -8,7 +8,7 @@ lints.workspace = true
 [package]
 name = "tectonic_bridge_flate"
 description = "Internal crate for the Tectonic project: tectonic_bridge_flate"
-version = "0.17.2"  # assigned with cranko (see README)
+version = "0.17.3"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic"
