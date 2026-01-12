@@ -20,6 +20,9 @@ for root, dirs, files in os.walk("crates"):
 def process_line(line, in_package_section):
     # 1. Rename package name in [package]
     if in_package_section:
+        # Debug logging to verify what CI sees
+        print(f"    [package] line: {repr(line)}")
+
         m_name = re.match(r'^\s*name\s*=\s*"(tectonic(?:_[a-z0-9_]+)?)"', line)
         if m_name:
             name = m_name.group(1)
@@ -33,7 +36,7 @@ def process_line(line, in_package_section):
             return f'name = "{new_name}"\n'
     
         # 2. Update version in [package]
-        # Use regex to be robust against whitespace
+        # Regex matches 'version' key with optional whitespace and equals sign
         if re.match(r'^\s*version\s*=', line):
             print(f"  Rewriting version: {line.strip()} -> {NEW_VERSION}")
             return f'version = "{NEW_VERSION}"\n'
