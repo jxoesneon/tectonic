@@ -8,7 +8,7 @@ lints.workspace = true
 [package]
 name = "tectonic_xetex_format"
 description = "Internal crate for the Tectonic project: tectonic_xetex_format"
-version = "0.17.1"  # assigned with cranko (see README)
+version = "0.17.2"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_xetex_format"
@@ -20,7 +20,7 @@ edition = "2021"
 [dependencies]
 byteorder = "^1"
 nom = "8"
-tectonic_errors = { path = "../errors", version = "0.17.1"  }
+tectonic_errors = { path = "../errors", version = "0.17.2"  }
 
 [dev-dependencies]
 clap = { version = "4.5", features = ["derive"] }

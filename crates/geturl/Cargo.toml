@@ -6,7 +6,7 @@ lints.workspace = true
 [package]
 name = "tectonic_geturl"
 description = "Internal crate for the Tectonic project: tectonic_geturl"
-version = "0.17.1"  # assigned with cranko (see README)
+version = "0.17.2"  # assigned with cranko (see README)
 authors = ["Peter Williams <peter@newton.cx>"]
 homepage = "https://tectonic-typesetting.github.io/"
 documentation = "https://docs.rs/tectonic_geturl"
@@ -19,8 +19,8 @@ edition = "2021"
 cfg-if = "^1.0"
 curl = { version = "^0.4", optional = true }
 reqwest = { version = "^0.12", optional = true, features = ["blocking"] }
-tectonic_errors = { path = "../errors", version = "0.17.1"  }
-tectonic_status_base = { path = "../status_base", version = "0.17.1"  }
+tectonic_errors = { path = "../errors", version = "0.17.2"  }
+tectonic_status_base = { path = "../status_base", version = "0.17.2"  }
 
 [features]
 default = ["reqwest"]
