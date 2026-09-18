@@ -14,6 +14,7 @@ engine, powered by [XeTeX](http://xetex.sourceforge.net/) and
 - **Native Debugging Hooks**: Direct integration with engine execution for real-time inspection.
 - **Enhanced Stability**: Hardened CI/CD pipeline with crate-io rate-limit protection.
 - **Optimized for LSP**: Improvements specifically tailored for the FerroTeX Language Server.
+- **Pure-Rust Engine Migration**: Comprehensive phased engineering blueprint to transition 100% of legacy C/C++ to safe Rust while guaranteeing 1:1 bitwise/visual rendering fidelity. See [MIGRATION_ROADMAP.md](./MIGRATION_ROADMAP.md).
 
 ## Read this first
 
