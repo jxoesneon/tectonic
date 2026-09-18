@@ -128,7 +128,20 @@ Phase 6: Safe Idiomatic Modernization
 
 #### Phase 3a: Image & PDF Dimension Probe Decoupling (Prerequisite)
 - **Problem**: `engine_xetex` has a compile-time C linkage dependency on `pdf_io` (`xetex-pic.c` includes `pdf_io/dpx-*.h` for `\XeTeXpicfile` and `\XeTeXpdffile` dimension and page-count queries). Deleting `pdf_io` directly breaks the TeX engine.
-- **Solution**: Extract image/PDF header parsing into an independent crate `tectonic_image_probe` (using `image` and `pdf-writer`/`lopdf`) with a minimal C-ABI export, preserving `engine_xetex` build integrity.
+- **Solution**: Extract image/PDF header parsing into an independent crate `tectonic_image_probe` (using `image` and `lopdf`) with a minimal C-ABI export, preserving `engine_xetex` build integrity.
+
+**✅ COMPLETE — commit `95f03a0a`**
+
+Implementation:
+- Created `crates/image_probe` with pure-Rust PNG/JPEG/BMP/GIF/TIFF dimension probing (`image` crate) and pure-Rust PDF MediaBox/CropBox/Rotate parser.
+- Exported 6 C-ABI functions in `tectonic_image_probe.h`: 3 path-based and 3 in-memory buffer-based (`_data` variants).
+- Introduced `slurp_handle()` VFS helper in `xetex-pic.c` to read open `rust_input_handle_t` handles into heap buffers, enabling buffer-based probing against Tectonic's virtual filesystem (where `name_of_file` is a VFS key, not an OS path).
+- Replaced all 6 `dpx-*.h` includes in `xetex-pic.c` with `#include "tectonic_image_probe.h"`.
+- Rewrote `count_pdf_file_pages()` → `tt_probe_pdf_page_count_data`.
+- Rewrote `pdf_get_rect()` → `tt_probe_pdf_page_count_data` + `tt_probe_pdf_box_data`.
+- Rewrote `get_image_size_in_inches()` → `tt_probe_image_bbox_data`.
+- Removed `dpx-pdfobj.h` include and `pdf_files_init()` / `pdf_files_close()` lifecycle calls from `xetex-ini.c`.
+- Verified: 33/33 `tex-outputs` integration tests pass; all 7 FerroTeX parity gates pass.
 
 #### Phase 3b: Crate-Substituted XDV-to-PDF Pipeline
 - **Strategy**: **Avoid a 1:1 mechanical port** of 71k lines of legacy `dpx-*` C code (obsolete PK raster fonts, TPIC specials, ad-hoc Deflate). Substitute with mature, battle-tested Rust crates:
