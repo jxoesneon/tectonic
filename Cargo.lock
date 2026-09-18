@@ -3477,6 +3477,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tectonic_hyphenation"
+version = "0.17.3"
+dependencies = [
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "tectonic_image_probe"
 version = "0.17.3"
 dependencies = [

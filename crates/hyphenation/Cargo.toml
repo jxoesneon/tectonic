@@ -1,0 +1,18 @@
+# Copyright 2026 the Tectonic Project & FerroTeX Authors
+# Licensed under the MIT License.
+
+lints.workspace = true
+
+[package]
+name = "tectonic_hyphenation"
+description = "Pure-Rust Liang hyphenation trie engine for Tectonic"
+version = "0.17.3"
+authors = ["Peter Williams <peter@newton.cx>", "FerroTeX Authors"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+thiserror = "^2.0"
+
+[dev-dependencies]
+tempfile = "^3.1"
