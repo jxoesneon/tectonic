@@ -1,0 +1,20 @@
+# Copyright 2026 the Tectonic Project & FerroTeX Authors
+# Licensed under the MIT License.
+
+lints.workspace = true
+
+[package]
+name = "tectonic_fonts"
+description = "Pure-Rust shared font metrics and ingestion engine for Tectonic"
+version = "0.17.3"
+authors = ["Peter Williams <peter@newton.cx>", "FerroTeX Authors"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+byteorder = "^1.4"
+thiserror = "^2.0"
+ttf-parser = "^0.25"
+
+[dev-dependencies]
+tempfile = "^3.1"

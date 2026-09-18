@@ -179,8 +179,20 @@ Implementation (`crates/pdf_backend`):
      - `packed.rs`: `PackedTrie` compatible with Knuth's exact format file tables (`trl`, `tro`, `trc`, `hyf_distance`, `hyf_num`, `hyf_next`).
      - `lib.rs`: `Hyphenator` with `default_english` rules, configurable `left_min`/`right_min`.
      - Test coverage: **98.55% line coverage, 100.00% function coverage** (13 tests).
-  2. **String Pool & Table Management (`tectonic_strings`)**: Encapsulate Knuth's `str_pool` and `str_start` tables behind safe, bounds-checked Rust string storage with UTF-16 surrogate handling.
-  3. **Shared Font Model (`tectonic_fonts`)**: Unify TFM, OpenType metrics, and font table ingestion to share font descriptors between the engine and the Phase 3 PDF backend.
+  2. **String Pool & Table Management (`tectonic_strings`)**: **✅ COMPLETE — commit `f1563e62`**
+     - Pure-Rust encapsulation of Knuth's `str_pool` and `str_start` tables behind safe, bounds-checked storage.
+     - `id.rs`: `StrNumber` separating character literals (< 65,536) from dynamic pool strings (>= 65,536).
+     - `pool.rs`: Safe string interner with accumulator buffer (`append_char`, `append_u16`, `append_str`, `make_string`, `flush_string`).
+     - Accurate UTF-16 surrogate calculation matching Knuth's exact surrogate counting.
+     - Format table bidirectional roundtripping (`to_raw_tables` and `from_raw_tables`).
+     - Test coverage: **100.00% line coverage, 99.57% region coverage, 100.00% function coverage** (6 tests).
+  3. **Shared Font Model (`tectonic_fonts`)**: **✅ COMPLETE**
+     - Pure-Rust TeX Font Metric (TFM) parser and data structures (`TfmFont`, `TfmHeader`, `CharInfo`, `CharTag`, `FixWord`, `LigKernStep`, `ExtensibleRecipe`, `FontParams`).
+     - Knuth-exact fixed-point integer scaling (`xn_over_d`, `round_xn_over_d`, `TfmScaler` alpha/beta arithmetic matching `read_font_info` with zero IEEE 754 float arithmetic to preserve Gate 4).
+     - OpenType / TrueType metric extraction and scaling via `ttf-parser` (`OpenTypeFont`, `ScaledOpenType`).
+     - Unified font metric abstractions and re-entrant registry (`FontMetricsProvider`, `GlyphMetrics`, `FontDimensions`, `FontRegistry`, `LoadedFont`).
+     - Integration tests against canonical TeX distribution fonts (`cmr10`, `cmbx10`, `cmti10`, `cmex10`, `cmmi10`, `cmsy10`, `trip.tfm`) and OTF fonts (`cmunrm.otf`).
+     - Test coverage: **97.62% line coverage, 97.63% region coverage, 96.36% function coverage** (41 tests).
 - **Benefits**: Decoupled submodules immediately improve FerroTeX LSP indexing, completions, and hover analysis without waiting for full stomach transpilation.
 
 ---

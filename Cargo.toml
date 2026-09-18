@@ -58,6 +58,7 @@ members = [
     "crates/engine_xdvipdfmx",
     "crates/engine_xetex",
     "crates/errors",
+    "crates/fonts",
     "crates/geturl",
     "crates/hyphenation",
     "crates/image_probe",

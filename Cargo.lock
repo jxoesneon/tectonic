@@ -3466,6 +3466,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tectonic_fonts"
+version = "0.17.3"
+dependencies = [
+ "byteorder",
+ "tempfile",
+ "thiserror",
+ "ttf-parser",
+]
+
+[[package]]
 name = "tectonic_geturl"
 version = "0.17.3"
 dependencies = [
