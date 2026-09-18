@@ -171,7 +171,14 @@ Implementation (`crates/pdf_backend`):
 **Objective**: Extract deterministic, standalone submodules out of `engine_xetex` into reusable, testable Rust crates.
 
 - **Submodules to Decouple**:
-  1. **Hyphenation Engine (`tectonic_hyphenation`)**: Liang's hyphenation trie algorithm (`patgen` structures). Purely deterministic string-in, hyphenation-points-out.
+  1. **Hyphenation Engine (`tectonic_hyphenation`)**: **✅ COMPLETE — commit `bc51e9db`**
+     - Pure-Rust implementation of Liang's hyphenation algorithm.
+     - `pattern.rs`: Pattern parser (`parse_patterns`).
+     - `exceptions.rs`: `ExceptionDictionary` with case-insensitivity and comment stripping.
+     - `trie.rs`: `TrieNode` multi-level score evaluator.
+     - `packed.rs`: `PackedTrie` compatible with Knuth's exact format file tables (`trl`, `tro`, `trc`, `hyf_distance`, `hyf_num`, `hyf_next`).
+     - `lib.rs`: `Hyphenator` with `default_english` rules, configurable `left_min`/`right_min`.
+     - Test coverage: **98.55% line coverage, 100.00% function coverage** (13 tests).
   2. **String Pool & Table Management (`tectonic_strings`)**: Encapsulate Knuth's `str_pool` and `str_start` tables behind safe, bounds-checked Rust string storage with UTF-16 surrogate handling.
   3. **Shared Font Model (`tectonic_fonts`)**: Unify TFM, OpenType metrics, and font table ingestion to share font descriptors between the engine and the Phase 3 PDF backend.
 - **Benefits**: Decoupled submodules immediately improve FerroTeX LSP indexing, completions, and hover analysis without waiting for full stomach transpilation.
