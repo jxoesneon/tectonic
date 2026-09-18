@@ -21,21 +21,21 @@ fn find_fonts_with_name(name: CFString, key: FontAttribute) -> CFArray<CTFontDes
 fn find_font_with_name(name: CFString, key: FontAttribute) -> Option<CTFontDescriptor> {
     let matches = find_fonts_with_name(name, key);
 
-    let mut matched = None;
     if !matches.is_empty() {
-        matched = Some(matches[0].clone());
+        Some(matches.get(0))
+    } else {
+        None
     }
-    matched
 }
 
 fn append_name_to_list(font: &CTFont, name_list: &mut Vec<CString>, name_key: FontNameKey) {
     let name = font.name(name_key);
-    if let Some(name) = name {
-        FontManager::append_to_list(name_list, name.as_cstr());
+    if let Some(name) = name.as_ref().and_then(|n| n.as_cstr()) {
+        FontManager::append_to_list(name_list, name);
     }
     let name = font.localized_name(name_key);
-    if let Some(name) = name {
-        FontManager::append_to_list(name_list, name.as_cstr());
+    if let Some(name) = name.as_ref().and_then(|n| n.as_cstr()) {
+        FontManager::append_to_list(name_list, name);
     }
 }
 
@@ -48,9 +48,9 @@ impl MacBackend {
 
     fn add_fonts_to_caches(&self, maps: &mut FontMaps, members: CFArray<CTFontDescriptor>) {
         for i in 0..members.len() {
-            let font = &members[i];
+            let font = members.get(i);
             let names = self.read_names(font.clone());
-            maps.add_to_maps(self, font.clone(), &names)
+            maps.add_to_maps(self, font, &names)
         }
     }
 
@@ -152,7 +152,7 @@ impl FontManagerBackend for MacBackend {
         // SAFETY: CFString has no generic parameters
         let ps_name = unsafe { ps_name.downcast::<CFString>() }.unwrap();
 
-        names.ps_name = Some(ps_name.get_cstring());
+        names.ps_name = ps_name.get_cstring();
 
         let font = CTFont::new_descriptor(&font, 0.0);
         append_name_to_list(&font, &mut names.full_names, FontNameKey::Full);

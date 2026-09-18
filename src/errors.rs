@@ -2,32 +2,25 @@
 // Licensed under the MIT License.
 
 //! Tectonic error types and support code.
-//!
-//! This module provides a unified error handling framework using `thiserror`
-//! for structured error variants and `anyhow` for flexible error propagation.
 
-#![allow(missing_docs)]
-
+use std::fmt::Formatter;
 use std::{
-    ffi,
-    fmt::{self, Debug},
-    io,
-    io::Write,
-    num,
+    fmt::{self, Debug, Display},
+    io::{self, Write},
     result::Result as StdResult,
-    str,
 };
-use tectonic_errors::Error as NewError;
-use zip::result::ZipError;
+pub use tectonic_errors::Error;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "toml")] {
+        /// Alias for [`toml::de::Error`]
         pub type ReadError = toml::de::Error;
+        /// Alias for [`toml::ser::Error`]
         pub type WriteError = toml::ser::Error;
     } else {
         use std::error;
-        use std::fmt::Display;
 
+        /// Null error to replace lack of `toml` dependency
         #[derive(Debug)]
         pub enum ReadError {}
 
@@ -39,6 +32,7 @@ cfg_if::cfg_if! {
 
         impl error::Error for ReadError { }
 
+        /// Null error to replace lack of `toml` dependency
         #[derive(Debug)]
         pub enum WriteError {}
 
@@ -52,144 +46,51 @@ cfg_if::cfg_if! {
     }
 }
 
-/// Structured error types for Tectonic operations.
-#[derive(Debug, thiserror::Error)]
-pub enum TectonicError {
-    /// The item is not the expected length.
-    #[error("expected length {expected}; found {observed}")]
-    BadLength {
-        /// Expected length
-        expected: usize,
-        /// Observed length
-        observed: usize,
-    },
-
-    /// This stream is not seekable.
-    #[error("this stream is not seekable")]
-    NotSeekable,
-
-    /// The size of this stream cannot be determined.
-    #[error("the size of this stream cannot be determined")]
-    NotSizeable,
-
-    /// Access to this file path is forbidden.
-    #[error("access to the path {0} is forbidden")]
-    PathForbidden(String),
-
-    /// An engine had an unrecoverable error.
-    #[error("the {0} engine had an unrecoverable error")]
-    EngineError(&'static str),
-
-    /// I/O error.
-    #[error(transparent)]
-    Io(#[from] io::Error),
-
-    /// Formatting error.
-    #[error(transparent)]
-    Fmt(#[from] fmt::Error),
-
-    /// Null byte in string.
-    #[error(transparent)]
-    Nul(#[from] ffi::NulError),
-
-    /// Integer parsing error.
-    #[error(transparent)]
-    ParseInt(#[from] num::ParseIntError),
-
-    /// Tempfile persistence error.
-    #[error(transparent)]
-    Persist(#[from] tempfile::PersistError),
-
-    /// Configuration read error.
-    #[error("configuration read error: {0}")]
-    ConfigRead(#[source] ReadError),
-
-    /// Configuration write error.
-    #[error("configuration write error: {0}")]
-    ConfigWrite(#[source] WriteError),
-
-    /// New-style error from tectonic_errors crate.
-    #[error(transparent)]
-    NewStyle(#[from] NewError),
-
-    /// XML parsing error.
-    #[error(transparent)]
-    QuickXml(#[from] quick_xml::Error),
-
-    /// System time error.
-    #[error(transparent)]
-    Time(#[from] std::time::SystemTimeError),
-
-    /// UTF-8 decoding error.
-    #[error(transparent)]
-    Utf8(#[from] str::Utf8Error),
-
-    /// XDV parsing error.
-    #[error(transparent)]
-    Xdv(#[from] tectonic_xdv::XdvError),
-
-    /// ZIP archive error.
-    #[error(transparent)]
-    Zip(#[from] ZipError),
-}
-
-// Manual From implementations for types that need special handling
-impl From<ReadError> for TectonicError {
-    fn from(e: ReadError) -> Self {
-        TectonicError::ConfigRead(e)
-    }
-}
-
-impl From<WriteError> for TectonicError {
-    fn from(e: WriteError) -> Self {
-        TectonicError::ConfigWrite(e)
-    }
-}
-
-/// The main error type for Tectonic, using anyhow for flexibility.
-pub type Error = anyhow::Error;
-
-/// The main result type for Tectonic operations.
-pub type Result<T> = anyhow::Result<T>;
-
-/// Legacy compatibility: ErrorKind is now TectonicError
-pub type ErrorKind = TectonicError;
-
-/// Use string formatting to create an error message.
-#[macro_export]
-macro_rules! errmsg {
-    ($( $fmt_args:expr ),*) => {
-        anyhow::anyhow!($( $fmt_args ),*)
-    };
-}
-
-/// "Chained try" — like `?`, but with the ability to add context to the error message.
+/// "Chained try" — like `try!`, but with the ability to add context to the error message.
 #[macro_export]
 macro_rules! ctry {
     ($op:expr ; $( $chain_fmt_args:expr ),*) => {{
+        #[allow(unused_imports)]
         use anyhow::Context;
         $op.with_context(|| format!($( $chain_fmt_args ),*))?
     }}
 }
 
-impl From<TectonicError> for io::Error {
-    fn from(err: TectonicError) -> io::Error {
-        io::Error::other(err.to_string())
+/// Error context for when an underlying engine failed catastrophically.
+#[derive(Debug)]
+pub struct EngineError(&'static str);
+
+impl EngineError {
+    /// Create a new [`EngineError`], given the name of an engine
+    pub fn new(engine: &'static str) -> EngineError {
+        EngineError(engine)
+    }
+
+    /// Get the name of the engine for this context
+    pub fn engine(&self) -> &str {
+        self.0
     }
 }
 
-/// Extension trait for adding context to errors (anyhow::Context re-export).
-pub use anyhow::Context as ResultExt;
-
-/// Helper to dump errors to stderr in a user-friendly format.
-pub fn dump_uncolorized(err: &Error) {
-    let mut prefix = "error:";
-    let mut s = io::stderr();
-
-    for cause in err.chain() {
-        writeln!(s, "{prefix} {cause}").expect("write to stderr failed");
-        prefix = "caused by:";
+impl Display for EngineError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "the {} engine had an unrecoverable error", self.0)
     }
+}
+
+/// Write the information contained in this object to standard error in a
+/// somewhat user-friendly form.
+///
+/// The `error_chain` crate provides a Display impl for its Error objects
+/// that ought to provide this functionality, but I have had enormous
+/// trouble being able to use it. So instead we emulate their code. This
+/// function is also paralleled by the implementation in
+/// `status::termcolor::TermcolorStatusBackend`, which adds the sugar of
+/// providing nice colorization if possible. This function should only be
+/// used if a `StatusBackend` is not yet available in the running program.
+pub fn dump_uncolorized(error: &Error) {
+    let mut s = io::stderr();
+    writeln!(s, "{:#}", error).expect("write to stderr failed");
 }
 
 /// The DefinitelySame trait is a helper trait implemented because Errors do
@@ -197,19 +98,29 @@ pub fn dump_uncolorized(err: &Error) {
 /// since it's nice to be able to check if an error matches the one that's
 /// expected. DefinitelySame addresses this by providing a weak equivalence
 /// test: definitely_same() returns true if the two values definitely are
-/// equivalent, and false otherwise.
+/// equivalent, and false otherwise. This can happen if the value are known to
+/// be different, but also if we can't tell. It doesn't cover all cases, but
+/// it does cover the ones that come up in our test suite.
 pub trait DefinitelySame {
-    /// Returns true if the two values are definitely equivalent.
+    /// Return true if two items are definitely the same, false otherwise
     fn definitely_same(&self, other: &Self) -> bool;
 }
 
-impl DefinitelySame for Error {
-    fn definitely_same(&self, other: &Self) -> bool {
-        self.to_string() == other.to_string()
-    }
-}
+// Rust currently thinks that this impl conflicts with the one that we
+// provide for Result ... I am pretty sure that's not the case since the
+// Result PartialEq impl requires that T and E be PartialEq too, whereas
+// our definition works for subtypes that are DefinitelySame but
+// not PartialEq too.
+//
+// impl<T: PartialEq> DefinitelySame for T {
+//     fn definitely_same(&self, other: &T) -> bool {
+//         self == other
+//     }
+// }
+//
 
-impl DefinitelySame for TectonicError {
+impl DefinitelySame for Error {
+    /// Hack alert! We only compare stringifications.
     fn definitely_same(&self, other: &Self) -> bool {
         self.to_string() == other.to_string()
     }
@@ -256,16 +167,17 @@ impl<T: DefinitelySame, E: DefinitelySame> DefinitelySame for StdResult<T, E> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error::Error as StdError;
 
     #[test]
     fn test_def_same_option() {
-        let a = Some(Box::from(NewError::msg("A")));
-        let b = Some(Box::from(NewError::msg("A")));
+        let a = Some(Box::from(Error::msg("A")));
+        let b = Some(Box::from(Error::msg("A")));
 
         assert!(a.definitely_same(&b));
         assert!(b.definitely_same(&a));
 
-        let b = Some(Box::from(NewError::msg("B")));
+        let b = Some(Box::from(Error::msg("B")));
         assert!(!a.definitely_same(&b));
 
         let b = None;
@@ -275,32 +187,29 @@ mod tests {
     }
 
     #[test]
-    fn test_tectonic_error_display() {
-        let err = TectonicError::BadLength {
-            expected: 10,
-            observed: 5,
-        };
-        assert_eq!(err.to_string(), "expected length 10; found 5");
+    fn test_def_same_err() {
+        let a = Error::msg("A");
+        let b = Error::msg("A");
 
-        let err = TectonicError::NotSeekable;
-        assert_eq!(err.to_string(), "this stream is not seekable");
+        // Different backtraces but should be same
+        assert!(a.definitely_same(&b));
 
-        let err = TectonicError::PathForbidden("/etc/passwd".to_string());
-        assert_eq!(
-            err.to_string(),
-            "access to the path /etc/passwd is forbidden"
-        );
+        let b = Error::msg("B");
+        assert!(!a.definitely_same(&b));
 
-        let err = TectonicError::EngineError("xetex");
-        assert_eq!(
-            err.to_string(),
-            "the xetex engine had an unrecoverable error"
-        );
+        let a = Error::msg("A");
+        assert!(!a.definitely_same(&b));
+
+        let b = Error::msg("A");
+        assert!(a.definitely_same(&b));
     }
 
     #[test]
-    fn test_errmsg_macro() {
-        let err: Error = errmsg!("test error {}", 42);
-        assert_eq!(err.to_string(), "test error 42");
+    fn test_def_same_box_err() {
+        let a: Box<dyn StdError + Send> = Box::from(Error::msg("A"));
+        let b: Box<dyn StdError + Send> = Box::from(Error::msg("B"));
+
+        assert!(a.definitely_same(&a));
+        assert!(!a.definitely_same(&b));
     }
 }

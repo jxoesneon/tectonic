@@ -4,18 +4,6 @@
 //! The "v2cli" command-line interface -- a "multitool" interface resembling
 //! Cargo, as compared to the classic "rustc-like" CLI.
 
-use clap::{Parser, Subcommand};
-use std::{env, ffi::OsString, fs, path::Path, path::PathBuf, process};
-use tectonic::{
-    config::PersistentConfig,
-    errors::{self, Result},
-    status::{termcolor::TermcolorStatusBackend, ChatterLevel, StatusBackend},
-    tt_note,
-};
-use tectonic_errors::prelude::anyhow;
-use tectonic_status_base::plain::PlainStatusBackend;
-use tracing::level_filters::LevelFilter;
-
 use self::commands::{
     build::BuildCommand,
     bundle::BundleCommand,
@@ -24,6 +12,17 @@ use self::commands::{
     show::ShowCommand,
     watch::WatchCommand,
 };
+use clap::{Parser, Subcommand};
+use std::{env, ffi::OsString, fs, path::Path, path::PathBuf, process};
+use tectonic::errors::dump_uncolorized;
+use tectonic::{
+    config::PersistentConfig,
+    status::{termcolor::TermcolorStatusBackend, ChatterLevel, StatusBackend},
+    tt_note,
+};
+use tectonic_errors::{prelude::anyhow, Result};
+use tectonic_status_base::plain::PlainStatusBackend;
+use tracing::level_filters::LevelFilter;
 
 mod commands;
 
@@ -31,6 +30,7 @@ mod commands;
 #[derive(Debug, Parser)]
 #[command(
     name = "tectonic -X",
+    version,
     about = "Process (La)TeX documents",
     no_binary_name(true)
 )]
@@ -70,7 +70,7 @@ pub fn v2_main(effective_args: &[OsString]) {
     let config = match PersistentConfig::open(false) {
         Ok(c) => c,
         Err(ref e) => {
-            errors::dump_uncolorized(e);
+            dump_uncolorized(e);
             process::exit(1);
         }
     };

@@ -28,8 +28,24 @@ runs:
         cd "$d"
         curl --proto '=https' --tlsv1.2 -sSf https://pkgw.github.io/cranko/fetch-latest.sh | sh
         echo "PATH=$d:$PATH" >> "$GITHUB_ENV"
-    - name: Install latest Cranko (Windows)
-      if: ${{ runner.os == 'Windows' }}
+    - name: Install latest Cranko (Windows ARM64)
+      if: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' }}
+      shell: pwsh
+      run: |
+        $version = "0.17.3"
+        $d = Join-Path $Env:Temp cranko-$(New-Guid)
+        $archive = Join-Path $d cranko.zip
+        $url = "https://github.com/pkgw/cranko/releases/download/cranko@$version/cranko-$version-x86_64-pc-windows-msvc.zip"
+        [void][System.IO.Directory]::CreateDirectory($d)
+        Invoke-WebRequest -Uri $url -OutFile $archive
+        Expand-Archive -LiteralPath $archive -DestinationPath $d
+        & (Join-Path $d cranko.exe) --version
+        if ($LASTEXITCODE -ne 0) {
+          throw "Cranko failed to run"
+        }
+        Add-Content -Value "PATH=${d};$Env:PATH" -Path $Env:GITHUB_ENV -Encoding utf8
+    - name: Install latest Cranko (Windows x64)
+      if: ${{ runner.os == 'Windows' && runner.arch != 'ARM64' }}
       shell: pwsh
       run: |
         $d = Join-Path $Env:Temp cranko-$(New-Guid)
@@ -38,6 +54,11 @@ runs:
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://pkgw.github.io/cranko/fetch-latest.ps1'))
         Add-Content -Value "PATH=${d};$Env:PATH" -Path $Env:GITHUB_ENV -Encoding utf8
+    - name: Add debug tools to PATH (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: pwsh
+      run: |
+        Add-Content -Value "PATH=C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\;$Env:PATH" -Path $Env:GITHUB_ENV -Encoding utf8
     - name: Install release artifact
       uses: actions/download-artifact@v4
       with:

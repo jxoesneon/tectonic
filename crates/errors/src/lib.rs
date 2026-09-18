@@ -113,7 +113,7 @@ macro_rules! atry {
         $op.with_context(|| {
             let mut ar = $crate::AnnotatedMessage::default();
             $(
-                atry!(@aa ar $annotation);
+                $crate::atry!(@aa ar $annotation);
             )+
             ar
         })?

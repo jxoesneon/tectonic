@@ -2,11 +2,17 @@ lints.workspace = true
 
 [package]
 name = "tectonic_bridge_fontconfig"
-description = "Internal crate for the Tectonic project: tectonic_bridge_fontconfig"
 version = "0.17.3"
 edition = "2021"
 license = "MIT"
 links = "fontconfig"
+description = """
+Exposing fontconfig APIs to the Tectonic C/C++ and Rust code.
+"""
+homepage = "https://tectonic-typesetting.github.io/"
+documentation = "https://docs.rs/tectonic_bridge_fontconfig"
+repository = "https://github.com/tectonic-typesetting/tectonic/"
+readme = "README.md"
 
 [dependencies]
 libc = "0.2"

@@ -13,6 +13,19 @@
 //! For an example of how to use this module, see `src/bin/tectonic/main.rs`,
 //! which contains tectonic's main CLI program.
 
+use crate::errors::EngineError;
+use crate::{
+    ctry,
+    io::{
+        format_cache::FormatCache,
+        memory::{MemoryFileCollection, MemoryIo},
+        InputOrigin,
+    },
+    status::StatusBackend,
+    tt_error, tt_note, tt_warning,
+    unstable_opts::UnstableOptions,
+    BibtexEngine, Spx2HtmlEngine, TexEngine, TexOutcome, XdvipdfmxEngine,
+};
 use anyhow::Context;
 use byte_unit::{Byte, UnitType};
 use quick_xml::{events::Event, NsReader};
@@ -30,6 +43,7 @@ use std::{
 use tectonic_bridge_core::{CoreBridgeLauncher, DriverHooks, SecuritySettings, SystemRequestError};
 use tectonic_bundles::Bundle;
 use tectonic_engine_spx2html::AssetSpecification;
+use tectonic_errors::{Error, Result};
 use tectonic_io_base::{
     digest::DigestData,
     filesystem::{FilesystemIo, FilesystemPrimaryInputIo},
@@ -37,20 +51,6 @@ use tectonic_io_base::{
     InputHandle, IoProvider, OpenResult, OutputHandle,
 };
 use which::which;
-
-use crate::{
-    ctry, errmsg,
-    errors::Result,
-    io::{
-        format_cache::FormatCache,
-        memory::{MemoryFileCollection, MemoryIo},
-        InputOrigin,
-    },
-    status::StatusBackend,
-    tt_error, tt_note, tt_warning,
-    unstable_opts::UnstableOptions,
-    BibtexEngine, Spx2HtmlEngine, TexEngine, TexOutcome, XdvipdfmxEngine,
-};
 
 /// Different patterns with which files may have been accessed by the
 /// underlying engines. Once a file is marked as ReadThenWritten or
@@ -301,21 +301,20 @@ impl BridgeState {
         // Now that we're validated, write those files to disk so that the tool
         // can actually use them.
 
-        let tempdir = ctry!(
-            tempfile::Builder::new().tempdir();
-            "can't create temporary directory for external tool"
-        );
+        let tempdir = tempfile::Builder::new()
+            .tempdir()
+            .context("can't create temporary directory for external tool")?;
 
         {
             for name in &read_files {
                 // If a relative parent is found in the file to open, this fn
                 // does not properly handle that. Thus, throw an error.
                 if name.contains("../") {
-                    return Err(errmsg!(
+                    return Err(Error::msg(format!(
                         "relative parent paths are not supported for the \
                         external tool. Got path `{}`.",
-                        name
-                    ));
+                        name,
+                    )));
                 }
 
                 let mut ih = ctry!(
@@ -335,9 +334,7 @@ impl BridgeState {
                 }
 
                 let tool_path = tempdir.path().join(name);
-                let tool_parent = tool_path
-                    .parent()
-                    .expect("tool_path constructed from tempdir must have parent");
+                let tool_parent = tool_path.parent().unwrap();
 
                 if tool_parent != tempdir.path() {
                     ctry!(
@@ -371,9 +368,12 @@ impl BridgeState {
             status.dump_error_logs(&output.stderr[..]);
 
             return if let Some(n) = output.status.code() {
-                Err(errmsg!("the external tool exited with error code {}", n))
+                Err(Error::msg(format!(
+                    "the external tool exited with error code {}",
+                    n
+                )))
             } else {
-                Err(errmsg!("the external tool was terminated by a signal"))
+                Err(Error::msg("the external tool was terminated by a signal"))
             };
         }
 
@@ -413,10 +413,7 @@ impl BridgeState {
         // Mark the input files as having been read, and we're done.
 
         for name in &read_files {
-            let summ = self
-                .events
-                .get_mut(name)
-                .expect("tracked file must be in events map");
+            let summ = self.events.get_mut(name).unwrap();
             summ.access_pattern = match summ.access_pattern {
                 AccessPattern::Written => AccessPattern::WrittenThenRead,
                 c => c, // identity mapping makes sense for remaining options
@@ -1131,10 +1128,10 @@ impl ProcessingSessionBuilder {
                 let parent = match p.parent() {
                     Some(parent) => parent.to_owned(),
                     None => {
-                        return Err(errmsg!(
+                        return Err(Error::msg(format!(
                             "can't figure out a parent directory for input path \"{}\"",
                             p.display()
-                        ));
+                        )));
                     }
                 };
 
@@ -1253,7 +1250,7 @@ impl ProcessingSessionBuilder {
             pass: self.pass,
             primary_input_path,
             primary_input_tex_path: tex_input_name,
-            format_name: self.format_name.expect("format_name verified in create()"),
+            format_name: self.format_name.unwrap(),
             tex_aux_path: aux_path.display().to_string(),
             tex_xdv_path: xdv_path.display().to_string(),
             tex_pdf_path: pdf_path.display().to_string(),
@@ -1452,11 +1449,7 @@ impl ProcessingSession {
         // Do that cleanup.
 
         if clean_up_shell_escape {
-            let shell_escape_work = self
-                .bs
-                .shell_escape_work
-                .take()
-                .expect("shell_escape_work initialized if allowed");
+            let shell_escape_work = self.bs.shell_escape_work.take().unwrap();
             let shell_escape_err = std::fs::remove_dir_all(shell_escape_work.root());
 
             if let Err(e) = shell_escape_err {
@@ -1482,8 +1475,9 @@ impl ProcessingSession {
                 OpenResult::Ok(_) => false,
                 OpenResult::NotAvailable => true,
                 OpenResult::Err(e) => {
-                    return Err(e)
-                        .context(format!("could not open format file {}", self.format_name));
+                    return Err(e).with_context(|| {
+                        format!("could not open format file {}", self.format_name)
+                    });
                 }
             }
         };
@@ -1552,7 +1546,7 @@ impl ProcessingSession {
             }
 
             // The check above ensures that this is never None.
-            let root = self.output_path.as_ref().expect("output_path initialized");
+            let root = self.output_path.as_ref().unwrap();
 
             for (name, info) in &self.bs.events {
                 if info.input_origin != InputOrigin::Filesystem {
@@ -1607,11 +1601,7 @@ impl ProcessingSession {
             }
 
             let sname = name;
-            let summ = self
-                .bs
-                .events
-                .get_mut(name)
-                .expect("event missing for output file");
+            let summ = self.bs.events.get_mut(name).unwrap();
 
             if !only_logs && (self.output_format == OutputFormat::Aux) {
                 // In this mode we're only writing the .aux file. I initially
@@ -1652,8 +1642,7 @@ impl ProcessingSession {
             }
 
             let real_path = root.join(name);
-            let byte_len =
-                Byte::from_u128(file.data.len() as u128).expect("file size fits in u128");
+            let byte_len = Byte::from_u128(file.data.len() as u128).unwrap();
             status.note_highlighted(
                 "Writing ",
                 &format!("`{}`", real_path.display()),
@@ -1793,10 +1782,12 @@ impl ProcessingSession {
         // PathBuf.file_stem() doesn't do what we want since it only strips
         // one extension. As of 1.17, the compiler needs a type annotation for
         // some reason, which is why we use the `r` variable.
-        let r: Result<&str> =
-            self.format_name.split('.').next().ok_or_else(|| {
-                errmsg!("incomprehensible format file name \"{}\"", self.format_name)
-            });
+        let r: Result<&str> = self.format_name.split('.').next().ok_or_else(|| {
+            Error::msg(format!(
+                "incomprehensible format file name \"{}\"",
+                self.format_name
+            ))
+        });
         let stem = r?;
 
         let result = {
@@ -1820,7 +1811,7 @@ impl ProcessingSession {
             }
             Ok(TexOutcome::Errors) => {
                 tt_error!(status, "errors were issued by the TeX engine; use --print and/or --keep-logs for details.");
-                return Err(errmsg!("unhandled TeX engine error"));
+                return Err(Error::msg("unhandled TeX engine error".to_owned()));
             }
             Err(e) => {
                 return Err(e);
@@ -1902,7 +1893,8 @@ impl ProcessingSession {
                     Some("errors were issued by the TeX engine, but were ignored; \
                          use --print and/or --keep-logs for details."),
             Err(e) =>
-                return Err(e),
+                return Err(e)
+                    .with_context(|| EngineError::new("XeTeX")),
         };
 
         if !self.bs.mem.files.borrow().contains_key(&self.tex_xdv_path) {
@@ -1947,7 +1939,7 @@ impl ProcessingSession {
                 );
             }
             Err(e) => {
-                return Err(e.context("the BibTeX engine had an unrecoverable error"));
+                return Err(e).with_context(|| EngineError::new("BibTeX"));
             }
         }
 
@@ -1985,7 +1977,9 @@ impl ProcessingSession {
                 engine.paper_spec(ps.clone());
             }
 
-            engine.process(&mut launcher, &self.tex_xdv_path, &self.tex_pdf_path)?;
+            engine
+                .process(&mut launcher, &self.tex_xdv_path, &self.tex_pdf_path)
+                .with_context(|| EngineError::new("xdvipdfmx"))?;
         }
 
         self.bs.mem.files.borrow_mut().remove(&self.tex_xdv_path);
@@ -1999,7 +1993,9 @@ impl ProcessingSession {
             match (self.html_emit_files, self.output_path.as_ref()) {
                 (true, Some(p)) => engine.output_base(p),
                 (false, _) => engine.do_not_emit_files(),
-                (true, None) => return Err(errmsg!("HTML output must be saved directly to disk")),
+                (true, None) => {
+                    return Err(Error::msg("HTML output must be saved directly to disk"))
+                }
             };
 
             if let Some(p) = self.html_assets_spec_path.as_ref() {
@@ -2013,7 +2009,9 @@ impl ProcessingSession {
             }
 
             status.note_highlighted("Running ", "spx2html", " ...");
-            engine.process_to_filesystem(&mut self.bs, status, &self.tex_xdv_path)?;
+            engine
+                .process_to_filesystem(&mut self.bs, status, &self.tex_xdv_path)
+                .with_context(|| EngineError::new("xdvipdfmx"))?;
         }
 
         self.bs.mem.files.borrow_mut().remove(&self.tex_xdv_path);
@@ -2159,7 +2157,7 @@ impl ProcessingSession {
                 }
 
                 (State::InBinaryName, Event::Text(ref e)) => {
-                    let text = e.unescape()?;
+                    let text = e.decode()?;
 
                     state = if &text == "biber" {
                         State::InBiberCmdline
@@ -2198,7 +2196,7 @@ impl ProcessingSession {
                 }
 
                 (State::InBiberArgument, Event::Text(ref e)) => {
-                    argv.push(e.unescape()?.to_string());
+                    argv.push(e.decode()?.to_string());
                     state = State::InBiberCmdline;
                 }
 
@@ -2249,7 +2247,7 @@ impl ProcessingSession {
                 }
 
                 (State::InBiberFileRequirement, Event::Text(ref e)) => {
-                    extra_requires.insert(e.unescape()?.to_string());
+                    extra_requires.insert(e.decode()?.to_string());
                     state = State::InBiberRequirementSection;
                 }
 

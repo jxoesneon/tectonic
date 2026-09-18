@@ -2,11 +2,17 @@ lints.workspace = true
 
 [package]
 name = "tectonic_bridge_png"
-description = "Internal crate for the Tectonic project: tectonic_bridge_png"
 version = "0.17.3"
 edition = "2021"
 license = "MIT"
 links = "png"
+description = """
+Exposing PNG APIs to the Tectonic C/C++ and Rust code.
+"""
+homepage = "https://tectonic-typesetting.github.io/"
+documentation = "https://docs.rs/tectonic_bridge_png"
+repository = "https://github.com/tectonic-typesetting/tectonic/"
+readme = "README.md"
 
 [build-dependencies]
 tectonic_dep_support = { path = "../dep_support", version = "0.17.3"  }

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -41,7 +41,7 @@ jobs:
     if: ${{ inputs.is-dev }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -73,7 +73,7 @@ jobs:
     if: ${{ inputs.is-release }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -96,7 +96,7 @@ jobs:
     needs: branch-and-tag
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -123,7 +123,7 @@ jobs:
     if: ${{ inputs.is-release }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -133,6 +133,7 @@ jobs:
         with:
           is-dev: ${{ inputs.is-dev }}
           is-release: ${{ inputs.is-release }}
+          artifacts: 'false'
       - name: "Rename for jxoesneon fork"
         if: ${{ github.repository == 'jxoesneon/tectonic' }}
         run: |
@@ -151,7 +152,7 @@ jobs:
     if: ${{ inputs.is-release }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: true
@@ -166,4 +167,4 @@ jobs:
         if: ${{ steps.deploy-setup.outputs.top-level != 'skip' }}
         run: bash dist/update-website.sh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.BOOK_TOKEN }}
