@@ -66,6 +66,7 @@ members = [
     "crates/pdf_backend",
     "crates/pdf_io",
     "crates/status_base",
+    "crates/strings",
     "crates/xdv",
     "crates/xetex_format",
     "crates/xetex_layout",

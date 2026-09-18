@@ -3552,6 +3552,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "tectonic_strings"
+version = "0.17.3"
+dependencies = [
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "tectonic_xdv"
 version = "0.17.3"
 dependencies = [
