@@ -1,0 +1,33 @@
+# Copyright 2026 the Tectonic Project & FerroTeX Authors
+# Licensed under the MIT License.
+
+[package]
+name = "tectonic_crater"
+description = "Phase 2 Differential Testing and Parity Harness for Tectonic Pure-Rust Migration"
+version = "0.17.3"
+authors = ["Peter Williams <peter@newton.cx>", "FerroTeX Authors"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+byteorder = "^1.4"
+flate2 = { version = "^1.0.19", default-features = false, features = ["zlib"] }
+regex = "1.10.2"
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = "1.0"
+tectonic = { path = "../.." }
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.3" }
+tectonic_errors = { path = "../errors", version = "0.17.3" }
+tectonic_io_base = { path = "../io_base", version = "0.17.3" }
+tectonic_status_base = { path = "../status_base", version = "0.17.3" }
+tectonic_xdv = { path = "../xdv", version = "0.17.3" }
+tempfile = "^3.1"
+thiserror = "^2.0"
+walkdir = "2"
+
+[package.metadata.internal_dep_versions]
+tectonic_bridge_core = "thiscommit:2023-06-11:PvhF7YB"
+tectonic_io_base = "thiscommit:2021-06-13:XFjtSsZ"
+tectonic_status_base = "317ae79ceaa2593fb56090e37bf1f5cc24213dd9"
+tectonic_xdv = "c91f2ef37858d1a0a724a5c3ddc2f7ea46373c77"

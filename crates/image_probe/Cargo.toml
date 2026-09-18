@@ -1,0 +1,21 @@
+# Copyright 2026 the Tectonic Project & FerroTeX Authors
+# Licensed under the MIT License.
+
+lints.workspace = true
+
+[package]
+name = "tectonic_image_probe"
+description = "Pure-Rust image and PDF dimension and metadata probing for Tectonic"
+version = "0.17.3"
+authors = ["Peter Williams <peter@newton.cx>", "FerroTeX Authors"]
+license = "MIT"
+edition = "2021"
+links = "tectonic_image_probe"
+
+[dependencies]
+byteorder = "^1.4"
+libc = "^0.2"
+thiserror = "^2.0"
+
+[dev-dependencies]
+tempfile = "^3.1"

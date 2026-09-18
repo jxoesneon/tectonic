@@ -3342,6 +3342,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "tectonic_crater"
+version = "0.17.3"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "flate2",
+ "regex",
+ "serde",
+ "serde_json",
+ "tectonic",
+ "tectonic_bridge_core",
+ "tectonic_errors",
+ "tectonic_io_base",
+ "tectonic_status_base",
+ "tectonic_xdv",
+ "tempfile",
+ "thiserror",
+ "walkdir",
+]
+
+[[package]]
 name = "tectonic_dep_support"
 version = "0.17.3"
 dependencies = [
@@ -3434,6 +3455,16 @@ dependencies = [
  "reqwest",
  "tectonic_errors",
  "tectonic_status_base",
+]
+
+[[package]]
+name = "tectonic_image_probe"
+version = "0.17.3"
+dependencies = [
+ "byteorder",
+ "libc",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]
