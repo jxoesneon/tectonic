@@ -77,6 +77,65 @@ pub struct PdfNormalizer {
     pub strip_comments: bool,
 }
 
+/// Builder for configuring [`PdfNormalizer`] options.
+#[derive(Debug, Clone, Default)]
+pub struct PdfNormalizerBuilder {
+    normalize_timestamps: Option<bool>,
+    normalize_font_subsets: Option<bool>,
+    normalize_producer: Option<bool>,
+    normalize_floats: Option<bool>,
+    float_precision: Option<usize>,
+    strip_comments: Option<bool>,
+}
+
+impl PdfNormalizerBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn normalize_timestamps(mut self, val: bool) -> Self {
+        self.normalize_timestamps = Some(val);
+        self
+    }
+
+    pub fn normalize_font_subsets(mut self, val: bool) -> Self {
+        self.normalize_font_subsets = Some(val);
+        self
+    }
+
+    pub fn normalize_producer(mut self, val: bool) -> Self {
+        self.normalize_producer = Some(val);
+        self
+    }
+
+    pub fn normalize_floats(mut self, val: bool) -> Self {
+        self.normalize_floats = Some(val);
+        self
+    }
+
+    pub fn float_precision(mut self, val: usize) -> Self {
+        self.float_precision = Some(val);
+        self
+    }
+
+    pub fn strip_comments(mut self, val: bool) -> Self {
+        self.strip_comments = Some(val);
+        self
+    }
+
+    pub fn build(self) -> PdfNormalizer {
+        let def = PdfNormalizer::default();
+        PdfNormalizer {
+            normalize_timestamps: self.normalize_timestamps.unwrap_or(def.normalize_timestamps),
+            normalize_font_subsets: self.normalize_font_subsets.unwrap_or(def.normalize_font_subsets),
+            normalize_producer: self.normalize_producer.unwrap_or(def.normalize_producer),
+            normalize_floats: self.normalize_floats.unwrap_or(def.normalize_floats),
+            float_precision: self.float_precision.unwrap_or(def.float_precision),
+            strip_comments: self.strip_comments.unwrap_or(def.strip_comments),
+        }
+    }
+}
+
 impl Default for PdfNormalizer {
     fn default() -> Self {
         Self {
@@ -91,6 +150,11 @@ impl Default for PdfNormalizer {
 }
 
 impl PdfNormalizer {
+    /// Creates a configuration builder for [`PdfNormalizer`].
+    pub fn builder() -> PdfNormalizerBuilder {
+        PdfNormalizerBuilder::default()
+    }
+
     /// Creates a new normalizer with default Gate 2 settings.
     pub fn new() -> Self {
         Self::default()
@@ -684,5 +748,295 @@ mod tests {
         let res = compare_pdfs(pdf1, pdf2, 300).expect("comparison should succeed");
         assert!(!res.stream_matches);
         assert!(!res.passes_gate2(0.001));
+    }
+
+    #[test]
+    fn test_pdf_diff_error_display() {
+        let err1 = PdfDiffError::ParseError("syntax error".into());
+        assert_eq!(format!("{err1}"), "PDF syntax error: syntax error");
+
+        let err2 = PdfDiffError::Decompress("zlib boom".into());
+        assert_eq!(format!("{err2}"), "Decompression failure: zlib boom");
+
+        let err3 = PdfDiffError::RenderError("pdftoppm missing".into());
+        assert_eq!(format!("{err3}"), "Visual raster render failure: pdftoppm missing");
+
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let err4 = PdfDiffError::from(io_err);
+        assert!(format!("{err4}").contains("file not found"));
+    }
+
+    #[test]
+    fn test_pdf_normalizer_builder_and_custom_options() {
+        let normalizer = PdfNormalizerBuilder::default()
+            .normalize_timestamps(false)
+            .normalize_font_subsets(false)
+            .normalize_producer(false)
+            .strip_comments(true)
+            .float_precision(3)
+            .build();
+
+        let input = "% comment\n/CreationDate (D:20260918072422) /ABCDEF+CMR10 10.12345 20.98765 cm";
+        let normalized = normalizer.normalize_metadata_and_tags(input);
+        // Timestamps and subsets should NOT be normalized
+        assert!(normalized.contains("20260918072422"));
+        assert!(normalized.contains("ABCDEF+CMR10"));
+
+        let stream_norm = normalizer.normalize_content_stream(input.as_bytes()).unwrap();
+        // Comments should be stripped
+        assert!(!stream_norm.contains("comment"));
+        // Float rounded to 3 places
+        assert!(stream_norm.contains("10.123"));
+        assert!(stream_norm.contains("20.988"));
+    }
+
+    #[test]
+    fn test_comments_and_hex_strings_normalization() {
+        let normalizer_preserve_comments = PdfNormalizerBuilder::default()
+            .strip_comments(false)
+            .build();
+
+        let input = b"% persistent comment\n<48656C6C6F> Tj\n";
+        let out = normalizer_preserve_comments.normalize_content_stream(input).unwrap();
+        assert!(out.contains("% persistent comment"));
+        assert!(out.contains("<48656C6C6F>"));
+    }
+
+    #[test]
+    fn test_visual_comparator_and_raster_buffers() {
+        let comp = VisualComparator::default();
+        assert_eq!(comp.dpi, 300);
+
+        let custom_comp = VisualComparator::new(150);
+        assert_eq!(custom_comp.dpi, 150);
+
+        // 1. Identical 2x2 RGBA buffers
+        let img_a = RasterImage {
+            width: 2,
+            height: 2,
+            data: vec![255; 16],
+        };
+        let img_b = img_a.clone();
+        let (score, diff_count) = comp.compare_raster_buffers(&img_a, &img_b);
+        assert_eq!(score, 0.0);
+        assert_eq!(diff_count, 0);
+
+        // 2. 1 pixel differing out of 4 (25.0%)
+        let mut img_diff = img_a.clone();
+        img_diff.data[0] = 0; // Red channel inverted on pixel 0
+        let (score_diff, diff_count_diff) = comp.compare_raster_buffers(&img_a, &img_diff);
+        assert_eq!(score_diff, 25.0);
+        assert_eq!(diff_count_diff, 1);
+
+        // 3. Dimension mismatch
+        let img_mismatch = RasterImage {
+            width: 3,
+            height: 2,
+            data: vec![255; 24],
+        };
+        let (score_mismatch, _) = comp.compare_raster_buffers(&img_a, &img_mismatch);
+        assert_eq!(score_mismatch, 100.0);
+
+        // 4. Zero pixel count
+        let img_zero = RasterImage {
+            width: 0,
+            height: 0,
+            data: Vec::new(),
+        };
+        let (score_zero, _) = comp.compare_raster_buffers(&img_zero, &img_zero);
+        assert_eq!(score_zero, 0.0);
+    }
+
+    #[test]
+    fn test_decompress_stream_variants() {
+        use flate2::write::{DeflateEncoder, ZlibEncoder};
+        use flate2::Compression;
+        use std::io::Write;
+
+        // 1. Raw uncompressed data (is_flate = false)
+        let raw = b"uncompressed raw data";
+        let out_raw = PdfNormalizer::decompress_stream(raw, false).unwrap();
+        assert_eq!(out_raw, raw);
+
+        // 2. Valid zlib stream
+        let mut zlib_enc = ZlibEncoder::new(Vec::new(), Compression::default());
+        zlib_enc.write_all(b"zlib decompressed payload").unwrap();
+        let zlib_bytes = zlib_enc.finish().unwrap();
+        let out_zlib = PdfNormalizer::decompress_stream(&zlib_bytes, true).unwrap();
+        assert_eq!(out_zlib, b"zlib decompressed payload");
+
+        // 3. Raw deflate stream (RFC 1951 fallback)
+        let mut def_enc = DeflateEncoder::new(Vec::new(), Compression::default());
+        def_enc.write_all(b"raw deflate payload").unwrap();
+        let def_bytes = def_enc.finish().unwrap();
+        let out_def = PdfNormalizer::decompress_stream(&def_bytes, true).unwrap();
+        assert_eq!(out_def, b"raw deflate payload");
+
+        // 4. Invalid stream bytes
+        let corrupt = b"\x00\x01\x02\x03\x04\x05\x06\x07";
+        let err = PdfNormalizer::decompress_stream(corrupt, true).unwrap_err();
+        assert!(matches!(err, PdfDiffError::Decompress(_)));
+    }
+
+    #[test]
+    fn test_metadata_normalization_comprehensive() {
+        let norm = PdfNormalizer::new();
+
+        let doc = "
+            /ModDate (D:20261231235959)
+            /CreationDate <3230323630393138>
+            /ModDate <3230323630393139>
+            <xmp:ModifyDate>2026-09-18T12:00:00Z</xmp:ModifyDate>
+            <xmp:MetadataDate>2026-09-18T12:00:00Z</xmp:MetadataDate>
+            <pdfx:CreationDate>2026-09-18T12:00:00Z</pdfx:CreationDate>
+            /Creator (XeTeX 0.999996)
+            <pdf:Producer>XeTeX 0.999996</pdf:Producer>
+            <xmp:CreatorTool>XeTeX</xmp:CreatorTool>
+            /ID [ <11223344556677889900AABBCCDDEEFF> <AABBCCDDEEFF00112233445566778899> ]
+            /ABCDEF+LinLibertine
+        ";
+
+        let normalized = norm.normalize_metadata_and_tags(doc);
+
+        assert!(normalized.contains("/ModDate (D:19700101000000Z)"));
+        assert!(normalized.contains("/CreationDate (D:19700101000000Z)"));
+        assert!(normalized.contains("<xmp:CreateDate>1970-01-01T00:00:00Z</xmp:CreateDate>"));
+        assert!(normalized.contains("/Creator (CANONICAL_TECTONIC_PRODUCER)"));
+        assert!(normalized.contains("<pdf:Producer>CANONICAL_TECTONIC_PRODUCER</pdf:Producer>"));
+        assert!(normalized.contains("<xmp:CreatorTool>CANONICAL_TECTONIC_PRODUCER</xmp:CreatorTool>"));
+        assert!(normalized.contains("/ID [ <00000000000000000000000000000000> <00000000000000000000000000000000> ]"));
+        assert!(normalized.contains("/SUBSET+LinLibertine"));
+    }
+
+    #[test]
+    fn test_content_stream_escaped_strings_and_floats() {
+        let norm = PdfNormalizer::new();
+
+        let stream = b"BT (Hello \\(nested\\) and \\\\ escaped) Tj 12.345678 98.765432 Td ET";
+        let out = norm.normalize_content_stream(stream).unwrap();
+
+        assert!(out.contains("(Hello \\(nested\\) and \\\\ escaped)"));
+        assert!(out.contains("12.3457"));
+        assert!(out.contains("98.7654"));
+    }
+
+    #[test]
+    fn test_gate2_evaluation_methods() {
+        let clean = PdfComparisonResult {
+            stream_matches: true,
+            visual_diff_score: 0.0,
+            divergent_pages: Vec::new(),
+            divergence_details: Vec::new(),
+        };
+        assert!(clean.is_identical());
+        assert!(clean.passes_gate2(0.001));
+
+        let slight_diff = PdfComparisonResult {
+            stream_matches: true,
+            visual_diff_score: 0.005,
+            divergent_pages: vec![0],
+            divergence_details: vec!["Anti-aliasing subpixel variation".into()],
+        };
+        assert!(!slight_diff.is_identical());
+        assert!(slight_diff.passes_gate2(0.01));
+        assert!(!slight_diff.passes_gate2(0.001));
+
+        let stream_fail = PdfComparisonResult {
+            stream_matches: false,
+            visual_diff_score: 0.0,
+            divergent_pages: vec![0],
+            divergence_details: vec!["Stream AST mismatch".into()],
+        };
+        assert!(!stream_fail.passes_gate2(1.0));
+    }
+
+    #[test]
+    fn test_basic_png_parser_branches() {
+        // 1. Too short
+        let short = b"\x89PNG\r\n\x1a";
+        let err1 = VisualComparator::parse_basic_png(short).unwrap_err();
+        assert!(matches!(err1, PdfDiffError::RenderError(_)));
+
+        // 2. Bad magic signature
+        let bad_magic = b"NOT_A_PNG_FILE_HEADER_12345678";
+        let err2 = VisualComparator::parse_basic_png(bad_magic).unwrap_err();
+        assert!(matches!(err2, PdfDiffError::RenderError(_)));
+
+        // 3. Valid PNG header (width=16, height=32)
+        let mut valid = vec![0u8; 32];
+        valid[0..8].copy_from_slice(b"\x89PNG\r\n\x1a\n");
+        valid[16..20].copy_from_slice(&16u32.to_be_bytes());
+        valid[20..24].copy_from_slice(&32u32.to_be_bytes());
+        let img = VisualComparator::parse_basic_png(&valid).unwrap();
+        assert_eq!(img.width, 16);
+        assert_eq!(img.height, 32);
+        assert_eq!(img.data.len(), 32);
+    }
+
+    #[test]
+    fn test_content_stream_signs_dots_and_page_mismatch() {
+        let norm = PdfNormalizer::new();
+
+        // Signed and leading-dot floats: "+.5 -.25 -.000000001"
+        let stream = b"10 20 m +.50000 -.25000 -.000000001 l";
+        let out = norm.normalize_content_stream(stream).unwrap();
+        assert!(out.contains("0.5"));
+        assert!(out.contains("-0.25"));
+
+        // Page count mismatch
+        let pdf1 = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 12 >>\nstream\nBT ET\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
+        let pdf2 = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R, 5 0 R] /Count 2 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 12 >>\nstream\nBT ET\nendstream\nendobj\n5 0 obj\n<< /Type /Page /Parent 2 0 R /Contents 6 0 R >>\nendobj\n6 0 obj\n<< /Length 12 >>\nstream\nBT ET\nendstream\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
+
+        let (matches, divergent_pages, details) = norm.compare_content_streams(pdf1, pdf2).unwrap();
+        assert!(!matches);
+        assert_eq!(divergent_pages.len(), 2);
+        assert!(details[0].contains("Page count mismatch"));
+
+        // Truncate diagnostic long string
+        let long_stream_a = vec![b'A'; 300];
+        let long_stream_b = vec![b'B'; 300];
+        let (matches_diff, _, diff_details) = norm.compare_content_streams(&long_stream_a, &long_stream_b).unwrap();
+        assert!(!matches_diff);
+        assert!(diff_details[0].contains("[truncated]"));
+    }
+
+    #[test]
+    fn test_pdf_normalizer_builder_and_scientific_notation() {
+        let norm = PdfNormalizerBuilder::new()
+            .normalize_timestamps(true)
+            .normalize_font_subsets(true)
+            .normalize_producer(true)
+            .normalize_floats(true)
+            .float_precision(3)
+            .strip_comments(true)
+            .build();
+        assert!(norm.normalize_floats);
+
+        let stream = b"1.25e+02 cm 3.4E-1 re .7500 w -0.0000001 w";
+        let out = norm.normalize_content_stream(stream).unwrap();
+        assert!(out.contains("125"));
+        assert!(out.contains("0.34"));
+        assert!(out.contains("0.75"));
+        assert!(out.contains("0 w"));
+
+        let def_builder = PdfNormalizer::builder();
+        let _ = def_builder.build();
+    }
+
+    #[test]
+    fn test_visual_comparator_pdftoppm_render() {
+        let comp = VisualComparator::new(150);
+        let sample_pdf = Path::new("tests/tex-outputs/the_letter_a.pdf");
+        if sample_pdf.exists() && std::process::Command::new("pdftoppm").arg("-v").output().is_ok() {
+            let img_res = comp.render_page_with_pdftoppm(sample_pdf, 1);
+            assert!(img_res.is_ok());
+            let img = img_res.unwrap();
+            assert!(img.width > 0);
+            assert!(img.height > 0);
+        }
+
+        let bad_pdf = Path::new("nonexistent_crater_test.pdf");
+        let err = comp.render_page_with_pdftoppm(bad_pdf, 1);
+        assert!(err.is_err());
     }
 }

@@ -203,18 +203,23 @@ impl PdfDocIndex {
         }
 
         if collected_pages.is_empty() {
-            // Fallback: scan all /Type /Page objects directly
-            for (&_id, &body) in &objects {
-                if (body.contains("/Type /Page") || body.contains("/Type/Page")) && !body.contains("/Pages") {
-                    let mut attrs = PageAttrs::default();
-                    attrs.media_box = extract_box(body, "/MediaBox");
-                    attrs.crop_box = extract_box(body, "/CropBox");
-                    attrs.bleed_box = extract_box(body, "/BleedBox");
-                    attrs.trim_box = extract_box(body, "/TrimBox");
-                    attrs.art_box = extract_box(body, "/ArtBox");
-                    attrs.rotate = extract_int(body, "/Rotate").unwrap_or(0);
-                    collected_pages.push(attrs);
-                }
+            // Fallback: scan all /Type /Page objects directly, sorted deterministically by ID
+            let mut page_objs: Vec<(u32, &str)> = objects
+                .iter()
+                .filter(|(_, body)| (body.contains("/Type /Page") || body.contains("/Type/Page")) && !body.contains("/Pages"))
+                .map(|(&id, &body)| (id, body))
+                .collect();
+            page_objs.sort_by_key(|(id, _)| *id);
+
+            for (_id, body) in page_objs {
+                let mut attrs = PageAttrs::default();
+                attrs.media_box = extract_box(body, "/MediaBox");
+                attrs.crop_box = extract_box(body, "/CropBox");
+                attrs.bleed_box = extract_box(body, "/BleedBox");
+                attrs.trim_box = extract_box(body, "/TrimBox");
+                attrs.art_box = extract_box(body, "/ArtBox");
+                attrs.rotate = extract_int(body, "/Rotate").unwrap_or(0);
+                collected_pages.push(attrs);
             }
         }
 

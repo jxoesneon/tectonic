@@ -2267,4 +2267,449 @@ mod tests {
         assert_eq!(collector.specials.len(), 1);
         assert_eq!(collector.specials[0].contents, b"test");
     }
+
+    #[test]
+    fn test_bitwise_divergence_length_mismatches() {
+        let shorter = b"12345";
+        let longer = b"1234567890";
+
+        // 1. Expected longer than actual
+        let err1 = XdvDiffEngine::compare_bitwise(longer, shorter).unwrap_err();
+        assert_eq!(err1.byte_offset, 5);
+        assert_eq!(err1.expected_len, 10);
+        assert_eq!(err1.actual_len, 5);
+        let msg1 = format!("{err1}");
+        assert!(msg1.contains("Bitwise divergence at byte offset"));
+        assert!(msg1.contains("expected=10 B, actual=5 B"));
+
+        // 2. Actual longer than expected
+        let err2 = XdvDiffEngine::compare_bitwise(shorter, longer).unwrap_err();
+        assert_eq!(err2.byte_offset, 5);
+        assert_eq!(err2.expected_len, 5);
+        assert_eq!(err2.actual_len, 10);
+        let msg2 = format!("{err2}");
+        assert!(msg2.contains("expected=5 B, actual=10 B"));
+    }
+
+    #[test]
+    fn test_xdv_opcode_event_names_and_coords() {
+        let coord = Coordinate::new(100, 200);
+
+        let events = vec![
+            XdvOpcodeEvent::Preamble { file_type: "xdv".into(), comment: b"comment".to_vec() },
+            XdvOpcodeEvent::DefineFont { font_num: 1, name: "cmr10".into(), scale_factor: 10, design_size: 10, checksum: 0 },
+            XdvOpcodeEvent::DefineNativeFont { font_num: 2, name: "Arial".into(), size: 10, face_index: 0, color_rgba: None, extend: None, slant: None, embolden: None },
+            XdvOpcodeEvent::BeginPage { page_num: 1, counters: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+            XdvOpcodeEvent::EndPage { page_num: 1 },
+            XdvOpcodeEvent::SetFont { font_num: 1 },
+            XdvOpcodeEvent::SetChar { char_code: 65, font_num: 1, coord },
+            XdvOpcodeEvent::PutGlyph { glyph_id: 65, font_num: 1, coord, width: 50 },
+            XdvOpcodeEvent::SetRule { height: 10, width: 20, coord },
+            XdvOpcodeEvent::PutRule { height: 10, width: 20, coord },
+            XdvOpcodeEvent::MoveRight { delta: 5, new_coord: coord },
+            XdvOpcodeEvent::MoveDown { delta: 10, new_coord: coord },
+            XdvOpcodeEvent::Push { depth: 1, coord },
+            XdvOpcodeEvent::Pop { depth: 0, coord },
+            XdvOpcodeEvent::Special { contents: b"spec".to_vec(), coord },
+            XdvOpcodeEvent::Postamble,
+            XdvOpcodeEvent::DoublePostamble,
+        ];
+
+        let expected_names = [
+            "preamble", "define_font", "define_native_font", "begin_page", "end_page",
+            "set_font", "set_char", "put_glyph", "set_rule", "put_rule",
+            "move_right", "move_down", "push", "pop", "special", "postamble", "double_postamble"
+        ];
+
+        for (ev, &name) in events.iter().zip(expected_names.iter()) {
+            assert_eq!(ev.opcode_name(), name);
+        }
+
+        // Coordinate checks
+        assert_eq!(events[0].coordinate(), Coordinate::default());
+        assert_eq!(events[6].coordinate(), coord);
+        assert_eq!(events[7].coordinate(), coord);
+        assert_eq!(events[8].coordinate(), coord);
+        assert_eq!(events[9].coordinate(), coord);
+        assert_eq!(events[10].coordinate(), coord);
+        assert_eq!(events[11].coordinate(), coord);
+        assert_eq!(events[12].coordinate(), coord);
+        assert_eq!(events[13].coordinate(), coord);
+        assert_eq!(events[14].coordinate(), coord);
+    }
+
+    #[test]
+    fn test_divergence_kind_display_all_variants() {
+        let coord = Coordinate::new(10, 20);
+
+        let kinds = vec![
+            DivergenceKind::OpcodeMismatch { expected: "push".into(), actual: "pop".into() },
+            DivergenceKind::GlyphPlacementMismatch {
+                glyph_id: 42,
+                font_num: 1,
+                expected_coord: coord,
+                actual_coord: Coordinate::new(15, 25),
+                delta_x: 5,
+                delta_y: 5,
+            },
+            DivergenceKind::FontDefinitionMismatch {
+                font_num: 2,
+                expected_name: "cmr10".into(),
+                actual_name: "cmbx10".into(),
+                expected_size: 655360,
+                actual_size: 700000,
+            },
+            DivergenceKind::CharMismatch {
+                font_num: 1,
+                expected_char: 65,
+                actual_char: 66,
+                coord,
+            },
+            DivergenceKind::RuleMismatch {
+                expected_height: 100,
+                expected_width: 200,
+                actual_height: 100,
+                actual_width: 250,
+                coord,
+            },
+            DivergenceKind::SpecialMismatch {
+                expected: "color push rgb 1 0 0".into(),
+                actual: "color push rgb 0 1 0".into(),
+                coord,
+            },
+            DivergenceKind::StackDepthMismatch { expected_depth: 2, actual_depth: 1 },
+            DivergenceKind::MovementMismatch {
+                direction: "right",
+                expected_delta: 10,
+                actual_delta: 20,
+                expected_coord: coord,
+                actual_coord: Coordinate::new(20, 20),
+            },
+            DivergenceKind::UnexpectedEndOfStream { expected_remaining: 3, next_expected: "end_page".into() },
+            DivergenceKind::TrailingOpcodes { actual_remaining: 2, next_actual: "special".into() },
+        ];
+
+        for kind in kinds {
+            let s = format!("{kind}");
+            assert!(!s.is_empty());
+        }
+
+        let div = XdvDivergence {
+            opcode_index: 7,
+            page_number: 1,
+            coordinate: coord,
+            kind: DivergenceKind::OpcodeMismatch { expected: "A".into(), actual: "B".into() },
+        };
+        assert!(format!("{div}").contains("Opcode #7 on Page 1"));
+    }
+
+    #[test]
+    fn test_xdv_builder_methods_and_opcode_trace_divergences() {
+        let xdv_full = XdvBuilder::new()
+            .comment(b"custom comment")
+            .native_font(1, "cmr10", 655360)
+            .native_font(2, "Helvetica", 655360)
+            .begin_page(1)
+            .set_font(1)
+            .move_right(1000)
+            .move_down(2000)
+            .push_stack()
+            .glyph(10, 100, 200, 500)
+            .rule(50, 150)
+            .special(b"spec content")
+            .pop_stack()
+            .end_page()
+            .build();
+
+        let trace1 = XdvDiffEngine::trace_opcodes(&xdv_full).unwrap();
+        assert!(!trace1.is_empty());
+
+        // Identical comparison produces clean stats
+        let stats = XdvDiffEngine::compare_opcode_traces(&trace1, &trace1).unwrap();
+        assert!(stats.total_opcodes > 5);
+        assert_eq!(stats.pages_checked, 1);
+
+        // 1. Preamble mismatch
+        let mut trace_bad_preamble = trace1.clone();
+        trace_bad_preamble[0] = XdvOpcodeEvent::Preamble { file_type: "dvi".into(), comment: b"other".to_vec() };
+        let err = XdvDiffEngine::compare_opcode_traces(&trace1, &trace_bad_preamble).unwrap_err();
+        assert!(matches!(err.kind, DivergenceKind::OpcodeMismatch { .. }));
+
+        // 2. DefineNativeFont mismatch
+        let mut trace_bad_native = trace1.clone();
+        trace_bad_native[1] = XdvOpcodeEvent::DefineNativeFont {
+            font_num: 1,
+            name: "Times-Roman".into(),
+            size: 655360,
+            face_index: 0,
+            color_rgba: None,
+            extend: None,
+            slant: None,
+            embolden: None,
+        };
+        let err = XdvDiffEngine::compare_opcode_traces(&trace1, &trace_bad_native).unwrap_err();
+        assert!(matches!(err.kind, DivergenceKind::FontDefinitionMismatch { .. }));
+
+        // 3. Trailing opcodes
+        let trace_short = trace1[..3].to_vec();
+        let err = XdvDiffEngine::compare_opcode_traces(&trace_short, &trace1).unwrap_err();
+        assert!(matches!(err.kind, DivergenceKind::TrailingOpcodes { .. }));
+
+        // 4. Unexpected end of stream
+        let err = XdvDiffEngine::compare_opcode_traces(&trace1, &trace_short).unwrap_err();
+        assert!(matches!(err.kind, DivergenceKind::UnexpectedEndOfStream { .. }));
+    }
+
+    #[test]
+    fn test_xdv_diff_engine_compare_bytes_and_files() {
+        let xdv = XdvBuilder::new()
+            .begin_page(1)
+            .rule(10, 20)
+            .end_page()
+            .build();
+
+        // 1. Compare identical bytes
+        let stats = XdvDiffEngine::compare_bytes(&xdv, &xdv).unwrap();
+        assert!(stats.bitwise_identical);
+        assert_eq!(stats.pages_checked, 1);
+
+        // 2. Compare files on disk via stream readers
+        let temp_dir = tempfile::tempdir().unwrap();
+        let p1 = temp_dir.path().join("a.xdv");
+        let p2 = temp_dir.path().join("b.xdv");
+        std::fs::write(&p1, &xdv).unwrap();
+        std::fs::write(&p2, &xdv).unwrap();
+
+        let f1 = std::fs::File::open(&p1).unwrap();
+        let f2 = std::fs::File::open(&p2).unwrap();
+        let f_stats = XdvDiffEngine::compare(f1, f2).unwrap();
+        assert!(f_stats.bitwise_identical);
+
+        // 3. Compare divergent files
+        let mut xdv_diverged = xdv.clone();
+        xdv_diverged[10] ^= 0xFF;
+        std::fs::write(&p2, &xdv_diverged).unwrap();
+        let f1_div = std::fs::File::open(&p1).unwrap();
+        let f2_div = std::fs::File::open(&p2).unwrap();
+        let div = XdvDiffEngine::compare(f1_div, f2_div).unwrap_err();
+        assert!(format!("{div}").contains("Page"));
+    }
+
+    #[test]
+    fn test_xdv_event_collector_char_run_and_collector_error() {
+        let mut collector = XdvEventCollector::default();
+        use tectonic_xdv::XdvEvents;
+        collector.handle_char_run(0, &[65, 66, 67]).unwrap();
+        assert_eq!(collector.char_runs.len(), 1);
+        assert_eq!(collector.char_runs[0].1, vec![65, 66, 67]);
+
+        let err = CollectorError::Io(std::io::Error::new(std::io::ErrorKind::Other, "test failure"));
+        assert!(format!("{err}").contains("test failure"));
+    }
+
+    #[test]
+    fn test_opcode_traces_detailed_parameter_mismatches() {
+        let coord = Coordinate::new(10, 20);
+
+        // 1. DefineFont parameter divergence
+        let f1 = vec![XdvOpcodeEvent::DefineFont {
+            font_num: 1, name: "cmr10".into(), scale_factor: 655360, design_size: 655360, checksum: 100
+        }];
+        let f2 = vec![XdvOpcodeEvent::DefineFont {
+            font_num: 1, name: "cmr10".into(), scale_factor: 700000, design_size: 655360, checksum: 100
+        }];
+        let err1 = XdvDiffEngine::compare_opcode_traces(&f1, &f2).unwrap_err();
+        assert!(matches!(err1.kind, DivergenceKind::FontDefinitionMismatch { .. }));
+
+        // 2. SetChar parameter divergence
+        let c1 = vec![XdvOpcodeEvent::SetChar { char_code: 65, font_num: 1, coord }];
+        let c2 = vec![XdvOpcodeEvent::SetChar { char_code: 66, font_num: 1, coord }];
+        let err2 = XdvDiffEngine::compare_opcode_traces(&c1, &c2).unwrap_err();
+        assert!(matches!(err2.kind, DivergenceKind::CharMismatch { .. }));
+
+        // 3. PutRule / SetRule divergence
+        let r1 = vec![XdvOpcodeEvent::PutRule { height: 10, width: 20, coord }];
+        let r2 = vec![XdvOpcodeEvent::PutRule { height: 10, width: 25, coord }];
+        let err3 = XdvDiffEngine::compare_opcode_traces(&r1, &r2).unwrap_err();
+        assert!(matches!(err3.kind, DivergenceKind::RuleMismatch { .. }));
+
+        // 4. MoveDown divergence
+        let m1 = vec![XdvOpcodeEvent::MoveDown { delta: 10, new_coord: coord }];
+        let m2 = vec![XdvOpcodeEvent::MoveDown { delta: 20, new_coord: Coordinate::new(10, 30) }];
+        let err4 = XdvDiffEngine::compare_opcode_traces(&m1, &m2).unwrap_err();
+        assert!(matches!(err4.kind, DivergenceKind::MovementMismatch { .. }));
+
+        // 5. Stack depth divergence
+        let s1 = vec![XdvOpcodeEvent::Push { depth: 1, coord }];
+        let s2 = vec![XdvOpcodeEvent::Push { depth: 2, coord }];
+        let err5 = XdvDiffEngine::compare_opcode_traces(&s1, &s2).unwrap_err();
+        assert!(matches!(err5.kind, DivergenceKind::StackDepthMismatch { .. }));
+
+        // 6. BeginPage page_num divergence
+        let p1 = vec![XdvOpcodeEvent::BeginPage { page_num: 1, counters: [0; 10] }];
+        let p2 = vec![XdvOpcodeEvent::BeginPage { page_num: 2, counters: [0; 10] }];
+        let err6 = XdvDiffEngine::compare_opcode_traces(&p1, &p2).unwrap_err();
+        assert!(matches!(err6.kind, DivergenceKind::OpcodeMismatch { .. }));
+
+        // 7. SetFont font_num divergence
+        let sf1 = vec![XdvOpcodeEvent::SetFont { font_num: 1 }];
+        let sf2 = vec![XdvOpcodeEvent::SetFont { font_num: 2 }];
+        let err7 = XdvDiffEngine::compare_opcode_traces(&sf1, &sf2).unwrap_err();
+        assert!(matches!(err7.kind, DivergenceKind::OpcodeMismatch { .. }));
+    }
+
+    #[test]
+    fn test_xdv_builder_edge_opcodes_and_error_streams() {
+        // Builder with font_num >= 64 and small move_down delta
+        let xdv = XdvBuilder::new()
+            .begin_page(1)
+            .set_font(100) // Opcode 235 branch
+            .move_down(50) // Small delta opcode 157 branch
+            .end_page()
+            .build();
+        assert!(!xdv.is_empty());
+
+        // Corrupt stream parse failures in compare_bytes
+        let corrupt_expected = b"INVALID_HEADER_DATA";
+        let valid_actual = xdv.clone();
+        let err = XdvDiffEngine::compare_bytes(corrupt_expected, &valid_actual).unwrap_err();
+        assert!(format!("{err}").contains("Expected stream parse failure"));
+
+        let err_act = XdvDiffEngine::compare_bytes(&valid_actual, corrupt_expected).unwrap_err();
+        assert!(format!("{err_act}").contains("Actual stream parse failure"));
+    }
+
+    #[test]
+    fn test_xdv_cursor_all_opcodes_and_read_methods() {
+        let mut bytes = Vec::new();
+        // 1. Preamble (SPX id=100)
+        bytes.push(247); // pre
+        bytes.push(100); // id_byte = 100 (SPX)
+        bytes.extend_from_slice(&1u32.to_be_bytes()); // num
+        bytes.extend_from_slice(&1u32.to_be_bytes()); // den
+        bytes.extend_from_slice(&1000u32.to_be_bytes()); // mag
+        bytes.push(4); // comment len
+        bytes.extend_from_slice(b"test");
+
+        // 2. Preamble with unknown ID (e.g. 42)
+        bytes.push(247);
+        bytes.push(42);
+        bytes.extend_from_slice(&1u32.to_be_bytes());
+        bytes.extend_from_slice(&1u32.to_be_bytes());
+        bytes.extend_from_slice(&1000u32.to_be_bytes());
+        bytes.push(0); // comment len 0
+
+        // 3. Begin page
+        bytes.push(139); // bop
+        for i in 0..10 {
+            bytes.extend_from_slice(&(i as i32).to_be_bytes());
+        }
+        bytes.extend_from_slice(&(-1i32).to_be_bytes()); // prev_bop
+
+        // 4. Movements: w0 (147), w1 (148), w2 (149), w3 (150), w4 (151)
+        bytes.push(148); // w1
+        bytes.push(10);  // signed 8-bit
+        bytes.push(147); // w0 (uses st.w = 10)
+        bytes.push(149); // w2
+        bytes.extend_from_slice(&20i16.to_be_bytes());
+        bytes.push(150); // w3
+        bytes.extend_from_slice(&[0, 0, 30]); // i24
+        bytes.push(151); // w4
+        bytes.extend_from_slice(&40i32.to_be_bytes());
+
+        // 5. Movements: x0 (152), x1 (153), x2 (154), x3 (155), x4 (156)
+        bytes.push(153); // x1
+        bytes.push(11);
+        bytes.push(152); // x0
+        bytes.push(154); // x2
+        bytes.extend_from_slice(&21i16.to_be_bytes());
+        bytes.push(155); // x3
+        bytes.extend_from_slice(&[0, 0, 31]);
+        bytes.push(156); // x4
+        bytes.extend_from_slice(&41i32.to_be_bytes());
+
+        // 6. Movements: y0 (161), y1 (162), y2 (163), y3 (164), y4 (165)
+        bytes.push(162); // y1
+        bytes.push(12);
+        bytes.push(161); // y0
+        bytes.push(163); // y2
+        bytes.extend_from_slice(&22i16.to_be_bytes());
+        bytes.push(164); // y3
+        bytes.extend_from_slice(&[0, 0, 32]);
+        bytes.push(165); // y4
+        bytes.extend_from_slice(&42i32.to_be_bytes());
+
+        // 7. Movements: z0 (166), z1 (167), z2 (168), z3 (169), z4 (170)
+        bytes.push(167); // z1
+        bytes.push(13);
+        bytes.push(166); // z0
+        bytes.push(168); // z2
+        bytes.extend_from_slice(&23i16.to_be_bytes());
+        bytes.push(169); // z3
+        bytes.extend_from_slice(&[0, 0, 33]);
+        bytes.push(170); // z4
+        bytes.extend_from_slice(&43i32.to_be_bytes());
+
+        // 8. Specials: xxx1 (239), xxx2 (240), xxx3 (241), xxx4 (242)
+        bytes.push(239); // xxx1
+        bytes.push(3);
+        bytes.extend_from_slice(b"sp1");
+
+        bytes.push(240); // xxx2
+        bytes.extend_from_slice(&3u16.to_be_bytes());
+        bytes.extend_from_slice(b"sp2");
+
+        bytes.push(241); // xxx3
+        bytes.extend_from_slice(&[0, 0, 3]);
+        bytes.extend_from_slice(b"sp3");
+
+        bytes.push(242); // xxx4
+        bytes.extend_from_slice(&3u32.to_be_bytes());
+        bytes.extend_from_slice(b"sp4");
+
+        // 9. Font definitions: fnt_def1 (243), fnt_def2 (244)
+        bytes.push(243); // fnt_def1
+        bytes.push(1);   // font_num
+        bytes.extend_from_slice(&123u32.to_be_bytes()); // checksum
+        bytes.extend_from_slice(&655360u32.to_be_bytes()); // scale
+        bytes.extend_from_slice(&655360u32.to_be_bytes()); // design
+        bytes.push(0); // area len
+        bytes.push(5); // name len
+        bytes.extend_from_slice(b"cmr10");
+
+        // 10. End page (140)
+        bytes.push(140);
+
+        let mut cursor = OpcodeParser::new(&bytes);
+        let events = cursor.parse_all().unwrap();
+        assert!(!events.is_empty());
+    }
+
+    #[test]
+    fn test_xdv_cursor_read_error_branches() {
+        let short_data = [0u8; 1];
+        let mut c1 = OpcodeParser::new(&short_data);
+        assert!(c1.read_i16().is_err());
+
+        let mut c2 = OpcodeParser::new(&short_data);
+        assert!(c2.read_u24().is_err());
+
+        let mut c3 = OpcodeParser::new(&short_data);
+        assert!(c3.read_i24().is_err());
+
+        let mut c4 = OpcodeParser::new(&short_data);
+        assert!(c4.read_u32().is_err());
+
+        let mut c5 = OpcodeParser::new(&short_data);
+        assert!(c5.read_i32().is_err());
+
+        let mut c6 = OpcodeParser::new(&short_data);
+        assert!(c6.read_slice(10).is_err());
+
+        let mut c7 = OpcodeParser::new(&short_data);
+        assert!(c7.read_compact_signed(5).is_err());
+
+        let mut c8 = OpcodeParser::new(&short_data);
+        assert!(c8.read_compact_pos(5).is_err());
+    }
 }

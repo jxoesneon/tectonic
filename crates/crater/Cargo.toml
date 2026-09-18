@@ -18,6 +18,7 @@ serde = { version = "^1.0", features = ["derive"] }
 serde_json = "1.0"
 tectonic = { path = "../.." }
 tectonic_bridge_core = { path = "../bridge_core", version = "0.17.3" }
+tectonic_bundles = { path = "../bundles", version = "0.17.3" }
 tectonic_errors = { path = "../errors", version = "0.17.3" }
 tectonic_io_base = { path = "../io_base", version = "0.17.3" }
 tectonic_status_base = { path = "../status_base", version = "0.17.3" }
