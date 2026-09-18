@@ -13,7 +13,6 @@
 #include "xetex-core.h"
 #include "xetex-xetexd.h"
 #include "xetex-synctex.h"
-#include "dpx-pdfobj.h" /* pdf_files_{init,close} */
 #include "xetex_bindings.h" /* FORMAT_SERIAL */
 
 /* All the following variables are declared in xetex-xetexd.h */
@@ -3470,7 +3469,6 @@ tt_cleanup(void) {
         it would result in a segfault.
     */
 
-    pdf_files_close();
     free(TEX_format_default);
     free(font_used);
     deinitialize_shipout_variables();
@@ -3867,7 +3865,6 @@ tt_run_engine(const char *dump_name, const char *input_file_name, time_t build_d
     if (semantic_pagination_enabled)
         INTPAR(xetex_generate_actual_text) = 1;
 
-    pdf_files_init();
     synctex_init_command();
     start_input(input_file_name);
     history = HISTORY_SPOTLESS;

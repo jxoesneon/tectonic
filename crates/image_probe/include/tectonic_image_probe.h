@@ -73,6 +73,37 @@ int32_t tt_probe_pdf_box(
     double *y1
 );
 
+/**
+ * Probe image dimensions and resolution from an in-memory byte buffer.
+ */
+int32_t tt_probe_image_bbox_data(
+    const uint8_t *data,
+    size_t len,
+    double *width,
+    double *height,
+    double *x_res,
+    double *y_res
+);
+
+/**
+ * Probe total page count of a PDF from an in-memory byte buffer.
+ */
+int32_t tt_probe_pdf_page_count_data(const uint8_t *data, size_t len);
+
+/**
+ * Probe boundary box coordinates of a PDF page from an in-memory byte buffer.
+ */
+int32_t tt_probe_pdf_box_data(
+    const uint8_t *data,
+    size_t len,
+    int32_t page_num,
+    int32_t box_type,
+    double *x0,
+    double *y0,
+    double *x1,
+    double *y1
+);
+
 #ifdef __cplusplus
 }
 #endif

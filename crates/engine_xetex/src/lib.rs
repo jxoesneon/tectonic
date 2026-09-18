@@ -252,7 +252,7 @@ pub mod c_api {
 /// them.
 mod linkage {
     #[allow(unused_imports)]
-    use tectonic_pdf_io as clipyrenamehack1;
+    use tectonic_image_probe as clipyrenamehack1;
 
     #[allow(unused_imports)]
     use tectonic_xetex_layout as clipyrenamehack2;

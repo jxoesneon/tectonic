@@ -558,6 +558,37 @@ fn test_c_api_exhaustive() {
         assert_eq!(tt_probe_image_bbox(invalid_utf8.as_ptr() as *const libc::c_char, &mut w, &mut h, &mut x_res, &mut y_res), -1);
         assert_eq!(tt_probe_pdf_page_count(invalid_utf8.as_ptr() as *const libc::c_char), 0);
         assert_eq!(tt_probe_pdf_box(invalid_utf8.as_ptr() as *const libc::c_char, 1, 2, &mut x0, &mut y0, &mut x1, &mut y1), -1);
+
+        // Data buffer C-API tests
+        let mut w_d = 0.0;
+        let mut h_d = 0.0;
+        let mut x_d = 0.0;
+        let mut y_d = 0.0;
+        let res_d = tt_probe_image_bbox_data(gif.as_ptr(), gif.len(), &mut w_d, &mut h_d, &mut x_d, &mut y_d);
+        assert_eq!(res_d, 0);
+        assert_eq!(w_d, 320.0);
+        assert_eq!(h_d, 240.0);
+        assert_eq!(x_d, 72.0);
+
+        // Null pointer and corrupt data guards
+        assert_eq!(tt_probe_image_bbox_data(std::ptr::null(), gif.len(), &mut w_d, &mut h_d, &mut x_d, &mut y_d), -1);
+        assert_eq!(tt_probe_image_bbox_data(gif.as_ptr(), 2, &mut w_d, &mut h_d, &mut x_d, &mut y_d), -1);
+
+        // PDF data buffer tests
+        let pdf_slice = pdf_content;
+        assert_eq!(tt_probe_pdf_page_count_data(pdf_slice.as_ptr(), pdf_slice.len()), 1);
+        assert_eq!(tt_probe_pdf_page_count_data(std::ptr::null(), 0), 0);
+
+        let mut bx0 = 0.0;
+        let mut by0 = 0.0;
+        let mut bx1 = 0.0;
+        let mut by1 = 0.0;
+        let res_box_d = tt_probe_pdf_box_data(pdf_slice.as_ptr(), pdf_slice.len(), 1, 2, &mut bx0, &mut by0, &mut bx1, &mut by1);
+        assert_eq!(res_box_d, 0);
+        assert_eq!((bx0, by0, bx1, by1), (0.0, 0.0, 500.0, 800.0));
+
+        assert_eq!(tt_probe_pdf_box_data(std::ptr::null(), 0, 1, 2, &mut bx0, &mut by0, &mut bx1, &mut by1), -1);
+        assert_eq!(tt_probe_pdf_box_data(pdf_slice.as_ptr(), pdf_slice.len(), 0, 2, &mut bx0, &mut by0, &mut bx1, &mut by1), -1);
     }
 }
 

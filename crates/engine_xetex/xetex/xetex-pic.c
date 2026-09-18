@@ -39,13 +39,7 @@ XeTeX_pic.c
 #include "xetex-core.h"
 #include "xetex-xetexd.h"
 #include "xetex-ext.h"
-#include "dpx-dpxutil.h"
-#include "dpx-pdfdoc.h"
-#include "dpx-pdfdraw.h"
-#include "dpx-pdfobj.h"
-#include "dpx-pngimage.h"
-#include "dpx-jpegimage.h"
-#include "dpx-bmpimage.h"
+#include "tectonic_image_probe.h"
 
 
 /* load_picture() needs some helper types and functions */
@@ -72,144 +66,147 @@ typedef struct {
 } real_rect;
 
 
+/* Helper: read an entire open VFS handle into a freshly malloc'd buffer.
+ * Returns NULL on failure.  Caller must free(). */
+static uint8_t *
+slurp_handle (rust_input_handle_t handle, size_t *out_size)
+{
+    size_t file_size;
+    uint8_t *buf;
+    ssize_t bytes_read;
+
+    file_size = ttstub_input_get_size(handle);
+    if (file_size == 0)
+        return NULL;
+
+    buf = (uint8_t *) xmalloc(file_size);
+    if (buf == NULL)
+        return NULL;
+
+    bytes_read = ttstub_input_read(handle, (char *) buf, file_size);
+    if (bytes_read < 0 || (size_t) bytes_read != file_size) {
+        free(buf);
+        return NULL;
+    }
+
+    *out_size = file_size;
+    return buf;
+}
+
+
 int
 count_pdf_file_pages (void)
 {
-    int pages;
     rust_input_handle_t handle;
-    pdf_file *pf;
+    uint8_t *buf;
+    size_t buf_len;
+    int32_t pages;
 
-    handle = ttstub_input_open (name_of_file, TTBC_FILE_FORMAT_PICT, 0);
+    handle = ttstub_input_open(name_of_file, TTBC_FILE_FORMAT_PICT, 0);
     if (handle == INVALID_HANDLE)
         return 0;
 
-    if ((pf = pdf_open(name_of_file, handle)) == NULL) {
-        /* TODO: issue warning */
-        ttstub_input_close(handle);
-        return 0;
-    }
-
-    pages = pdf_doc_get_page_count(pf);
-    pdf_close(pf);
+    buf = slurp_handle(handle, &buf_len);
     ttstub_input_close(handle);
-    return pages;
+
+    if (buf == NULL)
+        return 0;
+
+    pages = tt_probe_pdf_page_count_data(buf, buf_len);
+    free(buf);
+    return (pages > 0) ? (int) pages : 0;
 }
 
 
 static int
 pdf_get_rect (char *filename, rust_input_handle_t handle, int page_num, int pdf_box, real_rect* box)
 {
-    int pages, dpx_options;
-    pdf_file *pf;
-    pdf_obj *page;
-    pdf_rect bbox;
-    pdf_tmatrix matrix;
-    pdf_coord p1, p2, p3, p4;
+    uint8_t *buf;
+    size_t buf_len;
+    double x0, y0, x1, y1;
+    int32_t total_pages;
 
-    if ((pf = pdf_open(filename, handle)) == NULL) {
-        /* TODO: issue warning */
+    (void) filename; /* VFS paths are not OS paths; we use the open handle */
+
+    buf = slurp_handle(handle, &buf_len);
+    if (buf == NULL)
+        return -1;
+
+    /* Resolve negative / out-of-range page numbers: clamp to [1, total]. */
+    total_pages = tt_probe_pdf_page_count_data(buf, buf_len);
+    if (total_pages <= 0) {
+        free(buf);
         return -1;
     }
 
-    pages = pdf_doc_get_page_count(pf);
-
-    if (page_num > pages)
-        page_num = pages;
+    if (page_num > total_pages)
+        page_num = total_pages;
     if (page_num < 0)
-        page_num = pages + 1 + page_num;
+        page_num = total_pages + 1 + page_num;
     if (page_num < 1)
         page_num = 1;
 
-    /* OMG, magic numbers specifying page bound types do not agree between
-     * xdvipdfmx code (dpx-pdfdoc.c:pdf_doc_get_page) and XeTeX/Apple's
-     * pdfbox_* definitions (xetex-ext.h). */
-
-    switch (pdf_box) {
-    case pdfbox_media:
-        dpx_options = 2;
-        break;
-    case pdfbox_bleed:
-        dpx_options = 5;
-        break;
-    case pdfbox_trim:
-        dpx_options = 4;
-        break;
-    case pdfbox_art:
-        dpx_options = 3;
-        break;
-    case pdfbox_crop:
-    default:
-        dpx_options = 1;
-        break;
-    }
-
-    page = pdf_doc_get_page(pf, page_num, dpx_options, &bbox, &matrix, NULL);
-    pdf_close(pf);
-
-    if (page == NULL) {
-        /* TODO: issue warning */
+    /* TT_PDF_BOX_* constants match xetex-ext.h pdfbox_* 1:1 (1=Crop, 2=Media,
+     * 3=Bleed, 4=Trim, 5=Art), so pass pdf_box directly.
+     * /Rotate is applied inside tt_probe_pdf_box_data. */
+    if (tt_probe_pdf_box_data(buf, buf_len,
+                              (int32_t) page_num, (int32_t) pdf_box,
+                              &x0, &y0, &x1, &y1) != 0) {
+        free(buf);
         return -1;
     }
 
-    pdf_release_obj(page);
+    free(buf);
 
-    /* Image's attribute "bbox" here is affected by /Rotate entry of included
-     * PDF page.
-     */
-    p1.x = bbox.llx;
-    p1.y = bbox.lly;
-    pdf_dev_transform(&p1, &matrix);
-
-    p2.x = bbox.urx;
-    p2.y = bbox.lly;
-    pdf_dev_transform(&p2, &matrix);
-
-    p3.x = bbox.urx;
-    p3.y = bbox.ury;
-    pdf_dev_transform(&p3, &matrix);
-
-    p4.x = bbox.llx;
-    p4.y = bbox.ury;
-    pdf_dev_transform(&p4, &matrix);
-
-    bbox.llx = min4(p1.x, p2.x, p3.x, p4.x);
-    bbox.lly = min4(p1.y, p2.y, p3.y, p4.y);
-    bbox.urx = max4(p1.x, p2.x, p3.x, p4.x);
-    bbox.ury = max4(p1.y, p2.y, p3.y, p4.y);
-
-    box->x = 72.27 / 72 * bbox.llx;
-    box->y = 72.27 / 72 * bbox.lly;
-    box->wd = 72.27 / 72 * (bbox.urx - bbox.llx);
-    box->ht = 72.27 / 72 * (bbox.ury - bbox.lly);
-
+    /* Convert from PostScript/PDF points (bp, 1/72 inch) to TeX points
+     * (pt, 1/72.27 inch). */
+    box->x  = 72.27 / 72.0 * x0;
+    box->y  = 72.27 / 72.0 * y0;
+    box->wd = 72.27 / 72.0 * (x1 - x0);
+    box->ht = 72.27 / 72.0 * (y1 - y0);
     return 0;
 }
 
 
-/* Tectonic customization: use double-precision (see call site for explanation) */
+/* Tectonic customization: use double-precision (see call site for explanation).
+ * Reads the already-open VFS handle into a heap buffer and delegates probing
+ * to tectonic_image_probe, eliminating the dependency on dpx-*image.h. */
 static int
 get_image_size_in_inches (rust_input_handle_t handle, double *width, double *height)
 {
-    int err = 1;
-    unsigned int width_pix, height_pix;
-    double xdensity, ydensity;
+    size_t file_size;
+    uint8_t *buf;
+    ssize_t bytes_read;
+    double width_px, height_px, x_res, y_res;
+    int32_t err;
 
-    if (check_for_jpeg(handle))
-        err = jpeg_get_bbox(handle, &width_pix, &height_pix, &xdensity, &ydensity);
-    else if (check_for_bmp(handle))
-        err = bmp_get_bbox(handle, &width_pix, &height_pix, &xdensity, &ydensity);
-    else if (check_for_png(handle))
-        err = png_get_bbox(handle, &width_pix, &height_pix, &xdensity, &ydensity);
+    *width  = -1;
+    *height = -1;
 
-    if (err) {
-        *width = -1;
-        *height = -1;
-        return err;
+    file_size = ttstub_input_get_size(handle);
+    if (file_size == 0)
+        return 1;
+
+    buf = (uint8_t *) xmalloc(file_size);
+    if (buf == NULL)
+        return 1;
+
+    bytes_read = ttstub_input_read(handle, (char *) buf, file_size);
+    if (bytes_read < 0 || (size_t) bytes_read != file_size) {
+        free(buf);
+        return 1;
     }
 
-    /* xdvipdfmx defines density = 72 / dpi, so ... */
-    *width = width_pix * xdensity / 72;
-    *height = height_pix * ydensity / 72;
+    err = tt_probe_image_bbox_data(buf, file_size,
+                                   &width_px, &height_px, &x_res, &y_res);
+    free(buf);
+
+    if (err != 0)
+        return 1;
+
+    /* x_res / y_res are in DPI; convert pixel dimensions to inches. */
+    *width  = (x_res > 0.0) ? width_px  / x_res : width_px  / 72.0;
+    *height = (y_res > 0.0) ? height_px / y_res : height_px / 72.0;
     return 0;
 }
 

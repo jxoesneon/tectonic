@@ -3436,7 +3436,7 @@ dependencies = [
  "tectonic_bridge_icu",
  "tectonic_cfg_support",
  "tectonic_errors",
- "tectonic_pdf_io",
+ "tectonic_image_probe",
  "tectonic_xetex_layout",
 ]
 
