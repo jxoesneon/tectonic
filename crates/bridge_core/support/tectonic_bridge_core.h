@@ -253,6 +253,16 @@ int ttstub_get_file_md5(char const *path, char *digest);
 int ttstub_shell_escape(const unsigned short *cmd, size_t len);
 
 /**
+ * Check if macro expansion observation is enabled.
+ */
+int ttstub_is_expansion_hook_active(void);
+
+/**
+ * Trigger the rich macro expansion event hook with context.
+ */
+void ttstub_event_macro_expand(const char *name_utf8, size_t name_len, int32_t depth, int32_t cur_cmd, int32_t cur_chr);
+
+/**
  * Trigger the "expand_on" event hook.
  *
  * This function delegates to the Rust bridge to notify the driver that macro

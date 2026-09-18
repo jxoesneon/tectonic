@@ -1107,6 +1107,7 @@ void print_esc_cstr(const char* s);
 void print_int(int32_t n);
 void print_cs(int32_t p);
 void sprint_cs(int32_t p);
+void tt_get_cs_name(int32_t p, char *buf, size_t max_len, size_t *out_len);
 void print_file_name(int32_t n, int32_t a, int32_t e);
 void print_size(int32_t s);
 void print_write_whatsit(const char* s, int32_t p);

@@ -113,6 +113,19 @@ impl Display for SystemRequestError {
     }
 }
 
+/// Context provided to [`DriverHooks::event_macro_expand`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MacroExpansionContext<'a> {
+    /// Control sequence name or token representation being expanded.
+    pub name: &'a str,
+    /// Current recursion depth of the macro expansion.
+    pub depth: i32,
+    /// TeX `cur_cmd` code at the point of expansion.
+    pub cur_cmd: i32,
+    /// TeX `cur_chr` code at the point of expansion.
+    pub cur_chr: i32,
+}
+
 /// The DriverHooks trait allows engines to interact with the higher-level code
 /// that is driving the TeX processing.
 ///
@@ -155,6 +168,22 @@ pub trait DriverHooks {
     /// inspect the state of the engine or pause execution (e.g., implementing
     /// breakpoints) just before a macro is expanded.
     fn event_expand_on(&mut self) {}
+
+    /// Called when the engine enters macro expansion, providing rich contextual
+    /// metadata (macro name, depth, command code, char code).
+    ///
+    /// Defaults to calling [`Self::event_expand_on`].
+    fn event_macro_expand(&mut self, _context: &MacroExpansionContext<'_>) {
+        self.event_expand_on();
+    }
+
+    /// Return whether macro expansion observation is enabled.
+    ///
+    /// Returning false enables the C engine to completely bypass marshalling
+    /// and bridge dispatch on hot paths.
+    fn is_macro_expansion_enabled(&self) -> bool {
+        false
+    }
 
     /// The engine is requesting a "shell escape" evaluation.
     ///
@@ -1247,6 +1276,64 @@ pub extern "C" fn ttbc_input_close(
     }
 }
 
+/// Check whether macro expansion observation is enabled in the active hooks.
+///
+/// # Safety
+///
+/// Caller must ensure `es` is a valid pointer.
+#[no_mangle]
+pub unsafe extern "C" fn ttbc_is_expansion_hook_enabled(es: &CoreBridgeState) -> bool {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        es.hooks.is_macro_expansion_enabled()
+    }));
+    result.unwrap_or(false)
+}
+
+/// Trigger the rich macro expansion event hook with context.
+///
+/// # Safety
+///
+/// Caller must ensure `es` is a valid pointer, and `name_utf8` points to a buffer of at least `name_len` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn ttbc_event_macro_expand(
+    es: &mut CoreBridgeState,
+    name_utf8: *const u8,
+    name_len: usize,
+    depth: i32,
+    cur_cmd: i32,
+    cur_chr: i32,
+) {
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let name_bytes = if name_utf8.is_null() || name_len == 0 {
+            &[][..]
+        } else {
+            std::slice::from_raw_parts(name_utf8, name_len)
+        };
+
+        match std::str::from_utf8(name_bytes) {
+            Ok(valid_str) => {
+                let ctx = MacroExpansionContext {
+                    name: valid_str,
+                    depth,
+                    cur_cmd,
+                    cur_chr,
+                };
+                es.hooks.event_macro_expand(&ctx);
+            }
+            Err(_) => {
+                let lossy = String::from_utf8_lossy(name_bytes);
+                let ctx = MacroExpansionContext {
+                    name: &lossy,
+                    depth,
+                    cur_cmd,
+                    cur_chr,
+                };
+                es.hooks.event_macro_expand(&ctx);
+            }
+        }
+    }));
+}
+
 /// Trigger the "expand_on" event hook.
 ///
 /// # Safety
@@ -1255,7 +1342,9 @@ pub extern "C" fn ttbc_input_close(
 /// is a valid pointer to a `CoreBridgeState` structure initialized by Rust.
 #[no_mangle]
 pub unsafe extern "C" fn ttbc_event_expand_on(es: &mut CoreBridgeState) {
-    es.hooks.event_expand_on();
+    let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        es.hooks.event_expand_on();
+    }));
 }
 
 /// A buffer for diagnostic messages. Rust code does not need to use this type.
@@ -1447,3 +1536,259 @@ impl FileFormat {
 /// Does our resulting executable link correctly?
 #[test]
 fn linkage() {}
+
+#[cfg(test)]
+mod macro_expansion_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+    use std::sync::Arc;
+    use tectonic_status_base::NoopStatusBackend;
+
+    #[derive(Default)]
+    struct DummyIo;
+    impl IoProvider for DummyIo {
+        fn output_open_name(&mut self, _name: &str) -> OpenResult<OutputHandle> {
+            OpenResult::NotAvailable
+        }
+        fn input_open_name(
+            &mut self,
+            _name: &str,
+            _status: &mut dyn StatusBackend,
+        ) -> OpenResult<InputHandle> {
+            OpenResult::NotAvailable
+        }
+    }
+
+    #[derive(Default)]
+    struct MockHooks {
+        io: DummyIo,
+        legacy_called: Arc<AtomicBool>,
+        rich_called: Arc<AtomicBool>,
+        last_name: Arc<std::sync::Mutex<String>>,
+        last_depth: Arc<AtomicUsize>,
+        panics: bool,
+    }
+
+    impl DriverHooks for MockHooks {
+        fn io(&mut self) -> &mut dyn IoProvider {
+            &mut self.io
+        }
+
+        fn is_macro_expansion_enabled(&self) -> bool {
+            true
+        }
+
+        fn event_expand_on(&mut self) {
+            self.legacy_called.store(true, Ordering::SeqCst);
+        }
+
+        fn event_macro_expand(&mut self, ctx: &MacroExpansionContext<'_>) {
+            if self.panics {
+                panic!("intentional test panic in hook");
+            }
+            self.rich_called.store(true, Ordering::SeqCst);
+            *self.last_name.lock().unwrap() = ctx.name.to_string();
+            self.last_depth.store(ctx.depth as usize, Ordering::SeqCst);
+        }
+    }
+
+    #[derive(Default)]
+    struct LegacyOnlyHooks {
+        io: DummyIo,
+        legacy_called: Arc<AtomicBool>,
+    }
+
+    impl DriverHooks for LegacyOnlyHooks {
+        fn io(&mut self) -> &mut dyn IoProvider {
+            &mut self.io
+        }
+
+        fn event_expand_on(&mut self) {
+            self.legacy_called.store(true, Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn test_driver_hooks_default_delegation() {
+        let mut hooks = LegacyOnlyHooks::default();
+        let flag = hooks.legacy_called.clone();
+        assert!(!hooks.is_macro_expansion_enabled());
+
+        let ctx = MacroExpansionContext {
+            name: "testcmd",
+            depth: 1,
+            cur_cmd: 10,
+            cur_chr: 20,
+        };
+        hooks.event_macro_expand(&ctx);
+        assert!(flag.load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn test_ttbc_is_expansion_hook_enabled() {
+        let mut enabled_hooks = MockHooks::default();
+        let mut disabled_hooks = LegacyOnlyHooks::default();
+        let mut status = NoopStatusBackend::default();
+
+        let enabled_state = CoreBridgeState::new(
+            SecuritySettings::default(),
+            &mut enabled_hooks,
+            &mut status,
+            FsEmulationSettings::default(),
+        );
+        unsafe {
+            assert!(ttbc_is_expansion_hook_enabled(&enabled_state));
+        }
+
+        let disabled_state = CoreBridgeState::new(
+            SecuritySettings::default(),
+            &mut disabled_hooks,
+            &mut status,
+            FsEmulationSettings::default(),
+        );
+        unsafe {
+            assert!(!ttbc_is_expansion_hook_enabled(&disabled_state));
+        }
+    }
+
+    #[test]
+    fn test_ttbc_event_macro_expand_utf8() {
+        let mut hooks = MockHooks::default();
+        let rich_flag = hooks.rich_called.clone();
+        let last_name = hooks.last_name.clone();
+        let last_depth = hooks.last_depth.clone();
+        let mut status = NoopStatusBackend::default();
+
+        let mut state = CoreBridgeState::new(
+            SecuritySettings::default(),
+            &mut hooks,
+            &mut status,
+            FsEmulationSettings::default(),
+        );
+
+        let name = "\\newcommand";
+        unsafe {
+            ttbc_event_macro_expand(
+                &mut state,
+                name.as_ptr(),
+                name.len(),
+                3,
+                111,
+                222,
+            );
+        }
+
+        assert!(rich_flag.load(Ordering::SeqCst));
+        assert_eq!(*last_name.lock().unwrap(), "\\newcommand");
+        assert_eq!(last_depth.load(Ordering::SeqCst), 3);
+    }
+
+    #[test]
+    fn test_ttbc_event_macro_expand_lossy_invalid_utf8() {
+        let mut hooks = MockHooks::default();
+        let rich_flag = hooks.rich_called.clone();
+        let last_name = hooks.last_name.clone();
+        let mut status = NoopStatusBackend::default();
+
+        let mut state = CoreBridgeState::new(
+            SecuritySettings::default(),
+            &mut hooks,
+            &mut status,
+            FsEmulationSettings::default(),
+        );
+
+        // Invalid UTF-8 sequence (e.g. 0xFF, 0xFE)
+        let invalid_bytes = [0xFF, 0xFE, b'a', b'b'];
+        unsafe {
+            ttbc_event_macro_expand(
+                &mut state,
+                invalid_bytes.as_ptr(),
+                invalid_bytes.len(),
+                1,
+                0,
+                0,
+            );
+        }
+
+        assert!(rich_flag.load(Ordering::SeqCst));
+        let recorded = last_name.lock().unwrap().clone();
+        assert!(recorded.contains("ab"));
+        assert!(recorded.contains('\u{FFFD}'));
+    }
+
+    #[test]
+    fn test_ttbc_event_macro_expand_null_or_empty() {
+        let mut hooks = MockHooks::default();
+        let rich_flag = hooks.rich_called.clone();
+        let last_name = hooks.last_name.clone();
+        let mut status = NoopStatusBackend::default();
+
+        let mut state = CoreBridgeState::new(
+            SecuritySettings::default(),
+            &mut hooks,
+            &mut status,
+            FsEmulationSettings::default(),
+        );
+
+        unsafe {
+            ttbc_event_macro_expand(
+                &mut state,
+                std::ptr::null(),
+                0,
+                0,
+                0,
+                0,
+            );
+        }
+
+        assert!(rich_flag.load(Ordering::SeqCst));
+        assert_eq!(*last_name.lock().unwrap(), "");
+    }
+
+    #[test]
+    fn test_ttbc_panic_safety_catch_unwind() {
+        let mut hooks = MockHooks::default();
+        hooks.panics = true;
+        let mut status = NoopStatusBackend::default();
+
+        let mut state = CoreBridgeState::new(
+            SecuritySettings::default(),
+            &mut hooks,
+            &mut status,
+            FsEmulationSettings::default(),
+        );
+
+        // Neither ttbc_event_macro_expand nor ttbc_event_expand_on should panic across FFI
+        let name = "panicking_macro";
+        unsafe {
+            ttbc_event_macro_expand(
+                &mut state,
+                name.as_ptr(),
+                name.len(),
+                1,
+                0,
+                0,
+            );
+            ttbc_event_expand_on(&mut state);
+        }
+    }
+
+    #[test]
+    fn test_ttbc_event_expand_on_legacy() {
+        let mut hooks = MockHooks::default();
+        let legacy_flag = hooks.legacy_called.clone();
+        let mut status = NoopStatusBackend::default();
+
+        let mut state = CoreBridgeState::new(
+            SecuritySettings::default(),
+            &mut hooks,
+            &mut status,
+            FsEmulationSettings::default(),
+        );
+
+        unsafe {
+            ttbc_event_expand_on(&mut state);
+        }
+        assert!(legacy_flag.load(Ordering::SeqCst));
+    }
+}

@@ -120,10 +120,13 @@ _ttbc_get_core_state(void)
 }
 
 
+static int tectonic_expansion_hook_active = 0;
+
 jmp_buf *
 ttbc_global_engine_enter(ttbc_state_t *api)
 {
     tectonic_global_bridge_core = api;
+    tectonic_expansion_hook_active = api ? (ttbc_is_expansion_hook_enabled(api) ? 1 : 0) : 0;
     return &jump_buffer;
 }
 
@@ -132,6 +135,7 @@ void
 ttbc_global_engine_exit(void)
 {
     tectonic_global_bridge_core = NULL;
+    tectonic_expansion_hook_active = 0;
 }
 
 
@@ -340,4 +344,18 @@ void
 ttstub_event_expand_on(void)
 {
     ttbc_event_expand_on(tectonic_global_bridge_core);
+}
+
+int
+ttstub_is_expansion_hook_active(void)
+{
+    return tectonic_expansion_hook_active;
+}
+
+void
+ttstub_event_macro_expand(const char *name_utf8, size_t name_len, int32_t depth, int32_t cur_cmd, int32_t cur_chr)
+{
+    if (tectonic_global_bridge_core) {
+        ttbc_event_macro_expand(tectonic_global_bridge_core, (const uint8_t *) name_utf8, name_len, depth, cur_cmd, cur_chr);
+    }
 }

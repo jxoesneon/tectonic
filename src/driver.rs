@@ -40,7 +40,9 @@ use std::{
     str::FromStr,
     time::{Duration, SystemTime},
 };
-use tectonic_bridge_core::{CoreBridgeLauncher, DriverHooks, SecuritySettings, SystemRequestError};
+use tectonic_bridge_core::{
+    CoreBridgeLauncher, DriverHooks, MacroExpansionContext, SecuritySettings, SystemRequestError,
+};
 use tectonic_bundles::Bundle;
 use tectonic_engine_spx2html::AssetSpecification;
 use tectonic_errors::{Error, Result};
@@ -254,6 +256,9 @@ struct BridgeState {
 
     /// The I/O events that occurred while processing.
     events: HashMap<String, FileSummary>,
+
+    /// Observer hook for macro expansion events.
+    expansion_hook: Option<Box<dyn FnMut(&MacroExpansionContext<'_>) + Send>>,
 }
 
 impl BridgeState {
@@ -643,6 +648,16 @@ impl DriverHooks for BridgeState {
         self
     }
 
+    fn is_macro_expansion_enabled(&self) -> bool {
+        self.expansion_hook.is_some()
+    }
+
+    fn event_macro_expand(&mut self, context: &MacroExpansionContext<'_>) {
+        if let Some(ref mut hook) = self.expansion_hook {
+            hook(context);
+        }
+    }
+
     fn event_output_closed(&mut self, name: String, digest: DigestData) {
         let summ = self
             .events
@@ -824,6 +839,7 @@ pub struct ProcessingSessionBuilder {
     html_precomputed_assets: Option<AssetSpecification>,
     html_do_not_emit_files: bool,
     html_do_not_emit_assets: bool,
+    expansion_hook: Option<Box<dyn FnMut(&MacroExpansionContext<'_>) + Send>>,
 }
 
 impl ProcessingSessionBuilder {
@@ -1110,6 +1126,24 @@ impl ProcessingSessionBuilder {
         self
     }
 
+    /// Attach an expansion hook to observe macro expansion events with full context.
+    pub fn expansion_hook<F>(&mut self, hook: F) -> &mut Self
+    where
+        F: FnMut(&MacroExpansionContext<'_>) + Send + 'static,
+    {
+        self.expansion_hook = Some(Box::new(hook));
+        self
+    }
+
+    /// Attach a zero-argument expansion hook.
+    pub fn simple_expansion_hook<F>(&mut self, mut hook: F) -> &mut Self
+    where
+        F: FnMut() + Send + 'static,
+    {
+        self.expansion_hook = Some(Box::new(move |_| hook()));
+        self
+    }
+
     /// Creates a `ProcessingSession`.
     pub fn create(self, status: &mut dyn StatusBackend) -> Result<ProcessingSession> {
         // First, work on the "bridge state", which gathers the subset of our
@@ -1202,6 +1236,7 @@ impl ProcessingSessionBuilder {
             genuine_stdout,
             format_primary: None,
             events: HashMap::new(),
+            expansion_hook: self.expansion_hook,
         };
 
         // Now we can do the rest.

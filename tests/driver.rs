@@ -50,3 +50,52 @@ fn the_letter_a() {
         .run(&mut status)
         .expect("failed to execute processing session");
 }
+
+#[test]
+fn macro_expansion_hook_test() {
+    util::set_test_root();
+
+    let _config = PersistentConfig::default();
+    let mut status = TermcolorStatusBackend::new(ChatterLevel::Minimal);
+    let bundle = TestBundle::default();
+
+    let tempdir = tempfile::Builder::new()
+        .prefix("tectonic_macro_expand_test")
+        .tempdir()
+        .unwrap();
+
+    let test_tex = tempdir.path().join("expand_test.tex");
+    std::fs::write(&test_tex, b"\\def\\mymacro{Hello}\\mymacro\\bye\n").unwrap();
+
+    let expansion_count = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let last_macro_name = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+
+    let count_clone = expansion_count.clone();
+    let name_clone = last_macro_name.clone();
+
+    let mut pbuilder = ProcessingSessionBuilder::default();
+    pbuilder
+        .primary_input_path(&test_tex)
+        .tex_input_name("expand_test.tex")
+        .format_name("plain")
+        .format_cache_path(util::test_path(&[]))
+        .output_dir(tempdir.path())
+        .bundle(Box::new(bundle))
+        .expansion_hook(move |ctx| {
+            count_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if ctx.name.contains("mymacro") {
+                *name_clone.lock().unwrap() = ctx.name.to_string();
+            }
+        });
+
+    let mut session = pbuilder
+        .create(&mut status)
+        .expect("couldn't create processing session");
+
+    session
+        .run(&mut status)
+        .expect("failed to execute processing session");
+
+    assert!(expansion_count.load(std::sync::atomic::Ordering::SeqCst) > 0);
+    assert_eq!(*last_macro_name.lock().unwrap(), "\\mymacro");
+}

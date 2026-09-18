@@ -5682,6 +5682,16 @@ macro_call(void)
     r = mem[ref_count].b32.s1;
     n = 0;
 
+    /* Tectonic: notify bridge of macro expansion for debugging hooks */
+    if (__builtin_expect(ttstub_is_expansion_hook_active() != 0, 0)) {
+        char name_buf[256];
+        size_t name_len = 0;
+        tt_get_cs_name(cur_cs, name_buf, sizeof(name_buf), &name_len);
+        ttstub_event_macro_expand(name_buf, name_len, input_ptr, cur_cmd, cur_chr);
+    } else {
+        ttstub_event_expand_on();
+    }
+
     if (INTPAR(tracing_macros) > 0) { /*419:*/
         begin_diagnostic();
         diagnostic_begin_capture_warning_here();
@@ -6170,7 +6180,16 @@ expand(void)
     small_number save_scanner_status;
 
     /* Tectonic: notify bridge of expansion start for debugging hooks */
-    ttstub_event_expand_on();
+    if (__builtin_expect(ttstub_is_expansion_hook_active() != 0, 0)) {
+        if (cur_cmd < CALL) {
+            char name_buf[256];
+            size_t name_len = 0;
+            tt_get_cs_name(cur_cs, name_buf, sizeof(name_buf), &name_len);
+            ttstub_event_macro_expand(name_buf, name_len, expand_depth_count, cur_cmd, cur_chr);
+        }
+    } else {
+        ttstub_event_expand_on();
+    }
 
     expand_depth_count++;
     if (expand_depth_count >= expand_depth)

@@ -352,6 +352,21 @@ void ttbc_diag_finish(ttbc_state_t *es, ttbc_diagnostic_t *diag);
 int ttbc_shell_escape(ttbc_state_t *es, const uint16_t *cmd, size_t len);
 
 /**
+ * Check whether macro expansion observation is enabled in the active hooks.
+ */
+bool ttbc_is_expansion_hook_enabled(const ttbc_state_t *es);
+
+/**
+ * Trigger the rich macro expansion event hook with context.
+ */
+void ttbc_event_macro_expand(ttbc_state_t *es,
+                             const uint8_t *name_utf8,
+                             size_t name_len,
+                             int32_t depth,
+                             int32_t cur_cmd,
+                             int32_t cur_chr);
+
+/**
  * Trigger the "expand_on" event hook.
  */
 void ttbc_event_expand_on(ttbc_state_t *es);

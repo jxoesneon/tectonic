@@ -447,6 +447,90 @@ sprint_cs(int32_t p)
 
 
 void
+tt_get_cs_name(int32_t p, char *buf, size_t max_len, size_t *out_len)
+{
+    if (max_len == 0) {
+        if (out_len) *out_len = 0;
+        return;
+    }
+
+    size_t pos = 0;
+    int32_t esc = INTPAR(escape_char);
+    if (esc >= 0 && esc < 128) {
+        buf[pos++] = (char)esc;
+    } else if (esc >= 128 && esc <= 0x10FFFF) {
+        if (esc < 0x800 && pos + 2 < max_len) {
+            buf[pos++] = (char)(0xC0 | (esc >> 6));
+            buf[pos++] = (char)(0x80 | (esc & 0x3F));
+        } else if (esc < 0x10000 && pos + 3 < max_len) {
+            buf[pos++] = (char)(0xE0 | (esc >> 12));
+            buf[pos++] = (char)(0x80 | ((esc >> 6) & 0x3F));
+            buf[pos++] = (char)(0x80 | (esc & 0x3F));
+        }
+    }
+
+    if (p < HASH_BASE) {
+        if (p < SINGLE_BASE) {
+            pos = 0;
+            int32_t ch = p - 1;
+            if (ch >= 0 && ch < 128 && pos + 1 < max_len) {
+                buf[pos++] = (char)ch;
+            }
+        } else if (p < NULL_CS) {
+            int32_t ch = p - SINGLE_BASE;
+            if (ch >= 0 && ch < 128 && pos + 1 < max_len) {
+                buf[pos++] = (char)ch;
+            }
+        } else {
+            const char *cs = "csname\\endcsname";
+            while (*cs && pos + 1 < max_len) {
+                buf[pos++] = *cs++;
+            }
+        }
+    } else {
+        str_number s = 0;
+        if (p >= PRIM_EQTB_BASE && p < FROZEN_NULL_FONT) {
+            s = prim[p - PRIM_EQTB_BASE].s1 - 1;
+        } else if (p <= eqtb_top && hash[p].s1 < str_ptr) {
+            s = hash[p].s1;
+        }
+
+        if (s >= 65536L) {
+            pool_pointer start = str_start[s - 65536L];
+            pool_pointer end = str_start[s + 1 - 65536L];
+            for (pool_pointer i = start; i < end && pos + 4 < max_len; i++) {
+                uint32_t c = str_pool[i];
+                if (c >= 0xD800 && c <= 0xDBFF && i + 1 < end) {
+                    uint32_t lo = str_pool[i + 1];
+                    if (lo >= 0xDC00 && lo <= 0xDFFF) {
+                        c = (c - 0xD800) * 0x400 + lo - 0xDC00 + 0x10000;
+                        i++;
+                    }
+                }
+                if (c < 0x80) {
+                    buf[pos++] = (char)c;
+                } else if (c < 0x800) {
+                    buf[pos++] = (char)(0xC0 | (c >> 6));
+                    buf[pos++] = (char)(0x80 | (c & 0x3F));
+                } else if (c < 0x10000) {
+                    buf[pos++] = (char)(0xE0 | (c >> 12));
+                    buf[pos++] = (char)(0x80 | ((c >> 6) & 0x3F));
+                    buf[pos++] = (char)(0x80 | (c & 0x3F));
+                } else if (c <= 0x10FFFF) {
+                    buf[pos++] = (char)(0xF0 | (c >> 18));
+                    buf[pos++] = (char)(0x80 | ((c >> 12) & 0x3F));
+                    buf[pos++] = (char)(0x80 | ((c >> 6) & 0x3F));
+                    buf[pos++] = (char)(0x80 | (c & 0x3F));
+                }
+            }
+        }
+    }
+    buf[pos] = '\0';
+    if (out_len) *out_len = pos;
+}
+
+
+void
 print_file_name(int32_t n, int32_t a, int32_t e)
 {
     bool must_quote = false;
