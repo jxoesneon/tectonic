@@ -1,0 +1,29 @@
+# Copyright 2026 the Tectonic Project & FerroTeX Authors
+# Licensed under the MIT License.
+
+lints.workspace = true
+
+[package]
+name = "tectonic_pdf_backend"
+description = "Pure-Rust declarative XDV-to-PDF backend for Tectonic"
+version = "0.17.3"
+authors = ["Peter Williams <peter@newton.cx>", "FerroTeX Authors"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+tectonic_bridge_core = { path = "../bridge_core", version = "0.17.3" }
+tectonic_errors = { path = "../errors", version = "0.17.3" }
+tectonic_image_probe = { path = "../image_probe", version = "0.17.3" }
+tectonic_io_base = { path = "../io_base", version = "0.17.3" }
+tectonic_status_base = { path = "../status_base", version = "0.17.3" }
+tectonic_xdv = { path = "../xdv", version = "0.17.3" }
+
+byteorder = "^1.4"
+miniz_oxide = "^0.8"
+pdf-writer = "^0.15"
+thiserror = "^2.0"
+ttf-parser = "^0.25"
+
+[dev-dependencies]
+tempfile = "^3.1"

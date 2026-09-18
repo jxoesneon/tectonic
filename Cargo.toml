@@ -62,6 +62,7 @@ members = [
     "crates/image_probe",
     "crates/io_base",
     "crates/mac_core",
+    "crates/pdf_backend",
     "crates/pdf_io",
     "crates/status_base",
     "crates/xdv",
