@@ -3,7 +3,8 @@
 
 //! Declarative PDF document writer utilizing `pdf-writer`.
 
-use pdf_writer::{Finish, Name, Pdf, Rect, Ref};
+use pdf_writer::types::{CidFontType, FontFlags, SystemInfo};
+use pdf_writer::{Finish, Name, Pdf, Rect, Ref, Str};
 use std::collections::HashMap;
 use crate::fonts::FontRegistry;
 use crate::units::PdfRect;
@@ -72,12 +73,51 @@ impl PdfDocumentBuilder {
             if self.font_ids.contains_key(&font.pdf_name) {
                 continue;
             }
-            let font_ref = self.alloc_ref();
-            self.font_ids.insert(font.pdf_name.clone(), font_ref);
 
-            // Write Type1 font dictionary
-            let mut font_dict = self.pdf.type1_font(font_ref);
-            font_dict.base_font(Name(font.ps_name.as_bytes()));
+            if font.is_native {
+                let cid_font_ref = self.alloc_ref();
+                let descriptor_ref = self.alloc_ref();
+                let font_ref = self.alloc_ref();
+                self.font_ids.insert(font.pdf_name.clone(), font_ref);
+
+                // 1. Type 0 composite font
+                {
+                    let mut type0 = self.pdf.type0_font(font_ref);
+                    type0.base_font(Name(font.ps_name.as_bytes()));
+                    type0.encoding_predefined(Name(b"Identity-H"));
+                    type0.descendant_font(cid_font_ref);
+                }
+
+                // 2. Descendant CIDFont
+                {
+                    let mut cid = self.pdf.cid_font(cid_font_ref);
+                    cid.subtype(CidFontType::Type2);
+                    cid.base_font(Name(font.ps_name.as_bytes()));
+                    cid.system_info(SystemInfo {
+                        registry: Str(b"Adobe"),
+                        ordering: Str(b"Identity"),
+                        supplement: 0,
+                    });
+                    cid.font_descriptor(descriptor_ref);
+                    cid.default_width(1000.0);
+                    cid.cid_to_gid_map_predefined(Name(b"Identity"));
+                }
+
+                // 3. Font descriptor
+                {
+                    let mut desc = self.pdf.font_descriptor(descriptor_ref);
+                    desc.name(Name(font.ps_name.as_bytes()));
+                    desc.flags(FontFlags::NON_SYMBOLIC);
+                    desc.italic_angle(0.0);
+                }
+            } else {
+                let font_ref = self.alloc_ref();
+                self.font_ids.insert(font.pdf_name.clone(), font_ref);
+
+                // Write Type1 font dictionary
+                let mut font_dict = self.pdf.type1_font(font_ref);
+                font_dict.base_font(Name(font.ps_name.as_bytes()));
+            }
         }
     }
 

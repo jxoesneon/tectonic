@@ -10,10 +10,12 @@
 // Public sub-modules and reexports.
 
 pub mod bibtex;
+pub mod pdf_backend;
 pub mod spx2html;
 pub mod tex;
 pub mod xdvipdfmx;
 
 pub use self::{
-    bibtex::BibtexEngine, spx2html::Spx2HtmlEngine, tex::TexEngine, xdvipdfmx::XdvipdfmxEngine,
+    bibtex::BibtexEngine, pdf_backend::PdfBackendEngine, spx2html::Spx2HtmlEngine, tex::TexEngine,
+    xdvipdfmx::XdvipdfmxEngine,
 };

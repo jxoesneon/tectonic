@@ -30,6 +30,7 @@ const HELPMSG: &str = r#"Available unstable options:
                                     and this option makes some extra functionality trade-offs.
                                     Specifically, deterministic mode breaks SyncTeX's auxiliary files
                                     as they include and rely on absolute file paths
+    -Z pdf-backend=<engine>     Select PDF backend ('rust' or 'xdvipdfmx'/'c') [default: xdvipdfmx]
 "#;
 
 // Each entry of this should correspond to a field of UnstableOptions.
@@ -44,6 +45,7 @@ pub enum UnstableArg {
     ShellEscapeEnabled,
     ShellEscapeCwd(String),
     DeterministicModeEnabled,
+    PdfBackend(String),
 }
 
 impl FromStr for UnstableArg {
@@ -98,6 +100,8 @@ impl FromStr for UnstableArg {
 
             "deterministic-mode" => require_no_value(value, UnstableArg::DeterministicModeEnabled),
 
+            "pdf-backend" => require_value("engine").map(|s| UnstableArg::PdfBackend(s.to_string())),
+
             _ => Err(format!("Unknown unstable option '{arg}'").into()),
         }
     }
@@ -142,6 +146,12 @@ pub struct UnstableOptions {
     /// `/dev/urandom`), but anything else (especially behaviour in TeXLive
     /// packages) is considered a bug.
     pub deterministic_mode: bool,
+
+    /// Desired PDF backend ("rust" or "xdvipdfmx").
+    pub pdf_backend: Option<String>,
+
+    /// Whether to use the pure-Rust PDF backend.
+    pub use_rust_pdf_backend: bool,
 }
 
 impl UnstableOptions {
@@ -166,6 +176,10 @@ impl UnstableOptions {
                     opts.shell_escape = true;
                 }
                 DeterministicModeEnabled => opts.deterministic_mode = true,
+                PdfBackend(b) => {
+                    opts.use_rust_pdf_backend = b.eq_ignore_ascii_case("rust");
+                    opts.pdf_backend = Some(b);
+                }
             }
         }
 

@@ -24,7 +24,7 @@ use crate::{
     status::StatusBackend,
     tt_error, tt_note, tt_warning,
     unstable_opts::UnstableOptions,
-    BibtexEngine, Spx2HtmlEngine, TexEngine, TexOutcome, XdvipdfmxEngine,
+    BibtexEngine, PdfBackendEngine, Spx2HtmlEngine, TexEngine, TexOutcome, XdvipdfmxEngine,
 };
 use anyhow::Context;
 use byte_unit::{Byte, UnitType};
@@ -1999,22 +1999,51 @@ impl ProcessingSession {
     }
 
     fn xdvipdfmx_pass(&mut self, status: &mut dyn StatusBackend) -> Result<i32> {
+        let use_rust_backend = self.unstables.use_rust_pdf_backend
+            || std::env::var("TECTONIC_USE_RUST_PDF_BACKEND")
+                .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+                .unwrap_or(false);
+
         {
-            status.note_highlighted("Running ", "xdvipdfmx", " ...");
+            if use_rust_backend {
+                status.note_highlighted("Running ", "pdf_backend (pure Rust)", " ...");
 
-            let mut launcher =
-                CoreBridgeLauncher::new_with_security(&mut self.bs, status, self.security.clone());
-            let mut engine = XdvipdfmxEngine::default();
+                let mut launcher = CoreBridgeLauncher::new_with_security(
+                    &mut self.bs,
+                    status,
+                    self.security.clone(),
+                );
+                let mut engine = PdfBackendEngine::default();
 
-            engine.build_date(self.build_date);
+                engine.build_date(self.build_date);
 
-            if let Some(ref ps) = self.unstables.paper_size {
-                engine.paper_spec(ps.clone());
+                if let Some(ref ps) = self.unstables.paper_size {
+                    engine.paper_spec(ps.clone());
+                }
+
+                engine
+                    .process(&mut launcher, &self.tex_xdv_path, &self.tex_pdf_path)
+                    .with_context(|| EngineError::new("pdf_backend"))?;
+            } else {
+                status.note_highlighted("Running ", "xdvipdfmx", " ...");
+
+                let mut launcher = CoreBridgeLauncher::new_with_security(
+                    &mut self.bs,
+                    status,
+                    self.security.clone(),
+                );
+                let mut engine = XdvipdfmxEngine::default();
+
+                engine.build_date(self.build_date);
+
+                if let Some(ref ps) = self.unstables.paper_size {
+                    engine.paper_spec(ps.clone());
+                }
+
+                engine
+                    .process(&mut launcher, &self.tex_xdv_path, &self.tex_pdf_path)
+                    .with_context(|| EngineError::new("xdvipdfmx"))?;
             }
-
-            engine
-                .process(&mut launcher, &self.tex_xdv_path, &self.tex_pdf_path)
-                .with_context(|| EngineError::new("xdvipdfmx"))?;
         }
 
         self.bs.mem.files.borrow_mut().remove(&self.tex_xdv_path);

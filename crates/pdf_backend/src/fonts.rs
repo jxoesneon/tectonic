@@ -27,6 +27,8 @@ pub struct FontEntry {
     pub slant: Option<u32>,
     /// Extend factor (fixed point 16.16) if specified.
     pub extend: Option<u32>,
+    /// Whether this font was defined as a native OpenType/TrueType font.
+    pub is_native: bool,
 }
 
 /// Registry of fonts used in a document.
@@ -72,6 +74,7 @@ impl FontRegistry {
             color_rgba,
             slant,
             extend,
+            is_native: true,
         };
 
         self.fonts.insert(font_num, entry);
@@ -96,6 +99,7 @@ impl FontRegistry {
             color_rgba: None,
             slant: None,
             extend: None,
+            is_native: false,
         };
 
         self.fonts.insert(font_num, entry);

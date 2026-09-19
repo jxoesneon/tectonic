@@ -105,6 +105,7 @@ tectonic_engine_xetex = { path = "crates/engine_xetex", version = "0.17.3"  }
 tectonic_errors = { path = "crates/errors", version = "0.17.3"  }
 tectonic_geturl = { path = "crates/geturl", version = "0.17.3", default-features = false  }
 tectonic_io_base = { path = "crates/io_base", version = "0.17.3"  }
+tectonic_pdf_backend = { path = "crates/pdf_backend", version = "0.17.3" }
 tectonic_status_base = { path = "crates/status_base", version = "0.17.3"  }
 tectonic_xdv = { path = "crates/xdv", version = "0.17.3"  }
 tectonic_xetex_layout = { path = "crates/xetex_layout", version = "0.17.3"  }

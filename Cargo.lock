@@ -3328,6 +3328,7 @@ dependencies = [
  "tectonic_errors",
  "tectonic_geturl",
  "tectonic_io_base",
+ "tectonic_pdf_backend",
  "tectonic_status_base",
  "tectonic_xdv",
  "tectonic_xetex_layout",

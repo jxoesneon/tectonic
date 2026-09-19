@@ -165,6 +165,21 @@ Implementation (`crates/pdf_backend`):
 - Test coverage: **99.51% line coverage, 98.37% region coverage, 97.33% function coverage** (26 tests).
 - Parity gates: 0 violations across all 7 gates.
 
+**✅ MILESTONE 2 COMPLETE**
+
+Implementation (`tectonic` driver & engine integration):
+- Wired `tectonic_pdf_backend` directly into the `tectonic` driver and workspace dependencies.
+- Exposed `PdfBackendEngine` via `src/engines/pdf_backend.rs`, `src/engines/mod.rs`, and `src/lib.rs`.
+- Implemented Gate 7 Dual-Engine Fallback in `src/driver.rs` (`xdvipdfmx_pass`) and `src/unstable_opts.rs`:
+  - Configurable via `-Z pdf-backend=rust` or `-Z pdf-backend=xdvipdfmx` (default C backend).
+  - Runtime override via `TECTONIC_USE_RUST_PDF_BACKEND=1`.
+- Enhanced `crates/pdf_backend`:
+  - Emitted Type 0 composite font dictionaries (`/Subtype /Type0`) with `/Encoding /Identity-H` and descendant `/CIDFontType2` dictionaries for native OpenType fonts.
+  - Emitted `FontDescriptor` dictionaries for proper PDF font specification.
+  - Implemented 2-byte hexadecimal glyph ID sequence streaming (`<{:04x}> Tj`) in `handle_glyph_run`.
+- Verified end-to-end document compilation via `tests/driver.rs::the_letter_a_with_rust_pdf_backend`.
+- Preserved 100% pass rate on `tests/tex-outputs.rs` (33/33 tests) and all 7 Parity Gates.
+
 ---
 
 ### Phase 4: TeX Subsystem Decoupling (~15,000 lines of C)

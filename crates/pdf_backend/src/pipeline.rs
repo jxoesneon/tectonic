@@ -206,7 +206,7 @@ impl XdvEvents for XdvToPdfPipeline {
     fn handle_glyph_run(
         &mut self,
         font_num: i32,
-        _glyphs: &[u16],
+        glyphs: &[u16],
         x: &[i32],
         y: &[i32],
     ) -> Result<(), Self::Error> {
@@ -222,12 +222,25 @@ impl XdvEvents for XdvToPdfPipeline {
         let font_size_bp = font.size_bp;
 
         if let Some(content) = self.current_content.as_mut() {
-            let (pdf_x, pdf_y) = dvi_to_pdf_coords(x[0], y[0], self.page_height_bp);
-            let s = format!(
-                "BT\n/{} {:.4} Tf\n1 0 0 1 {:.4} {:.4} Tm\nET\n",
-                font_pdf_name, font_size_bp, pdf_x, pdf_y
-            );
-            content.extend_from_slice(s.as_bytes());
+            content.extend_from_slice(b"BT\n");
+            let tf = format!("/{} {:.4} Tf\n", font_pdf_name, font_size_bp);
+            content.extend_from_slice(tf.as_bytes());
+
+            if glyphs.is_empty() {
+                let (pdf_x, pdf_y) = dvi_to_pdf_coords(x[0], y[0], self.page_height_bp);
+                let s = format!("1 0 0 1 {:.4} {:.4} Tm\n", pdf_x, pdf_y);
+                content.extend_from_slice(s.as_bytes());
+            } else {
+                for (i, &gid) in glyphs.iter().enumerate() {
+                    let gx = x.get(i).copied().unwrap_or(x[0]);
+                    let gy = y.get(i).copied().unwrap_or(y[0]);
+                    let (pdf_x, pdf_y) = dvi_to_pdf_coords(gx, gy, self.page_height_bp);
+                    let op = format!("1 0 0 1 {:.4} {:.4} Tm\n<{:04x}> Tj\n", pdf_x, pdf_y, gid);
+                    content.extend_from_slice(op.as_bytes());
+                }
+            }
+
+            content.extend_from_slice(b"ET\n");
         }
 
         self.active_font_num = Some(font_num);
