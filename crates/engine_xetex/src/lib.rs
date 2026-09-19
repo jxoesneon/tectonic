@@ -22,7 +22,13 @@ use std::{ffi::CString, time::SystemTime};
 use tectonic_bridge_core::{CoreBridgeLauncher, EngineAbortedError};
 use tectonic_errors::prelude::*;
 
+pub mod state;
 pub mod unicode;
+
+pub use state::{
+    badness, half, tex_round, CommandCode, MemoryWord, TeXEngineState, TeXMemoryError, TeXMode,
+    TwoHalves,
+};
 
 /// A serial number describing the detailed binary layout of the TeX "format
 /// files" used by this crate. This number will occasionally increment,
