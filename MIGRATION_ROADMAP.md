@@ -241,11 +241,12 @@ Implementation (`tectonic` driver & engine integration):
 
 - **Architecture of `TeXEngineState`**:
   ```rust
-  pub struct TeXEngineState<'a> {
+  pub struct TeXEngineState {
       // Memory arrays
       pub mem: Vec<MemoryWord>,
       pub eqtb: Vec<MemoryWord>,
       pub hash: Vec<TwoHalves>,
+      pub cat_codes: Vec<u8>,
       
       // Fixed-point state
       pub cur_val: i32,
@@ -253,16 +254,35 @@ Implementation (`tectonic` driver & engine integration):
       pub cur_chr: i32,
       pub cur_cs: i32,
       
-      // Virtualized I/O & Hooks
-      pub io: &'a mut dyn IoProvider,
-      pub hooks: &'a mut dyn DriverHooks,
+      // Execution mode & list state
+      pub mode: i16,
+      pub head: i32,
+      pub tail: i32,
+      pub prev_graf: i32,
+      
+      // Dynamic memory rover & avail bounds
+      pub lo_mem_max: i32,
+      pub hi_mem_min: i32,
+      pub rover: i32,
+      pub avail: i32,
   }
   ```
-- **Transpilation Rules**:
-  - Preserve exact integer types (`scaled_t = i32`, `halfword = i32`, `quarterword = u8`).
-  - Preserve Knuth's exact division, multiplication, and `badness()` routines.
-  - Preserve `expand()` and `macro_call()` token dispatch flow.
-  - Zero process-global static state; instances are fully re-entrant and thread-safe.
+- **Transpilation Rules & Milestones**:
+  - **Milestone 1 (COMPLETE)**:
+    - Pure-Rust `TeXEngineState`, `MemoryWord` (64-bit word union matching Knuth layout), and `TwoHalves`.
+    - Knuth's exact 32-bit fixed-point arithmetic (`scaled_t = i32`, `mult_and_add`, `x_over_n`, `xn_over_d`, `round_xn_over_d`, `badness`, `tex_round`) preserving all historical TRIP-test rounding quirks (Gate 4 compliant).
+    - Knuth's exact doubly-linked rover dynamic memory allocator (`get_node`, `free_node`, auto-coalescing of adjacent free blocks).
+    - Single-word token memory allocator (`get_avail`, `free_avail`, `flush_list`).
+    - Standard node constructors (`new_null_box`, `new_rule`, `new_glue`, `new_spec`, `new_param_glue`, `new_kern`, `new_penalty`).
+    - Equivalents table (`eqtb`) parameter accessors for `count`, `dimen`, `skip`, `mu_skip`, `toks`, and `box_reg`.
+    - Standard TeX category code table (`cat_code`, `set_cat_code`, `init_default_cat_codes`).
+    - Command code enumeration (`CommandCode`) and execution modes (`TeXMode`).
+    - 22 unit tests passing in `crates/engine_xetex/src/state.rs`.
+    - 100% test pass rate preserved across `driver.rs` and `tex-outputs.rs` (33/33 tests).
+    - Gate 5 verified (zero global mutable static variables).
+  - **Milestone 2 (NEXT)**:
+    - Transpile token scanner and macro expansion loop (`get_next`, `expand`, `macro_call`).
+    - Transpile primitive dispatch table and token-list parser.
 
 ---
 
