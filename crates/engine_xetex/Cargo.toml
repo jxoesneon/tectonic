@@ -23,10 +23,8 @@ encoding_rs = "^0.8.35"
 icu_segmenter = "^2.3.0"
 libc = "^0.2"
 tectonic_bridge_core = { path = "../bridge_core", version = "0.17.3"  }
-tectonic_bridge_freetype2 = { path = "../bridge_freetype2", version = "0.17.3"  }
 tectonic_bridge_flate = { path = "../bridge_flate", version = "0.17.3"  }
 tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.17.3"  }
-tectonic_bridge_harfbuzz = { path = "../bridge_harfbuzz", version = "0.17.3"  }
 tectonic_errors = { path = "../errors", version = "0.17.3"  }
 tectonic_image_probe = { path = "../image_probe", version = "0.17.3"  }
 tectonic_xetex_layout = { path = "../xetex_layout", version = "0.17.3"  }
@@ -37,10 +35,7 @@ cc = "^1.0.66"
 tectonic_cfg_support = { path = "../cfg_support", version = "0.17.3"  }
 
 [features]
-external-harfbuzz = [
-    "tectonic_bridge_harfbuzz/external-harfbuzz",
-    "tectonic_xetex_layout/external-harfbuzz",
-]
+external-harfbuzz = []
 
 [package.metadata.internal_dep_versions]
 tectonic_bridge_core = "4e16bf963700aae59772a6fb223981ceaa9b5f57"

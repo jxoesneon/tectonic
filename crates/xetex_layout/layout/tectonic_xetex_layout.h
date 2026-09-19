@@ -5,8 +5,19 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "harfbuzz/hb.h"
-#include "harfbuzz/hb-ft.h"
+
+#ifndef HB_TAG_NONE
+typedef uint32_t hb_tag_t;
+#define HB_TAG_NONE 0x00000000u
+
+typedef struct hb_feature_t {
+  hb_tag_t tag;
+  uint32_t value;
+  unsigned int start;
+  unsigned int end;
+} hb_feature_t;
+#endif
+
 #ifdef XETEX_MAC
 #include <ApplicationServices/ApplicationServices.h>
 #else
@@ -142,7 +153,27 @@ bool usingOpenType(XeTeXLayoutEngine engine);
 
 bool isOpenTypeMathFont(XeTeXLayoutEngine engine);
 
-hb_font_t *ttxl_get_hb_font(XeTeXLayoutEngine engine);
+typedef struct {
+  uint32_t glyph;
+  int32_t start_connector_length;
+  int32_t end_connector_length;
+  int32_t full_advance;
+  uint32_t flags;
+} XeTeXMathGlyphPart;
+
+typedef struct {
+  unsigned int count;
+  XeTeXMathGlyphPart *parts;
+} XeTeXGlyphAssembly;
+
+int32_t ttxl_get_ot_math_constant(XeTeXFont font, uint32_t constant);
+uint32_t ttxl_get_ot_math_variant(XeTeXFont font, uint32_t glyph, int32_t variant_index, int32_t *adv, bool horiz);
+XeTeXGlyphAssembly *ttxl_get_ot_assembly_ptr(XeTeXFont font, uint32_t glyph, bool horiz);
+void ttxl_free_ot_assembly(XeTeXGlyphAssembly *assembly);
+int32_t ttxl_get_ot_math_ital_corr(XeTeXFont font, uint32_t glyph);
+int32_t ttxl_get_ot_math_accent_pos(XeTeXFont font, uint32_t glyph);
+int32_t ttxl_ot_min_connector_overlap(XeTeXFont font);
+int32_t ttxl_get_ot_math_kern(XeTeXFont font, uint32_t glyph, int32_t side, int32_t height);
 
 int layoutChars(XeTeXLayoutEngine engine,
                 uint16_t *chars,

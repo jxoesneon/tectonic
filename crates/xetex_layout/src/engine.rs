@@ -1,13 +1,13 @@
-//! Base engine for laying out fonts.
+// Copyright 2020-2021 the Tectonic Project
+// Licensed under the MIT License.
+
+//! Base engine for laying out fonts using `rustybuzz` and `bridge_graphite2`.
 
 use crate::font::Font;
-use crate::manager::{Engine, FontManager};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::ops::{Deref, DerefMut};
-use std::ptr;
 use tectonic_bridge_graphite2 as gr;
-use tectonic_bridge_harfbuzz as hb;
 
 /// Item that may be borrowed or owned. Similar to `Cow`, but with mutable references.
 pub enum MaybeBorrow<'a, T> {
@@ -43,13 +43,40 @@ pub(crate) struct GrBreak {
     pub(crate) text_len: libc::c_uint,
 }
 
+/// An OpenType feature setting for text shaping.
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct LayoutFeature {
+    /// 4-byte OpenType feature tag.
+    pub tag: u32,
+    /// Value assigned to the feature.
+    pub value: u32,
+    /// Start index in text buffer.
+    pub start: libc::c_uint,
+    /// End index in text buffer.
+    pub end: libc::c_uint,
+}
+
+/// Glyph positioning offsets and advances.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ShapedPosition {
+    /// Horizontal advance.
+    pub x_advance: f32,
+    /// Vertical advance.
+    pub y_advance: f32,
+    /// Horizontal offset.
+    pub x_offset: f32,
+    /// Vertical offset.
+    pub y_offset: f32,
+}
+
 /// Base layout engine. Combines all the information needed to shape a font for TeX.
 #[repr(C)]
 pub struct LayoutEngine {
     font: MaybeBorrow<'static, Font>,
-    script: hb::Tag,
-    pub(crate) language: hb::Language,
-    pub(crate) features: Box<[hb::Feature]>,
+    script: u32,
+    pub(crate) language: Option<String>,
+    pub(crate) features: Box<[LayoutFeature]>,
     /// the requested shapers
     shaper_list: Vec<*const libc::c_char>,
     /// the actually used shaper
@@ -58,7 +85,8 @@ pub struct LayoutEngine {
     extend: f32,
     slant: f32,
     embolden: f32,
-    hb_buffer: hb::Buffer,
+    pub(crate) shaped_glyphs: Vec<u32>,
+    pub(crate) shaped_positions: Vec<ShapedPosition>,
     pub(crate) gr_breaking: Option<GrBreak>,
 }
 
@@ -67,31 +95,21 @@ impl LayoutEngine {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         font: MaybeBorrow<'static, Font>,
-        script: hb::Tag,
+        script: u32,
         language: Option<Cow<'static, CStr>>,
-        features: Box<[hb::Feature]>,
+        features: Box<[LayoutFeature]>,
         shaper_list: Vec<*const libc::c_char>,
         rgb_value: u32,
         extend: f32,
         slant: f32,
         embolden: f32,
     ) -> LayoutEngine {
-        let req_engine = FontManager::with_font_manager(|mgr| mgr.get_req_engine());
+        let lang_str = language.and_then(|l| l.to_str().ok().map(|s| s.to_string()));
+
         LayoutEngine {
             font,
             script,
-            // For Graphite fonts treat the language as BCP 47 tag, for OpenType we
-            // treat it as a OT language tag for backward compatibility with pre-0.9999
-            // XeTeX.
-            language: if req_engine == Engine::Graphite {
-                language
-                    .map(|lang| hb::Language::from_cstr(&lang))
-                    .unwrap_or_default()
-            } else {
-                language
-                    .map(|lang| hb::Tag::from_cstr(&lang).to_language())
-                    .unwrap_or_default()
-            },
+            language: lang_str,
             features,
             shaper_list,
             shaper: None,
@@ -99,13 +117,14 @@ impl LayoutEngine {
             extend,
             slant,
             embolden,
-            hb_buffer: hb::Buffer::new(),
+            shaped_glyphs: Vec::new(),
+            shaped_positions: Vec::new(),
             gr_breaking: None,
         }
     }
 
     /// Get the font script used
-    pub fn script(&self) -> hb::Tag {
+    pub fn script(&self) -> u32 {
         self.script
     }
 
@@ -144,12 +163,27 @@ impl LayoutEngine {
         pub const UBIDI_DEFAULT_LTR: u8 = 0xFE;
         pub const UBIDI_DEFAULT_RTL: u8 = 0xFF;
 
-        let script = self.hb_buffer.as_ref().get_script();
-        if script.get_horizontal_direction() == hb::Direction::Rtl {
-            UBIDI_DEFAULT_RTL
-        } else {
-            UBIDI_DEFAULT_LTR
+        if self.script != 0 {
+            let tag_bytes = self.script.to_be_bytes();
+            let script_tag = ttf_parser::Tag::from_bytes(&tag_bytes);
+            if let Some(script) = rustybuzz::Script::from_iso15924_tag(script_tag) {
+                // Arabic, Hebrew, Syriac, Thaana, NKo, Samaritan, Mandaic are RTL
+                let is_rtl = matches!(
+                    script,
+                    rustybuzz::script::ARABIC
+                        | rustybuzz::script::HEBREW
+                        | rustybuzz::script::SYRIAC
+                        | rustybuzz::script::THAANA
+                        | rustybuzz::script::NKO
+                        | rustybuzz::script::SAMARITAN
+                        | rustybuzz::script::MANDAIC
+                );
+                if is_rtl {
+                    return UBIDI_DEFAULT_RTL;
+                }
+            }
         }
+        UBIDI_DEFAULT_LTR
     }
 
     /// Check whether we're using the graphite shaper
@@ -164,118 +198,301 @@ impl LayoutEngine {
         self.shaper.as_ref().is_some_and(|s| s.to_bytes() == b"ot")
     }
 
-    /// Get the harfbuzz buffer
-    pub fn hb_buffer(&self) -> hb::BufferRef<'_> {
-        self.hb_buffer.as_ref()
-    }
-
     /// Get the number of characters in the given slice
     pub fn layout_chars(&mut self, chars: &[u16], rtl: bool) -> usize {
-        let hb_font = self.font.hb_font();
-        let hb_face = hb_font.face();
+        self.shaped_glyphs.clear();
+        self.shaped_positions.clear();
 
-        let direction = if self.font.layout_dir_vertical() {
-            hb::Direction::Ttb
-        } else if rtl {
-            hb::Direction::Rtl
-        } else {
-            hb::Direction::Ltr
-        };
+        // Check if Graphite is requested and font has Graphite data
+        let wants_graphite = self.shaper_list.iter().any(|&s| {
+            // SAFETY: shaper list strings are valid C strings provided during engine initialization
+            !s.is_null() && unsafe { CStr::from_ptr(s).to_bytes() == b"graphite2" }
+        });
 
-        let script = self.script.to_script();
-        self.hb_buffer.as_mut().reset();
-        // TODO: figure out cfg for harfbuzz versions below 2.5
-        // if hb_version_atleast(2, 5, 0) == 0 {
-        //     #[derive(Copy, Clone)]
-        //     struct SendSync(*mut hb_unicode_funcs_t);
-        //
-        //     unsafe impl Send for SendSync {}
-        //     unsafe impl Sync for SendSync {}
-        //
-        //     unsafe extern "C" fn _decompose_compat(
-        //         _: *mut hb_unicode_funcs_t,
-        //         _: hb_codepoint_t,
-        //         _: *mut hb_codepoint_t,
-        //         _: *mut libc::c_void,
-        //     ) -> libc::c_uint {
-        //         0
-        //     }
-        //
-        //     unsafe extern "C" fn _get_unicode_funcs() -> *mut hb_unicode_funcs_t {
-        //         static UFUNCS: OnceLock<SendSync> = OnceLock::new();
-        //         let ufuncs = *UFUNCS
-        //             .get_or_init(|| SendSync(hb_unicode_funcs_create(hb_icu_get_unicode_funcs())));
-        //
-        //         hb_unicode_funcs_set_decompose_compatibility_func(
-        //             ufuncs.0,
-        //             _decompose_compat,
-        //             ptr::null_mut(),
-        //             None,
-        //         );
-        //
-        //         ufuncs.0
-        //     }
-        //
-        //     static HB_UNICODE_FUNCS: OnceLock<SendSync> = OnceLock::new();
-        //     let funcs = *HB_UNICODE_FUNCS.get_or_init(|| SendSync(_get_unicode_funcs()));
-        //     hb_buffer_set_unicode_funcs(engine.hb_buffer, funcs.0);
-        // }
-
-        self.hb_buffer.as_mut().add_utf16(chars);
-        self.hb_buffer.as_mut().set_direction(direction);
-        self.hb_buffer.as_mut().set_script(script);
-        self.hb_buffer.as_mut().set_language(self.language);
-
-        self.hb_buffer.as_mut().guess_segment_properties();
-        let segment_props = self.hb_buffer.as_mut().get_segment_properties();
-
-        if self.shaper_list.is_empty() {
-            // HarfBuzz gives graphite2 shaper a priority, so that for hybrid
-            // Graphite/OpenType fonts, Graphite will be used. However, pre-0.9999
-            // XeTeX preferred OpenType over Graphite, so we are doing the same
-            // here for sake of backward compatibility. Since "ot" shaper never
-            // fails, we set the shaper list to just include it.
-            self.shaper_list = vec![c"ot".as_ptr(), ptr::null()];
-        }
-
-        let mut shape_plan = hb::ShapePlan::new_cached(
-            hb_face,
-            &segment_props,
-            &self.features,
-            Some(&self.shaper_list),
-        );
-        let res = shape_plan
-            .as_mut()
-            .execute(hb_font, self.hb_buffer.as_mut(), &self.features);
-
-        self.shaper = None;
-
-        if res {
-            self.shaper = shape_plan.as_ref().get_shaper().map(CStr::to_owned);
-        } else {
-            // all selected shapers failed, retrying with default
-            // we don't use _cached here as the cached plan will always fail.
-            shape_plan = hb::ShapePlan::new(hb_face, &segment_props, &self.features, None);
-            let res = shape_plan
-                .as_mut()
-                .execute(hb_font, self.hb_buffer.as_mut(), &self.features);
-
-            if res {
-                self.shaper = shape_plan.as_ref().get_shaper().map(CStr::to_owned);
-            } else {
-                panic!("all shapers failed");
+        if wants_graphite {
+            if let Some(gr_face_ptr) = self.font.gr_face_ptr() {
+                // SAFETY: gr_face_ptr is guaranteed non-null and valid for the lifetime of self.font
+                let gr_face = unsafe { gr::FaceRef::from_raw(gr_face_ptr) };
+                if self.layout_chars_graphite(chars, rtl, gr_face) {
+                    self.shaper = Some(CString::new("graphite2").unwrap());
+                    return self.shaped_glyphs.len();
+                }
             }
         }
 
-        self.hb_buffer.as_ref().len()
+        self.layout_chars_rustybuzz(chars, rtl);
+        self.shaper = Some(CString::new("ot").unwrap());
+        self.shaped_glyphs.len()
+    }
+
+    fn layout_chars_rustybuzz(&mut self, chars: &[u16], rtl: bool) {
+        let Some(font_data) = self.font.data() else {
+            return;
+        };
+        let Some(face) = rustybuzz::Face::from_slice(font_data, self.font.index()) else {
+            return;
+        };
+
+        let direction = if self.font.layout_dir_vertical() {
+            rustybuzz::Direction::TopToBottom
+        } else if rtl {
+            rustybuzz::Direction::RightToLeft
+        } else {
+            rustybuzz::Direction::LeftToRight
+        };
+
+        let mut buffer = rustybuzz::UnicodeBuffer::new();
+        for (cluster, ch) in std::char::decode_utf16(chars.iter().copied()).enumerate() {
+            let c = ch.unwrap_or('\u{FFFD}');
+            buffer.add(c, cluster as u32);
+        }
+        buffer.set_direction(direction);
+
+        if self.script != 0 {
+            let tag_bytes = self.script.to_be_bytes();
+            let script_tag = ttf_parser::Tag::from_bytes(&tag_bytes);
+            if let Some(script) = rustybuzz::Script::from_iso15924_tag(script_tag) {
+                buffer.set_script(script);
+            }
+        }
+
+        if let Some(ref lang_str) = self.language {
+            if let Ok(lang) = core::str::FromStr::from_str(lang_str) {
+                buffer.set_language(lang);
+            }
+        }
+
+        buffer.guess_segment_properties();
+
+        let mut rb_features = Vec::with_capacity(self.features.len());
+        for f in self.features.iter() {
+            let tag_bytes = f.tag.to_be_bytes();
+            rb_features.push(rustybuzz::Feature::new(
+                ttf_parser::Tag::from_bytes(&tag_bytes),
+                f.value,
+                f.start as usize..f.end as usize,
+            ));
+        }
+
+        let glyph_buffer = rustybuzz::shape(&face, &rb_features, buffer);
+
+        for (info, pos) in glyph_buffer
+            .glyph_infos()
+            .iter()
+            .zip(glyph_buffer.glyph_positions().iter())
+        {
+            self.shaped_glyphs.push(info.glyph_id);
+            self.shaped_positions.push(ShapedPosition {
+                x_advance: pos.x_advance as f32,
+                y_advance: pos.y_advance as f32,
+                x_offset: pos.x_offset as f32,
+                y_offset: pos.y_offset as f32,
+            });
+        }
+    }
+
+    fn layout_chars_graphite(
+        &mut self,
+        chars: &[u16],
+        rtl: bool,
+        gr_face: gr::FaceRef<'_>,
+    ) -> bool {
+        let lang_tag = self
+            .language
+            .as_deref()
+            .map(|s| {
+                let bytes = s.as_bytes();
+                let mut tag = [b' '; 4];
+                for (i, b) in bytes.iter().take(4).enumerate() {
+                    tag[i] = *b;
+                }
+                u32::from_be_bytes(tag)
+            })
+            .unwrap_or(0);
+
+        let mut gr_feature_values = gr_face.feature_val_for_lang(lang_tag);
+        for f in self.features.iter().rev() {
+            if let Some(fref) = gr_face.find_feature_ref(f.tag) {
+                let _ = fref.set_feat_value(gr_feature_values.as_mut(), f.value as u16);
+            }
+        }
+
+        let gr_seg = gr::Segment::new_unscaled(
+            gr_face,
+            self.script,
+            gr_feature_values.as_ref(),
+            chars,
+            rtl,
+        );
+
+        let Some(gr_seg) = gr_seg else {
+            return false;
+        };
+
+        let seg_ref = gr_seg.as_ref();
+        let glyph_count = seg_ref.n_slots();
+        if glyph_count == 0 {
+            return true;
+        }
+
+        #[derive(Default, Clone, Copy)]
+        struct GrCluster {
+            base_char: u32,
+            num_chars: u32,
+            base_glyph: usize,
+            num_glyphs: u32,
+            advance: f32,
+        }
+
+        let mut clusters = vec![GrCluster::default(); chars.len().max(1)];
+        let mut gids = Vec::with_capacity(glyph_count);
+
+        let mut ci = 0usize;
+        let mut curradv = if rtl {
+            let first = seg_ref.first_slot();
+            first.origin().0
+        } else {
+            0.0
+        };
+
+        if rtl {
+            clusters[0].advance = seg_ref.advance_x() - curradv;
+        } else {
+            clusters[0].advance = 0.0;
+        }
+
+        let mut slot = Some(seg_ref.first_slot());
+        let mut ic = 0usize;
+
+        while let Some(s) = slot {
+            let before = s.before();
+            let after = s.after();
+            gids.push(s.gid() as u32);
+
+            while clusters[ci].base_char > before && ci > 0 {
+                let c_cur = clusters[ci];
+                clusters[ci - 1].num_chars += c_cur.num_chars;
+                clusters[ci - 1].num_glyphs += c_cur.num_glyphs;
+                clusters[ci - 1].advance += c_cur.advance;
+                ci -= 1;
+            }
+
+            if s.can_insert_before()
+                && clusters[ci].num_chars > 0
+                && before >= clusters[ci].base_char + clusters[ci].num_chars
+            {
+                let next_base_char = clusters[ci].base_char + clusters[ci].num_chars;
+                ci += 1;
+                if ci >= clusters.len() {
+                    clusters.resize(ci + 1, GrCluster::default());
+                }
+                clusters[ci].base_char = next_base_char;
+                clusters[ci].num_chars = before - next_base_char;
+                clusters[ci].base_glyph = ic;
+                clusters[ci].num_glyphs = 0;
+                if rtl {
+                    clusters[ci].advance = curradv - s.origin().0;
+                    curradv -= clusters[ci].advance;
+                } else {
+                    let origin_x = s.origin().0;
+                    clusters[ci].advance = 0.0;
+                    clusters[ci - 1].advance += origin_x - curradv;
+                    curradv = origin_x;
+                }
+            }
+            clusters[ci].num_glyphs += 1;
+
+            if clusters[ci].base_char + clusters[ci].num_chars < after + 1 {
+                clusters[ci].num_chars = after + 1 - clusters[ci].base_char;
+            }
+
+            slot = seg_ref.next(&s);
+            ic += 1;
+        }
+
+        if rtl {
+            clusters[ci].advance += curradv;
+        } else {
+            clusters[ci].advance += seg_ref.advance_x() - curradv;
+        }
+        ci += 1;
+
+        let mut glyph_advances = vec![0.0f32; glyph_count];
+        let mut glyph_cluster_adv = vec![0.0f32; glyph_count];
+        for c in &clusters[..ci] {
+            if c.num_glyphs > 0 && c.base_glyph < glyph_count {
+                glyph_advances[c.base_glyph] = c.advance;
+            }
+            for j in 0..c.num_glyphs {
+                let idx = c.base_glyph + j as usize;
+                if idx < glyph_count {
+                    glyph_cluster_adv[idx] = c.advance;
+                }
+            }
+        }
+
+        if !rtl {
+            let mut curradvx = 0.0f32;
+            let mut curradvy = 0.0f32;
+            let mut slot = Some(seg_ref.first_slot());
+            let mut i = 0;
+            while let Some(s) = slot {
+                let x_adv = glyph_advances[i];
+                let y_adv = s.advance_y_unscaled(gr_face);
+                let x_off = s.origin().0 - curradvx;
+                let y_off = s.origin().1 - curradvy;
+                curradvx += x_adv;
+                curradvy += y_adv;
+
+                self.shaped_glyphs.push(gids[i]);
+                self.shaped_positions.push(ShapedPosition {
+                    x_advance: x_adv,
+                    y_advance: y_adv,
+                    x_offset: x_off,
+                    y_offset: y_off,
+                });
+
+                slot = seg_ref.next(&s);
+                i += 1;
+            }
+        } else {
+            let mut curradvx = seg_ref.advance_x();
+            let mut curradvy = 0.0f32;
+            let mut slot = Some(seg_ref.first_slot());
+            let mut i = 0;
+            let mut temp_positions = Vec::with_capacity(glyph_count);
+            while let Some(s) = slot {
+                let x_adv = glyph_advances[i];
+                let y_adv = s.advance_y_unscaled(gr_face);
+                curradvx -= x_adv;
+                curradvy -= y_adv;
+                let x_off = s.origin().0 - glyph_cluster_adv[i] - curradvx + x_adv;
+                let y_off = s.origin().1 - curradvy;
+
+                temp_positions.push(ShapedPosition {
+                    x_advance: x_adv,
+                    y_advance: y_adv,
+                    x_offset: x_off,
+                    y_offset: y_off,
+                });
+
+                slot = seg_ref.next(&s);
+                i += 1;
+            }
+
+            for (gid, pos) in gids.into_iter().rev().zip(temp_positions.into_iter().rev()) {
+                self.shaped_glyphs.push(gid);
+                self.shaped_positions.push(pos);
+            }
+        }
+
+        true
     }
 }
 
 pub(crate) fn get_graphite_feature_code(engine: &LayoutEngine, index: u32) -> Option<u32> {
     let id = engine
         .font()
-        .hb_font()
-        .face()
         .gr_face()?
         .feature_ref(index as usize)?
         .id();
@@ -288,8 +505,6 @@ pub(crate) fn count_graphite_feature_settings(
 ) -> Option<u32> {
     let out = engine
         .font()
-        .hb_font()
-        .face()
         .gr_face()?
         .find_feature_ref(feature_id)?
         .num_values() as u32;
@@ -303,8 +518,6 @@ pub(crate) fn get_graphite_feature_setting_code(
 ) -> Option<u32> {
     let out = engine
         .font()
-        .hb_font()
-        .face()
         .gr_face()?
         .find_feature_ref(feature_id)?
         .value(index as usize) as u32;
@@ -315,13 +528,12 @@ pub(crate) fn get_graphite_feature_default_setting(
     engine: &LayoutEngine,
     feature_id: u32,
 ) -> Option<u32> {
-    let face = engine.font().hb_font().face().gr_face()?;
+    let face = engine.font().gr_face()?;
     let feat = face.find_feature_ref(feature_id)?;
     let lang = engine
         .language
-        .to_string()
-        .map(hb::Tag::from_cstr)
-        .map(hb::Tag::to_raw)
+        .as_deref()
+        .map(tag_from_str)
         .unwrap_or(0);
     let feature_values = face.feature_val_for_lang(lang);
     let out = feat.feat_value(feature_values.as_ref()) as u32;
@@ -332,7 +544,7 @@ pub(crate) fn get_graphite_feature_label(
     engine: &LayoutEngine,
     feature_id: u32,
 ) -> Option<gr::Label> {
-    let face = engine.font().hb_font().face().gr_face()?;
+    let face = engine.font().gr_face()?;
     let feature = face.find_feature_ref(feature_id)?;
     let lang_id = 0x409;
     let label = feature.label(lang_id)?;
@@ -344,7 +556,7 @@ pub(crate) fn get_graphite_feature_setting_label(
     feature_id: u32,
     setting_id: u32,
 ) -> Option<gr::Label> {
-    let face = engine.font().hb_font().face().gr_face()?;
+    let face = engine.font().gr_face()?;
 
     let feature = face.find_feature_ref(feature_id)?;
     for i in 0..feature.num_values() {
@@ -357,13 +569,22 @@ pub(crate) fn get_graphite_feature_setting_label(
     None
 }
 
+fn tag_from_str(s: &str) -> u32 {
+    let bytes = s.as_bytes();
+    let mut tag = [b' '; 4];
+    for (i, b) in bytes.iter().take(4).enumerate() {
+        tag[i] = *b;
+    }
+    u32::from_be_bytes(tag)
+}
+
 pub(crate) fn find_graphite_feature(
     engine: &LayoutEngine,
     str: &[u8],
-    tag: &mut hb::Tag,
+    tag: &mut u32,
     v: &mut libc::c_int,
 ) -> bool {
-    *tag = hb::Tag::new(0);
+    *tag = 0;
     *v = 0;
 
     let mut idx = 0;
@@ -375,7 +596,7 @@ pub(crate) fn find_graphite_feature(
     }
 
     match find_graphite_feature_named(engine, &str[..idx]) {
-        Some(val) => *tag = hb::Tag::new(val),
+        Some(val) => *tag = val,
         None => return false,
     }
 
@@ -388,7 +609,7 @@ pub(crate) fn find_graphite_feature(
         return false;
     }
 
-    *v = find_graphite_feature_setting_named(engine, tag.to_raw(), &str[idx..])
+    *v = find_graphite_feature_setting_named(engine, *tag, &str[idx..])
         .map(|i| i as libc::c_int)
         .unwrap_or(-1);
 
@@ -396,9 +617,9 @@ pub(crate) fn find_graphite_feature(
 }
 
 pub(crate) fn find_graphite_feature_named(engine: &LayoutEngine, name: &[u8]) -> Option<u32> {
-    let gr_face = engine.font().hb_font().face().gr_face()?;
+    let gr_face = engine.font().gr_face()?;
 
-    let tag = hb::Tag::from_str(std::str::from_utf8(name).unwrap()).to_raw();
+    let tag = tag_from_str(std::str::from_utf8(name).ok()?);
 
     for i in 0..gr_face.num_feature_refs() {
         let feature = gr_face.feature_ref(i)?;
@@ -418,9 +639,9 @@ pub(crate) fn find_graphite_feature_setting_named(
     id: u32,
     name: &[u8],
 ) -> Option<i16> {
-    let face = engine.font().hb_font().face().gr_face()?;
+    let face = engine.font().gr_face()?;
 
-    let tag = hb::Tag::from_str(std::str::from_utf8(name).unwrap()).to_raw();
+    let tag = tag_from_str(std::str::from_utf8(name).ok()?);
 
     let feature = face.find_feature_ref(id)?;
     for i in 0..feature.num_values() {

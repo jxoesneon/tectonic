@@ -212,3 +212,7 @@ tectonic_io_base = "thiscommit:2021-06-13:XFjtSsZ"
 tectonic_status_base = "317ae79ceaa2593fb56090e37bf1f5cc24213dd9"
 tectonic_xdv = "c91f2ef37858d1a0a724a5c3ddc2f7ea46373c77"
 tectonic_xetex_layout = "2c1ffcd702a662c003bd3d7d0ca4d169784cb6ad"
+
+[patch.crates-io]
+rustybuzz = { path = "vendor/rustybuzz" }
+

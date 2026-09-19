@@ -240,6 +240,46 @@ impl<'a> FaceRef<'a> {
     }
 }
 
+/// An owned Graphite face.
+pub struct Face(NonNull<sys::gr_face>);
+
+// SAFETY: sys::gr_face is thread-safe for reading after creation
+unsafe impl Send for Face {}
+// SAFETY: sys::gr_face is thread-safe for reading across threads
+unsafe impl Sync for Face {}
+
+impl Face {
+    /// Create a new Graphite face using ops callbacks.
+    ///
+    /// # Safety
+    /// `ops` and `handle` must be valid.
+    pub unsafe fn new_with_ops(
+        handle: *const libc::c_void,
+        ops: &sys::gr_face_ops,
+        face_options: libc::c_uint,
+    ) -> Option<Face> {
+        let ptr = sys::gr_make_face_with_ops(handle, ops, face_options);
+        NonNull::new(ptr).map(Face)
+    }
+
+    /// Convert into a borrowed reference.
+    pub fn as_ref(&self) -> FaceRef<'_> {
+        FaceRef(self.0, PhantomData)
+    }
+
+    /// Return the raw pointer to the underlying Graphite face.
+    pub fn raw_ptr(&self) -> NonNull<()> {
+        self.0.cast()
+    }
+}
+
+impl Drop for Face {
+    fn drop(&mut self) {
+        // SAFETY: Contained pointer guaranteed valid, and owned by us.
+        unsafe { sys::gr_face_destroy(self.0.as_ptr()) }
+    }
+}
+
 /// A reference to a [`Font`].
 #[derive(Copy, Clone)]
 pub struct FontRef<'a>(NonNull<sys::gr_font>, PhantomData<&'a sys::gr_font>);
@@ -364,6 +404,18 @@ impl<'a> SegmentRef<'a> {
         // SAFETY: Slot pointer guaranteed valid
         unsafe { sys::gr_slot_index(slot.as_ptr()) as usize }
     }
+
+    /// Get the advance X of the segment.
+    pub fn advance_x(self) -> f32 {
+        // SAFETY: Contained pointer guaranteed valid
+        unsafe { sys::gr_seg_advance_X(self.as_ptr()) }
+    }
+
+    /// Get the number of slots in the segment.
+    pub fn n_slots(self) -> usize {
+        // SAFETY: Contained pointer guaranteed valid
+        unsafe { sys::gr_seg_n_slots(self.as_ptr().cast_mut()) as usize }
+    }
 }
 
 /// A segment of text, with all necessary information for shaping
@@ -397,6 +449,31 @@ impl Segment {
         NonNull::new(ptr.cast()).map(Segment)
     }
 
+    /// Create a new segment unscaled (with null font) in font design units.
+    pub fn new_unscaled<S: ?Sized + StrEnc>(
+        face: FaceRef<'_>,
+        script: u32,
+        features: FeatureValRef<'_>,
+        s: &S,
+        rtl: bool,
+    ) -> Option<Segment> {
+        let dir = 2 | (if rtl { 1 } else { 0 });
+        // SAFETY: face and features pointers are valid references; null font creates unscaled segment.
+        let ptr = unsafe {
+            sys::gr_make_seg(
+                core::ptr::null(),
+                face.as_ptr(),
+                script,
+                features.as_ptr(),
+                s.enc(),
+                s.as_ptr().cast(),
+                s.len(),
+                dir,
+            )
+        };
+        NonNull::new(ptr.cast()).map(Segment)
+    }
+
     /// Convert into a borrowed reference.
     pub fn as_ref(&self) -> SegmentRef<'_> {
         SegmentRef(self.0, PhantomData)
@@ -417,6 +494,58 @@ pub struct Slot(NonNull<sys::gr_segment>, NonNull<sys::gr_slot>);
 impl Slot {
     fn as_ptr(&self) -> *const sys::gr_slot {
         self.1.as_ptr()
+    }
+
+    /// Get the glyph ID for this slot.
+    pub fn gid(&self) -> u16 {
+        // SAFETY: Slot pointer guaranteed valid
+        unsafe { sys::gr_slot_gid(self.as_ptr()) }
+    }
+
+    /// Get the origin (x, y) for this slot.
+    pub fn origin(&self) -> (f32, f32) {
+        // SAFETY: Slot pointer guaranteed valid
+        unsafe {
+            (
+                sys::gr_slot_origin_X(self.as_ptr()),
+                sys::gr_slot_origin_Y(self.as_ptr()),
+            )
+        }
+    }
+
+    /// Get the advance (x, y) for this slot.
+    pub fn advance(&self, face: FaceRef<'_>, font: FontRef<'_>) -> (f32, f32) {
+        // SAFETY: Pointers guaranteed valid
+        unsafe {
+            (
+                sys::gr_slot_advance_X(self.as_ptr(), face.as_ptr(), font.as_ptr()),
+                sys::gr_slot_advance_Y(self.as_ptr(), face.as_ptr(), font.as_ptr()),
+            )
+        }
+    }
+
+    /// Get before char index for this slot
+    pub fn before(&self) -> u32 {
+        // SAFETY: Contained pointer guaranteed valid
+        unsafe { sys::gr_slot_before(self.as_ptr()) }
+    }
+
+    /// Get after char index for this slot
+    pub fn after(&self) -> u32 {
+        // SAFETY: Contained pointer guaranteed valid
+        unsafe { sys::gr_slot_after(self.as_ptr()) }
+    }
+
+    /// Check if can insert before this slot
+    pub fn can_insert_before(&self) -> bool {
+        // SAFETY: Contained pointer guaranteed valid
+        unsafe { sys::gr_slot_can_insert_before(self.as_ptr()) != 0 }
+    }
+
+    /// Get the advance Y for this slot with null font (in design units).
+    pub fn advance_y_unscaled(&self, face: FaceRef<'_>) -> f32 {
+        // SAFETY: Contained pointer guaranteed valid
+        unsafe { sys::gr_slot_advance_Y(self.as_ptr(), face.as_ptr(), core::ptr::null()) }
     }
 }
 

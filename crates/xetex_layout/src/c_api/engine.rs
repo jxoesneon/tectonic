@@ -1,17 +1,21 @@
+// Copyright 2020-2021 the Tectonic Project
+// Licensed under the MIT License.
+
 use crate::c_api::{FloatPoint, GlyphBBox, XeTeXFont, XeTeXLayoutEngine};
-use crate::engine::{find_graphite_feature_named, GrBreak, LayoutEngine, MaybeBorrow};
+use crate::engine::{
+    find_graphite_feature_named, GrBreak, LayoutEngine, LayoutFeature, MaybeBorrow,
+};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::{ptr, slice};
 use tectonic_bridge_graphite2 as gr;
-use tectonic_bridge_harfbuzz as hb;
 
 #[no_mangle]
 pub unsafe extern "C" fn createLayoutEngine(
     font: XeTeXFont,
-    script: hb::Tag,
+    script: u32,
     language: *mut libc::c_char,
-    features: *mut hb::Feature,
+    features: *mut LayoutFeature,
     n_features: libc::c_int,
     shapers: *mut *const libc::c_char,
     rgb_value: u32,
@@ -61,9 +65,9 @@ pub unsafe extern "C" fn createLayoutEngine(
 #[no_mangle]
 pub unsafe extern "C" fn createLayoutEngineBorrowed(
     font: XeTeXFont,
-    script: hb::Tag,
+    script: u32,
     language: *mut libc::c_char,
-    features: *mut hb::Feature,
+    features: *mut LayoutFeature,
     n_features: libc::c_int,
     shapers: *mut *const libc::c_char,
     rgb_value: u32,
@@ -80,7 +84,6 @@ pub unsafe extern "C" fn createLayoutEngineBorrowed(
     };
     let features: Box<[_]> = if !features.is_null() {
         let len = n_features as usize;
-        // Clone the slice - we don't own it and it may be realloced at any time.
         Box::from(slice::from_raw_parts(features, len))
     } else {
         Box::new([])
@@ -261,12 +264,11 @@ pub unsafe extern "C" fn usingOpenType(engine: XeTeXLayoutEngine) -> bool {
 
 #[no_mangle]
 pub unsafe extern "C" fn isOpenTypeMathFont(engine: XeTeXLayoutEngine) -> bool {
-    (*engine).font().hb_font().face().has_ot_math_data()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn ttxl_get_hb_font(engine: XeTeXLayoutEngine) -> *mut hb::sys::hb_font_t {
-    (*engine).font().hb_font().as_ptr()
+    (*engine)
+        .font()
+        .ttf_face()
+        .map(|f| f.tables().math.is_some())
+        .unwrap_or(false)
 }
 
 #[no_mangle]
@@ -293,24 +295,22 @@ pub unsafe extern "C" fn getFontFilename(
 
 #[no_mangle]
 pub unsafe extern "C" fn freeFontFilename(filename: *const libc::c_char) {
-    let _ = CString::from_raw(filename.cast_mut());
+    if !filename.is_null() {
+        let _ = CString::from_raw(filename.cast_mut());
+    }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn getGlyphs(engine: XeTeXLayoutEngine, glyphs: *mut u32) {
-    let hb_glyphs = (*engine).hb_buffer().glyph_info().unwrap();
-
-    for (idx, glyph) in hb_glyphs.iter().enumerate() {
-        *glyphs.add(idx) = glyph.codepoint;
+    for (idx, &glyph) in (*engine).shaped_glyphs.iter().enumerate() {
+        *glyphs.add(idx) = glyph;
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn getGlyphAdvances(engine: XeTeXLayoutEngine, advances: *mut f32) {
     let engine = &*engine;
-    let hb_positions = engine.hb_buffer().glyph_positions().unwrap();
-
-    for (i, pos) in hb_positions.iter().enumerate() {
+    for (i, pos) in engine.shaped_positions.iter().enumerate() {
         let advance = if engine.font().layout_dir_vertical() {
             pos.y_advance
         } else {
@@ -324,35 +324,35 @@ pub unsafe extern "C" fn getGlyphAdvances(engine: XeTeXLayoutEngine, advances: *
 #[no_mangle]
 pub unsafe extern "C" fn getGlyphPositions(engine: XeTeXLayoutEngine, positions: *mut FloatPoint) {
     let engine = &mut *engine;
-    let hb_positions = engine.hb_buffer().glyph_positions().unwrap();
+    let positions_slice = &engine.shaped_positions;
 
     let mut x: f32 = 0.0;
     let mut y: f32 = 0.0;
     let font = engine.font();
 
     if font.layout_dir_vertical() {
-        for (i, pos) in hb_positions.iter().enumerate() {
-            (*positions.add(i)).x = -font.units_to_points((x + pos.y_offset as f32) as f64) as f32;
-            (*positions.add(i)).y = font.units_to_points((y - pos.x_offset as f32) as f64) as f32;
-            x += pos.y_advance as f32;
-            y += pos.x_advance as f32;
+        for (i, pos) in positions_slice.iter().enumerate() {
+            (*positions.add(i)).x = -font.units_to_points((x + pos.y_offset) as f64) as f32;
+            (*positions.add(i)).y = font.units_to_points((y - pos.x_offset) as f64) as f32;
+            x += pos.y_advance;
+            y += pos.x_advance;
         }
 
-        (*positions.add(hb_positions.len())).x = -font.units_to_points(x as f64) as f32;
-        (*positions.add(hb_positions.len())).y = font.units_to_points(y as f64) as f32;
+        (*positions.add(positions_slice.len())).x = -font.units_to_points(x as f64) as f32;
+        (*positions.add(positions_slice.len())).y = font.units_to_points(y as f64) as f32;
     } else {
-        for (i, pos) in hb_positions.iter().enumerate() {
-            (*positions.add(i)).x = font.units_to_points((x + pos.x_offset as f32) as f64) as f32;
-            (*positions.add(i)).y = -font.units_to_points((y + pos.y_offset as f32) as f64) as f32; /* negative is upwards */
-            x += pos.x_advance as f32;
-            y += pos.y_advance as f32;
+        for (i, pos) in positions_slice.iter().enumerate() {
+            (*positions.add(i)).x = font.units_to_points((x + pos.x_offset) as f64) as f32;
+            (*positions.add(i)).y = -font.units_to_points((y + pos.y_offset) as f64) as f32;
+            x += pos.x_advance;
+            y += pos.y_advance;
         }
-        (*positions.add(hb_positions.len())).x = font.units_to_points(x as f64) as f32;
-        (*positions.add(hb_positions.len())).y = -font.units_to_points(y as f64) as f32;
+        (*positions.add(positions_slice.len())).x = font.units_to_points(x as f64) as f32;
+        (*positions.add(positions_slice.len())).y = -font.units_to_points(y as f64) as f32;
     }
 
     if engine.extend() != 1.0 || engine.slant() != 0.0 {
-        for i in 0..=hb_positions.len() {
+        for i in 0..=positions_slice.len() {
             let pos = &mut *positions.add(i);
             pos.x = pos.x * engine.extend() - pos.y * engine.slant();
         }
@@ -361,8 +361,7 @@ pub unsafe extern "C" fn getGlyphPositions(engine: XeTeXLayoutEngine, positions:
 
 #[no_mangle]
 pub unsafe extern "C" fn countGraphiteFeatures(engine: XeTeXLayoutEngine) -> u32 {
-    let hb_face = (*engine).font().hb_font().face();
-    match hb_face.gr_face() {
+    match (*engine).font().gr_face() {
         Some(face) => face.num_feature_refs() as u32,
         None => 0,
     }
@@ -426,7 +425,7 @@ pub unsafe extern "C" fn findGraphiteFeature(
     engine: XeTeXLayoutEngine,
     s: *const libc::c_char,
     e: *const libc::c_char,
-    f: *mut hb::Tag,
+    f: *mut u32,
     v: *mut libc::c_int,
 ) -> bool {
     let len = e.byte_offset_from(s).unsigned_abs();
@@ -478,20 +477,24 @@ pub unsafe extern "C" fn initGraphiteBreaking(
 
     engine.gr_breaking = None;
 
-    let hb_font = engine.font().hb_font();
-    let hb_face = hb_font.face();
-    let Some(gr_face) = hb_face.gr_face() else {
+    let Some(gr_face) = engine.font().gr_face() else {
         return false;
     };
-    let Some(gr_font) = gr::Font::new(hb_font.ptem(), gr_face) else {
+    let Some(gr_font) = gr::Font::new(engine.font().point_size(), gr_face) else {
         return false;
     };
 
     let lang = engine
         .language
-        .to_string()
-        .map(hb::Tag::from_cstr)
-        .map(hb::Tag::to_raw)
+        .as_deref()
+        .map(|s| {
+            let bytes = s.as_bytes();
+            let mut tag = [b' '; 4];
+            for (i, b) in bytes.iter().take(4).enumerate() {
+                tag[i] = *b;
+            }
+            u32::from_be_bytes(tag)
+        })
         .unwrap_or(0);
     let mut gr_feature_values = gr_face.feature_val_for_lang(lang);
 
@@ -503,16 +506,18 @@ pub unsafe extern "C" fn initGraphiteBreaking(
         }
     }
 
-    // SAFETY: Required pointer must be to an array of at least len
-    let text = unsafe { slice::from_raw_parts(txt_ptr, txt_len as usize) };
+    let text = slice::from_raw_parts(txt_ptr, txt_len as usize);
     let gr_seg = gr::Segment::new(
         gr_font.as_ref(),
         gr_face,
-        engine.script().to_raw(),
+        engine.script(),
         gr_feature_values.as_ref(),
         text,
-    )
-    .unwrap();
+    );
+
+    let Some(gr_seg) = gr_seg else {
+        return false;
+    };
 
     engine.gr_breaking = Some(GrBreak {
         slot: gr_seg.as_ref().first_slot(),

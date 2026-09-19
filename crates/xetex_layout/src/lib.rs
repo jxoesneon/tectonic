@@ -8,6 +8,7 @@
 pub mod engine;
 pub mod font;
 pub mod manager;
+pub mod math;
 mod utils;
 
 mod c_api;
@@ -15,3 +16,4 @@ mod c_api;
 /// Does our resulting executable link correctly?
 #[test]
 fn linkage() {}
+

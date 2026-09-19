@@ -1,19 +1,17 @@
+// Copyright 2020-2021 the Tectonic Project
+// Licensed under the MIT License.
+
 use crate::c_api::{Fixed, OTTag, RawPlatformFontRef, XeTeXFont};
-use crate::font::{get_larger_script_list_table_ot, Font};
+use crate::font::{larger_script_list, Font};
 use crate::utils::{d_to_fix, fix_to_d, raw_to_rs};
 use std::ffi::{CStr, CString};
 use std::ptr;
-use tectonic_bridge_freetype2 as ft;
-use tectonic_bridge_harfbuzz as hb;
 #[cfg(target_os = "macos")]
 use tectonic_mac_core::{sys::CTFontRef, CTFont, CoreType};
 
 #[no_mangle]
 pub unsafe extern "C" fn hasFontTable(font: XeTeXFont, table_tag: OTTag) -> bool {
-    // TODO: has_font_table for efficiency
-    (*font)
-        .load_font_table(ft::TableTag::Other(table_tag))
-        .is_some()
+    (*font).has_font_table(table_tag)
 }
 
 #[no_mangle]
@@ -38,62 +36,73 @@ pub unsafe extern "C" fn setFontLayoutDir(font: XeTeXFont, vertical: libc::c_int
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn getIndScript(font: XeTeXFont, index: libc::c_uint) -> hb::Tag {
-    get_larger_script_list_table_ot(&*font)
-        .script(index as usize)
-        .map_or(hb::Tag::new(0), |s| s.tag())
+pub unsafe extern "C" fn getIndScript(font: XeTeXFont, index: libc::c_uint) -> u32 {
+    if let Some(face) = (*font).ttf_face() {
+        if let Some(scripts) = larger_script_list(&face) {
+            if let Some(script) = scripts.get(index as u16) {
+                return u32::from_be_bytes(script.tag.to_bytes());
+            }
+        }
+    }
+    0
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn getIndLanguage(
     font: XeTeXFont,
-    script: hb::Tag,
+    script: u32,
     index: libc::c_uint,
-) -> hb::Tag {
-    let index = index as usize;
-    let script = get_larger_script_list_table_ot(&*font).find_script(script);
-
-    if let Some(script) = script {
-        if let Some(lang) = script.lang(index) {
-            return lang.tag();
-        }
-        let lang = script.swap_table().and_then(|s| s.lang(index));
-        if let Some(lang) = lang {
-            return lang.tag();
+) -> u32 {
+    if let Some(face) = (*font).ttf_face() {
+        if let Some(scripts) = larger_script_list(&face) {
+            let tag = ttf_parser::Tag::from_bytes(&script.to_be_bytes());
+            if let Some(script_rec) = scripts.find(tag) {
+                if let Some(lang) = script_rec.languages.get(index as u16) {
+                    return u32::from_be_bytes(lang.tag.to_bytes());
+                }
+            }
         }
     }
-
-    hb::Tag::new(0)
+    0
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn getIndFeature(
     font: XeTeXFont,
-    script: hb::Tag,
-    language: hb::Tag,
-    index: libc::c_uint,
-) -> hb::Tag {
-    let mut index = index as usize;
-    let layout = (*font).hb_font().face().ot_layout();
-
-    for table_tag in [hb::GTag::GSub, hb::GTag::GPos] {
-        let table = layout.table(table_tag);
-        if let Some(script) = table.find_script(script) {
-            let lang = script.select_lang(&[language]);
-            if lang.is_ok() || language == hb::Tag::new(0) {
-                let lang = lang.unwrap_or_else(|l| l);
-                let feat = lang.feature(index);
-
-                if let Some(feat) = feat {
-                    return feat;
+    script: u32,
+    language: u32,
+    mut index: libc::c_uint,
+) -> u32 {
+    if let Some(face) = (*font).ttf_face() {
+        let script_tag = ttf_parser::Tag::from_bytes(&script.to_be_bytes());
+        let lang_tag = if language != 0 {
+            Some(ttf_parser::Tag::from_bytes(&language.to_be_bytes()))
+        } else {
+            None
+        };
+        for table in [face.tables().gsub, face.tables().gpos].into_iter().flatten() {
+            if let Some(s) = table.scripts.find(script_tag) {
+                let feat_indices = if let Some(lang_tag) = lang_tag {
+                    s.languages.find(lang_tag).map(|l| l.feature_indices)
+                } else {
+                    s.default_language.map(|d| d.feature_indices)
+                };
+                if let Some(indices) = feat_indices {
+                    let len = indices.len() as libc::c_uint;
+                    if index < len {
+                        if let Some(feat_idx) = indices.get(index as u16) {
+                            if let Some(feat) = table.features.get(feat_idx) {
+                                return u32::from_be_bytes(feat.tag.to_bytes());
+                            }
+                        }
+                        return 0;
+                    }
+                    index -= len;
                 }
-
-                index -= lang.feature_tags_len();
             }
         }
     }
-
-    hb::Tag::new(0)
+    0
 }
 
 #[no_mangle]
@@ -116,7 +125,9 @@ pub unsafe extern "C" fn getGlyphName(
 
 #[no_mangle]
 pub unsafe extern "C" fn freeGlyphName(name: *mut libc::c_char) {
-    let _ = CString::from_raw(name);
+    if !name.is_null() {
+        let _ = CString::from_raw(name);
+    }
 }
 
 #[no_mangle]
@@ -172,45 +183,55 @@ pub unsafe extern "C" fn deleteFont(font: XeTeXFont) {
 
 #[no_mangle]
 pub unsafe extern "C" fn countScripts(font: XeTeXFont) -> libc::c_uint {
-    get_larger_script_list_table_ot(&*font).script_tags_len() as libc::c_uint
+    if let Some(face) = (*font).ttf_face() {
+        if let Some(scripts) = larger_script_list(&face) {
+            return scripts.len() as libc::c_uint;
+        }
+    }
+    0
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn countLanguages(font: XeTeXFont, script: hb::Tag) -> libc::c_uint {
-    let table = get_larger_script_list_table_ot(&*font);
-    let script = table.find_script(script);
-    let out = match script {
-        Some(script) => {
-            script.language_tags_len()
-                + script
-                    .swap_table()
-                    .map(|s| s.language_tags_len())
-                    .unwrap_or(0)
+pub unsafe extern "C" fn countLanguages(font: XeTeXFont, script: u32) -> libc::c_uint {
+    if let Some(face) = (*font).ttf_face() {
+        if let Some(scripts) = larger_script_list(&face) {
+            let tag = ttf_parser::Tag::from_bytes(&script.to_be_bytes());
+            if let Some(script_rec) = scripts.find(tag) {
+                return script_rec.languages.len() as libc::c_uint;
+            }
         }
-        None => 0,
-    };
-    out as libc::c_uint
+    }
+    0
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn countFeatures(
     font: XeTeXFont,
-    script: hb::Tag,
-    language: hb::Tag,
+    script: u32,
+    language: u32,
 ) -> libc::c_uint {
-    let layout = (*font).hb_font().face().ot_layout();
-
-    let mut rval = 0;
-    for table_tag in [hb::GTag::GSub, hb::GTag::GPos] {
-        let table = layout.table(table_tag);
-        if let Some(script) = table.find_script(script) {
-            let lang = script.select_lang(&[language]);
-            if lang.is_ok() || language == hb::Tag::new(0) {
-                rval += lang.unwrap_or_else(|l| l).feature_tags_len();
+    if let Some(face) = (*font).ttf_face() {
+        let script_tag = ttf_parser::Tag::from_bytes(&script.to_be_bytes());
+        let lang_tag = if language != 0 {
+            Some(ttf_parser::Tag::from_bytes(&language.to_be_bytes()))
+        } else {
+            None
+        };
+        let mut count = 0;
+        for table in [face.tables().gsub, face.tables().gpos].into_iter().flatten() {
+            if let Some(s) = table.scripts.find(script_tag) {
+                if let Some(lang_tag) = lang_tag {
+                    if let Some(l) = s.languages.find(lang_tag) {
+                        count += l.feature_indices.len();
+                    }
+                } else if let Some(dflt) = s.default_language {
+                    count += dflt.feature_indices.len();
+                }
             }
         }
+        return count as libc::c_uint;
     }
-    rval as libc::c_uint
+    0
 }
 
 #[cfg(target_os = "macos")]

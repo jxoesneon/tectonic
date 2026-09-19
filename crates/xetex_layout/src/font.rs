@@ -1,159 +1,77 @@
+// Copyright 2020-2021 the Tectonic Project
+// Licensed under the MIT License.
+
 //! Font handling - specific fonts used by an engine while shaping text.
 
-use crate::c_api::{Fixed, GlyphBBox, GlyphID, PlatformFontRef};
-use crate::utils::fix_to_d;
+use crate::c_api::{GlyphBBox, GlyphID, PlatformFontRef};
 use std::ffi::{CStr, CString};
-use std::path::Path;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
 use tectonic_bridge_core::{CoreBridgeState, FileFormat};
 #[cfg(not(target_os = "macos"))]
 use tectonic_bridge_fontconfig as fc;
-use tectonic_bridge_freetype2 as ft;
-use tectonic_bridge_harfbuzz as hb;
+use tectonic_bridge_graphite2 as gr;
 #[cfg(target_os = "macos")]
 use tectonic_mac_core::{
     CFArray, CFDictionary, CFType, CFUrl, CTFont, CTFontDescriptor, FontAttribute, FontNameKey,
 };
 
-fn get_glyph_advance(face: &ft::Face, gid: libc::c_uint, vertical: bool) -> ft::Fixed {
-    let flags = if vertical {
-        ft::LoadFlags::NO_SCALE | ft::LoadFlags::VERTICAL_LAYOUT
-    } else {
-        ft::LoadFlags::NO_SCALE
-    };
-    let out = match face.get_advance(gid, flags) {
-        Ok(advance) => {
-            if vertical {
-                -advance
+struct FontDataHandle {
+    data: Arc<Vec<u8>>,
+    index: u32,
+}
+
+unsafe extern "C" fn graphite_get_table(
+    app_face_handle: *const libc::c_void,
+    name: libc::c_uint,
+    len: *mut libc::size_t,
+) -> *const libc::c_void {
+    let handle = &*(app_face_handle as *const FontDataHandle);
+    let tag = ttf_parser::Tag::from_bytes(&name.to_be_bytes());
+    if let Ok(face) = ttf_parser::Face::parse(&handle.data, handle.index) {
+        if let Some(table) = face.raw_face().table(tag) {
+            *len = table.len();
+            return table.as_ptr() as *const libc::c_void;
+        }
+    }
+    *len = 0;
+    std::ptr::null()
+}
+
+static GRAPHITE_OPS: gr::sys::gr_face_ops = gr::sys::gr_face_ops {
+    size: std::mem::size_of::<gr::sys::gr_face_ops>(),
+    get_table: graphite_get_table,
+    release_table: None,
+};
+
+pub(crate) fn larger_script_list<'a>(
+    face: &'a ttf_parser::Face<'a>,
+) -> Option<ttf_parser::opentype_layout::ScriptList<'a>> {
+    let sub = face.tables().gsub.map(|t| t.scripts);
+    let pos = face.tables().gpos.map(|t| t.scripts);
+    match (sub, pos) {
+        (Some(s), Some(p)) => {
+            if s.len() >= p.len() {
+                Some(s)
             } else {
-                advance
+                Some(p)
             }
         }
-        Err(_) => 0,
-    };
-    out as ft::Fixed
-}
-
-fn get_font_funcs() -> hb::FontFuncsRef<'static, Arc<Mutex<ft::Face>>> {
-    static FONTS: OnceLock<hb::ImmutFontFuncs<Arc<Mutex<ft::Face>>>> = OnceLock::new();
-
-    FONTS
-        .get_or_init(|| {
-            let mut funcs = hb::FontFuncs::<Arc<Mutex<ft::Face>>>::new();
-
-            let mut f = funcs.as_mut();
-            f.nominal_glyph_func(|_, face, ch| {
-                face.lock().unwrap().get_char_index(ch).map(|cc| cc.get())
-            });
-            f.variation_glyph_func(|_, face, ch, vs| {
-                face.lock()
-                    .unwrap()
-                    .get_char_variant_index(ch, vs)
-                    .map(|cc| cc.get())
-            });
-            f.glyph_h_advance(|_, face, gid| {
-                get_glyph_advance(&face.lock().unwrap(), gid, false) as hb::Position
-            });
-            f.glyph_v_advance(|_, face, gid| {
-                get_glyph_advance(&face.lock().unwrap(), gid, true) as hb::Position
-            });
-            f.glyph_h_origin(|_, _, _| Some((0, 0)));
-            f.glyph_v_origin(|_, _, _| {
-                Some((0, 0))
-
-                // TODO
-                // Keep the code below for reference, for now we want to keep vertical
-                // origin at (0, 0) for compatibility with pre-0.9999.
-                // Reconsider this (e.g. using BASE table) when we get around overhauling
-                // the text directionality model and implementing real vertical typesetting.
-
-                /*
-                FT_Face face = (FT_Face) font_data;
-                FT_Error error;
-
-                error = FT_Load_Glyph (face, gid, FT_LOAD_NO_SCALE);
-                if (!error) {
-                    *x = face->glyph->metrics.horiBearingX -   face->glyph->metrics.vertBearingX;
-                    *y = face->glyph->metrics.horiBearingY - (-face->glyph->metrics.vertBearingY);
-                }
-
-                return !error;
-                 */
-            });
-            f.glyph_h_kerning(|_, face, gid1, gid2| {
-                match face
-                    .lock()
-                    .unwrap()
-                    .get_kerning(gid1, gid2, ft::KerningMode::Unscaled)
-                {
-                    Ok(vec) => vec.x as hb::Position,
-                    Err(_) => 0,
-                }
-            });
-            f.glyph_v_kerning(|_, _, _, _| 0);
-            f.glyph_extents(|_, face, gid| {
-                let mut face = face.lock().unwrap();
-                if let Ok(glyph) = face.load_glyph(gid, ft::LoadFlags::NO_SCALE) {
-                    Some(hb::GlyphExtents {
-                        x_bearing: glyph.metrics().horiBearingX as hb::Position,
-                        y_bearing: glyph.metrics().horiBearingY as hb::Position,
-                        width: glyph.metrics().width as hb::Position,
-                        height: -glyph.metrics().height as hb::Position,
-                    })
-                } else {
-                    None
-                }
-            });
-            f.glyph_contour_point(|_, face, gid, point_index| {
-                let mut face = face.lock().unwrap();
-
-                if let Ok(glyph) = face.load_glyph(gid, ft::LoadFlags::NO_SCALE) {
-                    if let Some(outline) = glyph.outline() {
-                        if point_index < (outline.n_points as u32) {
-                            let x = outline.points()[point_index as usize].x as hb::Position;
-                            let y = outline.points()[point_index as usize].y as hb::Position;
-                            return Some((x, y));
-                        }
-                    }
-                }
-                None
-            });
-            f.glyph_name(
-                |_, face, gid, buf| match face.lock().unwrap().get_glyph_name(gid, buf) {
-                    Ok(str) if !str.to_bytes().is_empty() && str.to_bytes()[0] == 0 => 0,
-                    Err(_) => 0,
-                    Ok(str) => str.to_bytes().len(),
-                },
-            );
-
-            funcs.make_immutable()
-        })
-        .as_ref()
-}
-
-pub(crate) fn get_larger_script_list_table_ot(font: &Font) -> hb::ot::Table<'_> {
-    let layout = font.hb_font().face().ot_layout();
-
-    let sl_sub = layout.table(hb::GTag::GSub);
-    let sl_pos = layout.table(hb::GTag::GPos);
-
-    if sl_sub.script_tags_len() > sl_pos.script_tags_len() {
-        sl_sub
-    } else {
-        sl_pos
+        (Some(s), None) => Some(s),
+        (None, Some(p)) => Some(p),
+        (None, None) => None,
     }
 }
 
 enum FontKind {
-    FtFont,
+    TtfFont,
     #[cfg(target_os = "macos")]
     Mac(CTFontDescriptor, Option<CTFont>),
 }
 
 /// A font, with all the information needed by TeX to shape it for typesetting.
 pub struct Font {
-    units_per_em: libc::c_ushort,
+    units_per_em: u16,
     point_size: f32,
     ascent: f32,
     descent: f32,
@@ -166,10 +84,11 @@ pub struct Font {
     filename: CString,
     index: u32,
 
-    ft_face: Option<Arc<Mutex<ft::Face>>>,
-    hb_font: Option<hb::Font>,
+    data: Option<Arc<Vec<u8>>>,
+    gr_face: Option<Arc<gr::Face>>,
+    #[allow(dead_code)]
+    gr_handle: Option<Box<FontDataHandle>>,
 
-    // Currently only used on MacOS
     #[allow(dead_code)]
     kind: FontKind,
 }
@@ -200,8 +119,9 @@ impl Font {
             vertical: false,
             filename: CString::new("").unwrap(),
             index: 0,
-            ft_face: None,
-            hb_font: None,
+            data: None,
+            gr_face: None,
+            gr_handle: None,
             kind: FontKind::Mac(descriptor, None),
         };
         out.initialize_mac()?;
@@ -224,18 +144,19 @@ impl Font {
             vertical: false,
             filename: CString::new("").unwrap(),
             index: 0,
-            ft_face: None,
-            hb_font: None,
-            kind: FontKind::FtFont,
+            data: None,
+            gr_face: None,
+            gr_handle: None,
+            kind: FontKind::TtfFont,
         };
         if let Some(path) = path {
-            out.initialize_ft(path, index)?;
+            out.initialize(path, index)?;
         }
         Ok(out)
     }
 
-    fn initialize_ft(&mut self, pathname: &str, index: usize) -> Result<(), ()> {
-        CoreBridgeState::with_global_state(|engine| {
+    fn initialize(&mut self, pathname: &str, index: usize) -> Result<(), ()> {
+        let backing_data = CoreBridgeState::with_global_state(|engine| {
             let handle = engine
                 .input_open(pathname, FileFormat::OpenType, false)
                 .or_else(|| engine.input_open(pathname, FileFormat::TrueType, false))
@@ -245,104 +166,55 @@ impl Font {
             };
 
             let sz = engine.input_get_size(handle);
-            let mut backing_data = vec![0; sz];
+            let mut data = vec![0; sz];
             engine
-                .input_read(handle, &mut backing_data)
+                .input_read(handle, &mut data)
                 .expect("failed to read font file");
 
             engine.input_close(handle);
-
-            self.ft_face = match ft::Face::new_memory(backing_data, index) {
-                Ok(face) => Some(Arc::new(Mutex::new(face))),
-                Err(_) => return Err(()),
-            };
-
-            if !self.ft_face().is_scalable() {
-                return Err(());
-            }
-
-            if index == 0 && !self.ft_face().is_sfnt() {
-                let afm = Path::new(pathname)
-                    .file_name()
-                    .map(Path::new)
-                    .unwrap_or(Path::new(pathname));
-                let afm = afm.with_extension("afm");
-
-                let afm_handle = engine.input_open(afm.to_str().unwrap(), FileFormat::Afm, false);
-
-                if let Some(afm_handle) = afm_handle {
-                    let sz = engine.input_get_size(afm_handle);
-                    let mut backing_data2 = vec![0; sz];
-                    engine
-                        .input_read(afm_handle, &mut backing_data2)
-                        .expect("failed to read AFM file");
-
-                    self.ft_face().attach_stream_mem(backing_data2).unwrap();
-                    engine.input_close(afm_handle);
-                }
-            }
-            Ok(())
+            Ok(data)
         })?;
+
+        let data = Arc::new(backing_data);
+        let face = ttf_parser::Face::parse(&data, index as u32).map_err(|_| ())?;
 
         self.filename = CString::from_str(pathname).unwrap();
         self.index = index as u32;
-        let upe = { self.ft_face().units_per_em() };
-        self.units_per_em = upe;
-        let a = { self.ft_face().ascender() } as f64;
-        self.ascent = self.units_to_points(a) as f32;
-        let d = { self.ft_face().descender() } as f64;
-        self.descent = self.units_to_points(d) as f32;
+        self.units_per_em = face.units_per_em();
+        self.ascent = self.units_to_points(face.ascender() as f64) as f32;
+        self.descent = self.units_to_points(face.descender() as f64) as f32;
+        self.italic_angle = face.italic_angle();
+        self.cap_height = face
+            .capital_height()
+            .map(|ch| self.units_to_points(ch as f64) as f32)
+            .unwrap_or(0.0);
+        self.x_height = face
+            .x_height()
+            .map(|xh| self.units_to_points(xh as f64) as f32)
+            .unwrap_or(0.0);
 
-        let ft_face = self.ft_face();
-        let post_table = ft_face.get_sfnt_table::<ft::tables::Postscript>();
-        let ia = if let Some(table) = post_table {
-            fix_to_d(table.italic_angle as Fixed) as f32
-        } else {
-            self.italic_angle
-        };
-        drop(ft_face);
-        self.italic_angle = ia;
+        let has_silf = face.raw_face().table(ttf_parser::Tag::from_bytes(b"Silf")).is_some();
 
-        let ft_face = self.ft_face();
-        let os2_table = ft_face.get_sfnt_table::<ft::tables::Os2>();
-        let (ch, xh) = if let Some(table) = os2_table {
-            let ch = self.units_to_points(table.sCapHeight as f64) as f32;
-            let xh = self.units_to_points(table.sxHeight as f64) as f32;
-            (ch, xh)
-        } else {
-            (self.cap_height, self.x_height)
-        };
-        drop(ft_face);
-        self.cap_height = ch;
-        self.x_height = xh;
+        self.data = Some(data);
 
-        let ft_face = Arc::clone(self.ft_face.as_ref().unwrap());
-        let mut hb_face = hb::Face::new_tables(move |_, tag| {
-            if let Ok(table) = ft_face
-                .lock()
-                .unwrap()
-                .load_sfnt_table(ft::TableTag::Other(tag.to_raw()))
-            {
-                Some(hb::Blob::new(table))
-            } else {
-                None
-            }
-        });
-
-        hb_face.as_mut().set_index(self.index);
-        hb_face.as_mut().set_upem(self.units_per_em as u32);
-
-        let mut hb_font = hb::Font::new(hb_face.as_ref());
-
-        hb_font
-            .as_mut()
-            .set_funcs(get_font_funcs(), Arc::clone(self.ft_face.as_ref().unwrap()));
-        hb_font
-            .as_mut()
-            .set_scale(self.units_per_em as i32, self.units_per_em as i32);
-        hb_font.as_mut().set_ppem(0, 0);
-
-        self.hb_font = Some(hb_font);
+        // Setup Graphite if available
+        if has_silf {
+            let handle = Box::new(FontDataHandle {
+                data: Arc::clone(self.data.as_ref().unwrap()),
+                index: self.index,
+            });
+            let handle_ptr = &*handle as *const FontDataHandle as *const libc::c_void;
+            // SAFETY: handle_ptr and GRAPHITE_OPS are valid callbacks and state.
+            let gr_face = unsafe {
+                gr::Face::new_with_ops(
+                    handle_ptr,
+                    &GRAPHITE_OPS,
+                    gr::sys::gr_face_preloadAll,
+                )
+            };
+            self.gr_face = gr_face.map(Arc::new);
+            self.gr_handle = Some(handle);
+        }
 
         Ok(())
     }
@@ -364,22 +236,35 @@ impl Font {
         ));
         let mut index = 0;
         let pathname = get_file_name_from_ct_font(font_ref.as_ref().unwrap(), &mut index).unwrap();
-        self.initialize_ft(pathname.to_str().unwrap(), index as usize)
+        self.initialize(pathname.to_str().unwrap(), index as usize)
     }
 
-    pub(crate) fn ft_face(&self) -> std::sync::MutexGuard<'_, ft::Face> {
-        self.ft_face.as_ref().unwrap().lock().unwrap()
+    pub(crate) fn ttf_face(&self) -> Option<ttf_parser::Face<'_>> {
+        self.data
+            .as_ref()
+            .and_then(|d| ttf_parser::Face::parse(d, self.index).ok())
+    }
+
+    pub(crate) fn data(&self) -> Option<&[u8]> {
+        self.data.as_deref().map(|v| v.as_slice())
+    }
+
+    pub(crate) fn index(&self) -> u32 {
+        self.index
+    }
+
+    pub(crate) fn gr_face(&self) -> Option<gr::FaceRef<'_>> {
+        self.gr_face.as_ref().map(|f| gr::Face::as_ref(f))
+    }
+
+    pub(crate) fn gr_face_ptr(&self) -> Option<std::ptr::NonNull<()>> {
+        self.gr_face.as_ref().map(|f| f.raw_ptr())
     }
 
     pub(crate) fn get_glyph_name(&self, gid: u16) -> Option<CString> {
-        if self.ft_face().has_glyph_names() {
-            let mut buf = vec![0u8; 256];
-            self.ft_face().get_glyph_name(gid as u32, &mut buf).unwrap();
-
-            CStr::from_bytes_until_nul(&buf).map(CStr::to_owned).ok()
-        } else {
-            None
-        }
+        let face = self.ttf_face()?;
+        let name = face.glyph_name(ttf_parser::GlyphId(gid))?;
+        CString::new(name).ok()
     }
 
     pub(crate) fn get_glyph_sidebearings(
@@ -389,7 +274,6 @@ impl Font {
         rsb: Option<&mut f32>,
     ) {
         let width = self.get_glyph_width(gid as u32);
-
         let bbox = self.get_glyph_bounds(gid);
 
         if let Some(lsb) = lsb {
@@ -412,64 +296,93 @@ impl Font {
     }
 
     pub(crate) fn map_char_to_glyph(&self, ch: u32) -> GlyphID {
-        match self.ft_face().get_char_index(ch) {
-            Some(val) => val.get() as GlyphID,
-            None => 0,
+        if let Some(face) = self.ttf_face() {
+            if let Some(c) = char::from_u32(ch) {
+                if let Some(gid) = face.glyph_index(c) {
+                    return gid.0;
+                }
+            }
         }
+        0
     }
 
     pub(crate) fn first_char_code(&self) -> u32 {
-        self.ft_face().get_first_char().0
+        let mut min_cp = u32::MAX;
+        if let Some(face) = self.ttf_face() {
+            if let Some(cmap) = face.tables().cmap {
+                for sub in cmap.subtables {
+                    if sub.is_unicode() {
+                        sub.codepoints(|cp| {
+                            if cp < min_cp {
+                                min_cp = cp;
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        if min_cp == u32::MAX {
+            0
+        } else {
+            min_cp
+        }
     }
 
     pub(crate) fn last_char_code(&self) -> u32 {
-        let ft_face = self.ft_face();
-
-        let (mut ch, mut index) = ft_face.get_first_char();
-        let mut prev = ch;
-        while index != 0 {
-            prev = ch;
-            (ch, index) = ft_face.get_next_char(ch);
+        let mut max_cp = 0;
+        if let Some(face) = self.ttf_face() {
+            if let Some(cmap) = face.tables().cmap {
+                for sub in cmap.subtables {
+                    if sub.is_unicode() {
+                        sub.codepoints(|cp| {
+                            if cp > max_cp {
+                                max_cp = cp;
+                            }
+                        });
+                    }
+                }
+            }
         }
-        prev
+        max_cp
     }
 
     pub(crate) fn map_glyph_to_index(&self, glyph_name: &CStr) -> GlyphID {
-        match self.ft_face().get_name_index(glyph_name) {
-            Some(index) => index.get() as u16,
-            None => 0,
+        if let Some(face) = self.ttf_face() {
+            if let Ok(name_str) = glyph_name.to_str() {
+                for i in 0..face.number_of_glyphs() {
+                    let gid = ttf_parser::GlyphId(i);
+                    if face.glyph_name(gid) == Some(name_str) {
+                        return i;
+                    }
+                }
+            }
         }
+        0
     }
 
-    pub(crate) fn load_font_table(&self, tag: ft::TableTag) -> Option<Vec<u8>> {
-        self.ft_face().load_sfnt_table(tag).ok()
+    #[allow(dead_code)]
+    pub(crate) fn load_font_table(&self, tag: u32) -> Option<Vec<u8>> {
+        let tag = ttf_parser::Tag::from_bytes(&tag.to_be_bytes());
+        self.ttf_face().and_then(|f| f.raw_face().table(tag)).map(|s| s.to_vec())
+    }
+
+    pub(crate) fn has_font_table(&self, tag: u32) -> bool {
+        let tag = ttf_parser::Tag::from_bytes(&tag.to_be_bytes());
+        self.ttf_face().map(|f| f.raw_face().table(tag).is_some()).unwrap_or(false)
     }
 
     pub(crate) fn get_glyph_bounds(&mut self, gid: GlyphID) -> GlyphBBox {
-        let mut ft_face = self.ft_face();
-
-        let glyph = ft_face
-            .load_glyph(gid as u32, ft::LoadFlags::NO_SCALE)
-            .and_then(|slot| slot.get_glyph());
-
-        match glyph {
-            Ok(glyph) => {
-                let ft::BBox {
-                    x_min,
-                    y_min,
-                    x_max,
-                    y_max,
-                } = glyph.get_cbox(ft::BBoxMode::Unscaled);
-                drop(ft_face);
-                GlyphBBox {
-                    x_min: self.units_to_points(x_min as f64) as f32,
-                    y_min: self.units_to_points(y_min as f64) as f32,
-                    x_max: self.units_to_points(x_max as f64) as f32,
-                    y_max: self.units_to_points(y_max as f64) as f32,
-                }
+        if let Some(face) = self.ttf_face() {
+            if let Some(rect) = face.glyph_bounding_box(ttf_parser::GlyphId(gid)) {
+                return GlyphBBox {
+                    x_min: self.units_to_points(rect.x_min as f64) as f32,
+                    y_min: self.units_to_points(rect.y_min as f64) as f32,
+                    x_max: self.units_to_points(rect.x_max as f64) as f32,
+                    y_max: self.units_to_points(rect.y_max as f64) as f32,
+                };
             }
-            Err(_) => GlyphBBox::default(),
         }
+        GlyphBBox::default()
     }
 
     pub(crate) fn get_glyph_height_depth(
@@ -492,20 +405,23 @@ impl Font {
         &self.filename
     }
 
-    // pub(crate) fn get_font_table<T: ft::Table>(&self) -> Option<&T::Table> {
-    //     self.ft_face().get_sfnt_table::<T>()
-    // }
-
     pub(crate) fn italic_angle(&self) -> f32 {
         self.italic_angle
     }
 
     pub(crate) fn num_glyphs(&self) -> usize {
-        self.ft_face().num_glyphs()
+        self.ttf_face()
+            .map(|f| f.number_of_glyphs() as usize)
+            .unwrap_or(0)
     }
 
     pub(crate) fn get_glyph_width(&self, gid: u32) -> f32 {
-        self.units_to_points(get_glyph_advance(&self.ft_face(), gid, false) as f64) as f32
+        if let Some(face) = self.ttf_face() {
+            if let Some(adv) = face.glyph_hor_advance(ttf_parser::GlyphId(gid as u16)) {
+                return self.units_to_points(adv as f64) as f32;
+            }
+        }
+        0.0
     }
 
     pub(crate) fn layout_dir_vertical(&self) -> bool {
@@ -536,17 +452,6 @@ impl Font {
         self.x_height
     }
 
-    pub(crate) fn hb_font(&self) -> hb::FontRef<'_> {
-        self.hb_font.as_ref().unwrap().as_ref()
-    }
-
-    pub(crate) fn try_hb_font(&self) -> Option<hb::FontRef<'_>> {
-        self.hb_font.as_ref().map(|f| f.as_ref())
-    }
-
-    /* Tectonic: these are modified from the base XeTeX code to use doubles;
-     * otherwise roundoff errors can accumulate leading to differences in the
-     * XDV outputs. */
     pub(crate) fn units_to_points(&self, units: f64) -> f64 {
         (units * self.point_size as f64) / (self.units_per_em as f64)
     }
@@ -566,29 +471,27 @@ pub(crate) fn get_file_name_from_ct_font(ct_font: &CTFont, index: &mut u32) -> O
     let pathname = url.fs_representation()?;
     *index = 0;
 
-    let face = ft::Face::new(&pathname, 0);
-    if let Ok(face) = face {
-        if face.num_faces() > 1 {
-            let num_faces = face.num_faces();
-            let ps_name1 = ct_font.name(FontNameKey::PostScript);
-            *index = u32::MAX;
-            for i in 0..num_faces {
-                let face = ft::Face::new(&pathname, i);
-                if let Ok(face) = face {
-                    let ps_name2 = face.get_postscript_name();
-                    match (&ps_name1, ps_name2) {
-                        (None, None) => {
-                            *index = i as u32;
-                            break;
-                        }
-                        (Some(name1), Some(name2))
-                            if name1.as_cstr().is_some_and(|name1| name1 == name2) =>
-                        {
-                            *index = i as u32;
-                            break;
-                        }
-                        _ => (),
+    let path_str = pathname.to_str().ok()?;
+    let data = std::fs::read(path_str).ok()?;
+    let num_faces = ttf_parser::fonts_in_collection(&data).unwrap_or(1);
+    if num_faces > 1 {
+        let ps_name1 = ct_font.name(FontNameKey::PostScript);
+        *index = u32::MAX;
+        for i in 0..num_faces {
+            if let Ok(face) = ttf_parser::Face::parse(&data, i) {
+                let ps_name2 = face.names().find(|n| n.name_id == ttf_parser::name_id::POST_SCRIPT_NAME).and_then(|n| n.to_string());
+                match (&ps_name1, ps_name2.as_deref()) {
+                    (None, None) => {
+                        *index = i;
+                        break;
                     }
+                    (Some(name1), Some(name2))
+                        if name1.as_cstr().is_some_and(|name1| name1.to_bytes() == name2.as_bytes()) =>
+                    {
+                        *index = i;
+                        break;
+                    }
+                    _ => (),
                 }
             }
         }

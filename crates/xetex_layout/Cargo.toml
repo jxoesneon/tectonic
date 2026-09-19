@@ -20,12 +20,12 @@ links = "tectonic_xetex_layout"
 
 [dependencies]
 tectonic_bridge_core = { path = "../bridge_core", version = "0.17.3"  }
-tectonic_bridge_freetype2 = { path = "../bridge_freetype2", version = "0.17.3"  }
 tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.17.3"  }
-tectonic_bridge_harfbuzz = { path = "../bridge_harfbuzz", version = "0.17.3"  }
 tectonic_io_base = { path = "../io_base", version = "0.17.3"  }
 libc = "0.2"
 enrede = { version = "0.2", features = ["alloc"] }
+rustybuzz = "0.20.1"
+ttf-parser = "0.25.1"
 
 [build-dependencies]
 cc = "^1.0.66"
@@ -38,7 +38,7 @@ tectonic_bridge_fontconfig = { path = "../bridge_fontconfig", version = "0.17.3"
 tectonic_mac_core = { path = "../mac_core", version = "0.17.3"  }
 
 [features]
-external-harfbuzz = ["tectonic_bridge_harfbuzz/external-harfbuzz"]
+external-harfbuzz = []
 
 [package.metadata.internal_dep_versions]
 tectonic_mac_core = "thiscommit:2026-04-27:052BNSA"

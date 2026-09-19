@@ -85,4 +85,46 @@ extern "C" {
     pub fn gr_cinfo_base(p: *const gr_char_info) -> libc::size_t;
     pub fn gr_featureval_destroy(features: *mut gr_feature_val);
     pub fn gr_font_destroy(font: *mut gr_font);
+    pub fn gr_slot_gid(p: *const gr_slot) -> libc::c_ushort;
+    pub fn gr_slot_origin_X(p: *const gr_slot) -> libc::c_float;
+    pub fn gr_slot_origin_Y(p: *const gr_slot) -> libc::c_float;
+    pub fn gr_slot_advance_X(
+        p: *const gr_slot,
+        face: *const gr_face,
+        font: *const gr_font,
+    ) -> libc::c_float;
+    pub fn gr_slot_advance_Y(
+        p: *const gr_slot,
+        face: *const gr_face,
+        font: *const gr_font,
+    ) -> libc::c_float;
+    pub fn gr_slot_before(p: *const gr_slot) -> libc::c_uint;
+    pub fn gr_slot_after(p: *const gr_slot) -> libc::c_uint;
+    pub fn gr_slot_can_insert_before(p: *const gr_slot) -> libc::c_uint;
+    pub fn gr_seg_advance_X(seg: *const gr_segment) -> libc::c_float;
+    pub fn gr_seg_n_slots(seg: *const gr_segment) -> libc::c_uint;
+    pub fn gr_make_face_with_ops(
+        appFaceHandle: *const libc::c_void,
+        ops: *const gr_face_ops,
+        faceOptions: libc::c_uint,
+    ) -> *mut gr_face;
+    pub fn gr_face_destroy(pFace: *mut gr_face);
 }
+
+#[repr(C)]
+pub struct gr_face_ops {
+    pub size: libc::size_t,
+    pub get_table: unsafe extern "C" fn(
+        appFaceHandle: *const libc::c_void,
+        name: libc::c_uint,
+        len: *mut libc::size_t,
+    ) -> *const libc::c_void,
+    pub release_table: Option<
+        unsafe extern "C" fn(
+            appFaceHandle: *const libc::c_void,
+            table_buffer: *const libc::c_void,
+        ),
+    >,
+}
+
+pub const gr_face_preloadAll: libc::c_uint = 1;

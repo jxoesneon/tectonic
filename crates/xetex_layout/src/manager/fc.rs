@@ -3,12 +3,11 @@ use super::{
     NameCollection,
 };
 use crate::c_api::PlatformFontRef;
-use enrede::encoding::{MacRoman, Utf16BE, Utf8};
+use enrede::encoding::{MacRoman, Utf8};
 use enrede::Str;
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use tectonic_bridge_fontconfig as fc;
-use tectonic_bridge_freetype2 as ft;
 
 pub const FONT_FAMILY_NAME: libc::c_ushort = 1;
 pub const FONT_STYLE_NAME: libc::c_ushort = 2;
@@ -26,7 +25,6 @@ impl FcBackend {
         if !fc::init() {
             panic!("fontconfig initialization failed");
         }
-        let _ = ft::init();
 
         let pat = fc::Pattern::from_name(c":outline=true").unwrap();
         let os = fc::ObjectSet::new(&[
@@ -194,94 +192,116 @@ impl FontManagerBackend for FcBackend {
             Err(_) => return names,
         };
 
-        let face = match ft::Face::new(pathname, index as usize) {
-            Ok(face) => face,
+        let path_str = match pathname.to_str() {
+            Ok(s) => s,
             Err(_) => return names,
         };
 
-        let name = match face.get_postscript_name() {
-            Some(name) => name,
-            None => return names,
+        let data = match std::fs::read(path_str) {
+            Ok(d) => d,
+            Err(_) => return names,
         };
 
-        names.ps_name = Some(name.to_owned());
+        let face = match ttf_parser::Face::parse(&data, index as u32) {
+            Ok(f) => f,
+            Err(_) => {
+                // Fallback to fontconfig pattern names if not an SFNT font
+                let mut idx = 0;
+                while let Ok(name) = pat.as_ref().get::<fc::pat::FullName>(idx) {
+                    idx += 1;
+                    FontManager::append_to_list(&mut names.full_names, name);
+                }
+                idx = 0;
+                while let Ok(fam) = pat.as_ref().get::<fc::pat::Family>(idx) {
+                    idx += 1;
+                    FontManager::append_to_list(&mut names.family_names, fam);
+                }
+                idx = 0;
+                while let Ok(name) = pat.as_ref().get::<fc::pat::FullName>(idx) {
+                    idx += 1;
+                    FontManager::append_to_list(&mut names.style_names, name);
+                }
+                return names;
+            }
+        };
 
-        if face.is_sfnt() {
-            let mut family_names = Vec::new();
-            let mut sub_family_names = Vec::new();
+        // Extract PostScript name
+        let ps_name = face
+            .names()
+            .into_iter()
+            .find(|n| n.name_id == ttf_parser::name_id::POST_SCRIPT_NAME)
+            .and_then(|n| {
+                if n.is_unicode() {
+                    n.to_string()
+                } else if n.platform_id == ttf_parser::PlatformId::Macintosh
+                    && n.encoding_id == 0
+                    && n.language_id == 0
+                {
+                    let str = Str::<MacRoman>::from_bytes_infallible(n.name);
+                    str.recode::<Utf8>().ok().and_then(|r| String::from_utf8(r.into_bytes()).ok())
+                } else {
+                    String::from_utf8(n.name.to_vec()).ok()
+                }
+            })
+            .and_then(|s| CString::new(s).ok());
 
-            for i in 0..face.get_sfnt_name_count() {
-                let mut utf8_name = None;
-                let name_rec = match face.get_sfnt_name(i) {
-                    Ok(name) => name,
-                    Err(_) => continue,
-                };
+        let Some(ps_name) = ps_name else {
+            return names;
+        };
+        names.ps_name = Some(ps_name);
 
-                match name_rec.name_id {
-                    FONT_FULL_NAME
-                    | FONT_FAMILY_NAME
-                    | FONT_STYLE_NAME
-                    | PREFERRED_FAMILY_NAME
-                    | PREFERRED_SUBFAMILY_NAME => {
-                        let mut preferred_name = false;
-                        if name_rec.platform_id == ft::PlatformId::MACINTOSH
-                            && name_rec.encoding_id == ft::EncodingId::MAC_ROMAN
-                            && name_rec.language_id == ft::LanguageId::MAC_ENGLISH
-                        {
-                            let str = Str::<MacRoman>::from_bytes_infallible(name_rec.string);
-                            if let Ok(recoded) = str.recode::<Utf8>() {
-                                if let Ok(c_str) = enrede::CString::try_from(recoded) {
-                                    utf8_name = Some(c_str);
-                                    preferred_name = true;
-                                }
-                            }
-                        } else if name_rec.platform_id == ft::PlatformId::APPLE_UNICODE
-                            || name_rec.platform_id == ft::PlatformId::MICROSOFT
-                        {
-                            if let Ok(str) = Str::<Utf16BE>::from_bytes(name_rec.string) {
-                                if let Ok(recoded) = str.recode::<Utf8>() {
-                                    if let Ok(c_str) = enrede::CString::try_from(recoded) {
-                                        utf8_name = Some(c_str);
-                                    }
-                                }
+        let mut family_names = Vec::new();
+        let mut sub_family_names = Vec::new();
+
+        for name_rec in face.names() {
+            let mut utf8_name = None;
+            let mut preferred_name = false;
+
+            match name_rec.name_id {
+                FONT_FULL_NAME
+                | FONT_FAMILY_NAME
+                | FONT_STYLE_NAME
+                | PREFERRED_FAMILY_NAME
+                | PREFERRED_SUBFAMILY_NAME => {
+                    if name_rec.platform_id == ttf_parser::PlatformId::Macintosh
+                        && name_rec.encoding_id == 0
+                        && name_rec.language_id == 0
+                    {
+                        let str = Str::<MacRoman>::from_bytes_infallible(name_rec.name);
+                        if let Ok(recoded) = str.recode::<Utf8>() {
+                            if let Ok(c_str) = enrede::CString::try_from(recoded) {
+                                utf8_name = Some(c_str);
+                                preferred_name = true;
                             }
                         }
-
-                        if let Some(name) = utf8_name {
-                            let name_list = match name_rec.name_id {
-                                FONT_FULL_NAME => &mut names.full_names,
-                                FONT_FAMILY_NAME => &mut names.family_names,
-                                FONT_STYLE_NAME => &mut names.style_names,
-                                PREFERRED_FAMILY_NAME => &mut family_names,
-                                PREFERRED_SUBFAMILY_NAME => &mut sub_family_names,
-                                _ => unreachable!(),
-                            };
-
-                            if preferred_name {
-                                FontManager::prepend_to_list(name_list, name.into_std());
-                            } else {
-                                FontManager::append_to_list(name_list, name.into_std());
+                    } else if name_rec.is_unicode() {
+                        if let Some(s) = name_rec.to_string() {
+                            if let Ok(c_str) = CString::new(s) {
+                                if let Ok(en_str) = enrede::CString::try_from(c_str) {
+                                    utf8_name = Some(en_str);
+                                }
                             }
                         }
                     }
-                    _ => (),
+
+                    if let Some(name) = utf8_name {
+                        let name_list = match name_rec.name_id {
+                            FONT_FULL_NAME => &mut names.full_names,
+                            FONT_FAMILY_NAME => &mut names.family_names,
+                            FONT_STYLE_NAME => &mut names.style_names,
+                            PREFERRED_FAMILY_NAME => &mut family_names,
+                            PREFERRED_SUBFAMILY_NAME => &mut sub_family_names,
+                            _ => unreachable!(),
+                        };
+
+                        if preferred_name {
+                            FontManager::prepend_to_list(name_list, name.into_std());
+                        } else {
+                            FontManager::append_to_list(name_list, name.into_std());
+                        }
+                    }
                 }
-            }
-        } else {
-            let mut index = 0;
-            while let Ok(name) = pat.as_ref().get::<fc::pat::FullName>(index) {
-                index += 1;
-                FontManager::append_to_list(&mut names.full_names, name);
-            }
-            index = 0;
-            while let Ok(fam) = pat.as_ref().get::<fc::pat::Family>(index) {
-                index += 1;
-                FontManager::append_to_list(&mut names.family_names, fam);
-            }
-            index = 0;
-            while let Ok(name) = pat.as_ref().get::<fc::pat::FullName>(index) {
-                index += 1;
-                FontManager::append_to_list(&mut names.style_names, name);
+                _ => (),
             }
         }
 

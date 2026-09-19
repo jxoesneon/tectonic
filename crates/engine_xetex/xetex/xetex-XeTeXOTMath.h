@@ -37,11 +37,9 @@ authorization from the copyright holders.
 
 #include "xetex-core.h"
 #include "xetex-ext.h"
+#include "tectonic_xetex_layout.h"
 
-typedef struct {
-    unsigned int count;
-    hb_ot_math_glyph_part_t *parts;
-} GlyphAssembly;
+typedef XeTeXGlyphAssembly GlyphAssembly;
 
 BEGIN_EXTERN_C
 
