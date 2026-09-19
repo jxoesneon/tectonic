@@ -208,11 +208,16 @@ Implementation (`crates/pdf_backend`):
   - Test coverage: **98.92% line coverage, 98.59% region coverage, 100.00% function coverage** (7 tests, plus all 33 `tex-outputs` end-to-end integration tests).
   - Safety Gates: 0 parity gate violations across Gates 1–7.
 
-- **Phase 4.5b: HarfBuzz & FreeType2 Decoupling (Active)**:
-  - `bridge_harfbuzz` $\rightarrow$ [`rustybuzz`](https://github.com/RazrFalcon/rustybuzz) (pure-Rust HarfBuzz port).
-  - `bridge_freetype2` $\rightarrow$ [`ttf-parser`](https://github.com/RazrFalcon/ttf-parser) (pure-Rust OpenType/TrueType metric parser, already unified in `tectonic_fonts`).
-  - `bridge_fontconfig` $\rightarrow$ pure-Rust font discovery or embedded fallback catalog for standalone/WASM targets.
-- **Outcome**: Completely eliminates C system dependencies, enabling clean compilation to `wasm32-unknown-unknown` without Emscripten or Asyncify.
+- **Phase 4.5b: HarfBuzz & FreeType2 Decoupling (Complete - Commit `7b386d6b`)**:
+  - Fully removed `tectonic_bridge_harfbuzz` and `tectonic_bridge_freetype2` from `crates/engine_xetex` and `crates/xetex_layout`.
+  - Removed all `#include <harfbuzz/*.h>` and `#include <freetype/*.h>` headers and eliminated their include directories from `build.rs`.
+  - Ported all font loading, cmap decoding, and metrics querying to pure-Rust [`ttf-parser`](https://github.com/RazrFalcon/ttf-parser).
+  - Implemented self-contained pure-Rust OpenType MATH table extraction (`crates/xetex_layout/src/math.rs`) replacing all `hb_ot_math_*` calls.
+  - Ported text shaping in `LayoutEngine` to pure-Rust [`rustybuzz`](https://github.com/RazrFalcon/rustybuzz).
+  - Implemented exact cluster advance tracking for Graphite2 complex shaping in pure Rust via `bridge_graphite2`.
+  - Enhanced vendored `rustybuzz` to support CFF charstring outlines and empty glyph bounding boxes for 100% bitwise-identical fallback mark positioning.
+  - Test verification: **33 of 33 tests passed** in `tests/tex-outputs.rs` (100% bitwise/opcode XDV parity), all driver tests passed, and 0 safety gate violations across Gates 1–7.
+- **Outcome**: Completely eliminates C HarfBuzz and FreeType2 dependencies from the engine and layout subsystems, enabling standalone WASM compilation without C font engines.
 
 ---
 
