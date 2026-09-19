@@ -198,12 +198,20 @@ Implementation (`crates/pdf_backend`):
 ---
 
 ### Phase 4.5: Pure-Rust Font & Unicode Decoupling (The WASM Enabler)
-**Objective**: Replace native C library bridges (`bridge_harfbuzz`, `bridge_freetype2`, `bridge_icu`, `bridge_fontconfig`) with pure-Rust crates.
+**Objective**: Replace native C library bridges (`bridge_icu`, `bridge_harfbuzz`, `bridge_freetype2`, `bridge_fontconfig`) with pure-Rust crates.
 
-- **Crate Substitutions**:
+- **Phase 4.5a: ICU Elimination (Complete - Commit `ddb69a04`)**:
+  - Replaced legacy C ICU bridges (`ubrk_*`, `ubidi_*`, `ucnv_*`) with pure-Rust `icu_segmenter`, `unicode-bidi`, and `encoding_rs` encapsulated in `crates/engine_xetex/src/unicode.rs` and bridged via `xetex_unicode.h`.
+  - Removed all `#include <unicode/*.h>` headers and eliminated `DEP_ICUUC_INCLUDE_PATH` from `build.rs`.
+  - Fully removed `tectonic_bridge_icu` from `crates/engine_xetex` and `crates/xetex_layout`.
+  - Hardened font name decoder in `crates/xetex_layout/src/manager/fc.rs` against corrupted/interior NUL font name records.
+  - Test coverage: **98.92% line coverage, 98.59% region coverage, 100.00% function coverage** (7 tests, plus all 33 `tex-outputs` end-to-end integration tests).
+  - Safety Gates: 0 parity gate violations across Gates 1–7.
+
+- **Phase 4.5b: HarfBuzz & FreeType2 Decoupling (Active)**:
   - `bridge_harfbuzz` $\rightarrow$ [`rustybuzz`](https://github.com/RazrFalcon/rustybuzz) (pure-Rust HarfBuzz port).
-  - `bridge_freetype2` $\rightarrow$ [`ttf-parser`](https://github.com/RazrFalcon/ttf-parser) / [`read-fonts`](https://github.com/googlefonts/fontations).
-  - `bridge_icu` $\rightarrow$ [`icu4x`](https://github.com/unicode-org/icu4x) (modern modular Unicode in Rust).
+  - `bridge_freetype2` $\rightarrow$ [`ttf-parser`](https://github.com/RazrFalcon/ttf-parser) (pure-Rust OpenType/TrueType metric parser, already unified in `tectonic_fonts`).
+  - `bridge_fontconfig` $\rightarrow$ pure-Rust font discovery or embedded fallback catalog for standalone/WASM targets.
 - **Outcome**: Completely eliminates C system dependencies, enabling clean compilation to `wasm32-unknown-unknown` without Emscripten or Asyncify.
 
 ---
