@@ -8,9 +8,8 @@
 
 #include "tectonic_bridge_core.h"
 
-/* ICU */
-#include <unicode/utypes.h>
-#include <unicode/platform.h> // defines U_IS_BIG_ENDIAN for us
+/* Pure-Rust Unicode interfaces */
+#include "xetex_unicode.h"
 
 /* fontconfig */
 #ifndef XETEX_MAC

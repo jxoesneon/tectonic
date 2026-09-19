@@ -51,10 +51,6 @@ authorization from the copyright holders.
 #include <sys/time.h>
 #endif
 
-#include <unicode/ubidi.h>
-#include <unicode/ubrk.h>
-#include <unicode/ucnv.h>
-
 #include <graphite2/Font.h>
 
 #include "xetex-xetexd.h"
@@ -65,62 +61,35 @@ authorization from the copyright holders.
 #define kGPOS HB_TAG('G','P','O','S')
 
 
-static UBreakIterator* brkIter = NULL;
-static int brkLocaleStrNum = 0;
+static int using_graphite_break = 0;
 
 void
 linebreak_start(int f, int32_t localeStrNum, uint16_t* text, int32_t textLength)
 {
-    UErrorCode status = U_ZERO_ERROR;
     char* locale = (char*)gettexstring(localeStrNum);
 
     if (font_area[f] == OTGR_FONT_FLAG && streq_ptr(locale, "G")) {
         XeTeXLayoutEngine engine = (XeTeXLayoutEngine) font_layout_engine[f];
-        if (initGraphiteBreaking(engine, text, textLength))
-            /* user asked for Graphite line breaking and the font supports it */
+        if (initGraphiteBreaking(engine, text, textLength)) {
+            using_graphite_break = 1;
+            free(locale);
             return;
-    }
-
-    if ((localeStrNum != brkLocaleStrNum) && (brkIter != NULL)) {
-        ubrk_close(brkIter);
-        brkIter = NULL;
-    }
-
-    if (brkIter == NULL) {
-        brkIter = ubrk_open(UBRK_LINE, locale, NULL, 0, &status);
-        if (U_FAILURE(status)) {
-            begin_diagnostic();
-            print_nl('E');
-            print_c_string("rror ");
-            print_int(status);
-            print_c_string(" creating linebreak iterator for locale `");
-            print_c_string(locale);
-            print_c_string("'; trying default locale `en_us'.");
-            end_diagnostic(1);
-            if (brkIter != NULL)
-                ubrk_close(brkIter);
-            status = U_ZERO_ERROR;
-            brkIter = ubrk_open(UBRK_LINE, "en_us", NULL, 0, &status);
         }
-        free(locale);
-        brkLocaleStrNum = localeStrNum;
     }
 
-    if (brkIter == NULL)
-        _tt_abort ("failed to create linebreak iterator, status=%d", (int) status);
-
-    ubrk_setText(brkIter, (UChar*) text, textLength, &status);
+    using_graphite_break = 0;
+    tt_linebreak_start(text, textLength, locale);
+    free(locale);
 }
 
 int
 linebreak_next(int f)
 {
-    if (brkIter != NULL)
-        return ubrk_next((UBreakIterator*)brkIter);
-    else {
-    	XeTeXLayoutEngine engine = (XeTeXLayoutEngine) font_layout_engine[f];
+    if (using_graphite_break) {
+        XeTeXLayoutEngine engine = (XeTeXLayoutEngine) font_layout_engine[f];
         return findNextGraphiteBreak(engine);
-	}
+    }
+    return tt_linebreak_next();
 }
 
 int
@@ -130,8 +99,6 @@ get_encoding_mode_and_info(int32_t* info)
      *   -> name is packed in |nameoffile| as a C string, starting at [1]
      * Check if it's a built-in name; if not, try to open an ICU converter by that name
      */
-    UErrorCode err = U_ZERO_ERROR;
-    UConverter* cnv;
     *info = 0;
     if (strcasecmp(name_of_file, "auto") == 0) {
         return AUTO;
@@ -152,9 +119,8 @@ get_encoding_mode_and_info(int32_t* info)
         return RAW;
     }
 
-    /* try for an ICU converter */
-    cnv = ucnv_open(name_of_file, &err);
-    if (cnv == NULL) {
+    /* try for an encoding converter */
+    if (!tt_encoding_is_supported(name_of_file)) {
         begin_diagnostic();
         print_nl('U'); /* ensure message starts on a new line */
         print_c_string("nknown encoding `");
@@ -163,7 +129,6 @@ get_encoding_mode_and_info(int32_t* info)
         end_diagnostic(1);
         return RAW;
     } else {
-        ucnv_close(cnv);
         *info = maketexstring(name_of_file);
         return ICUMAPPING;
     }
@@ -1584,29 +1549,27 @@ measure_native_node(void* pNode, int use_glyph_metrics)
 
         /* need to find direction runs within the text, and call layoutChars separately for each */
 
-        UBiDiDirection dir;
+        int dir;
         void* glyph_info = 0;
         static FloatPoint* positions = 0;
         static float* advances = 0;
         static uint32_t* glyphs = 0;
 
-        UBiDi* pBiDi = ubidi_open();
+        bool default_dir_rtl = ((getDefaultDirection(engine) & 1) != 0);
+        TtBiDiContext* pBiDi = tt_bidi_create((const uint16_t*) txtPtr, txtLen, default_dir_rtl);
 
-        UErrorCode errorCode = U_ZERO_ERROR;
-        ubidi_setPara(pBiDi, (const UChar*) txtPtr, txtLen, getDefaultDirection(engine), NULL, &errorCode);
-
-        dir = ubidi_getDirection(pBiDi);
+        dir = tt_bidi_get_direction(pBiDi);
         if (dir == UBIDI_MIXED) {
             /* we actually do the layout twice here, once to count glyphs and then again to get them;
                which is inefficient, but i figure that MIXED is a relatively rare occurrence, so i can't be
                bothered to deal with the memory reallocation headache of doing it differently
             */
-            int nRuns = ubidi_countRuns(pBiDi, &errorCode);
+            int nRuns = tt_bidi_count_runs(pBiDi);
             double width = 0;
             int i, runIndex;
             int32_t logicalStart, length;
             for (runIndex = 0; runIndex < nRuns; ++runIndex) {
-                dir = ubidi_getVisualRun(pBiDi, runIndex, &logicalStart, &length);
+                dir = tt_bidi_get_visual_run(pBiDi, runIndex, &logicalStart, &length);
                 totalGlyphCount += layoutChars(engine, txtPtr, logicalStart, length, txtLen, (dir == UBIDI_RTL));
             }
 
@@ -1621,7 +1584,7 @@ measure_native_node(void* pNode, int use_glyph_metrics)
                 x = y = 0.0;
                 for (runIndex = 0; runIndex < nRuns; ++runIndex) {
                     int nGlyphs;
-                    dir = ubidi_getVisualRun(pBiDi, runIndex, &logicalStart, &length);
+                    dir = tt_bidi_get_visual_run(pBiDi, runIndex, &logicalStart, &length);
                     nGlyphs = layoutChars(engine, txtPtr, logicalStart, length, txtLen,
                                             (dir == UBIDI_RTL));
 
@@ -1689,7 +1652,7 @@ measure_native_node(void* pNode, int use_glyph_metrics)
             free(advances);
         }
 
-        ubidi_close(pBiDi);
+        tt_bidi_destroy(pBiDi);
 
 
         if (font_letter_space[f] != 0) {

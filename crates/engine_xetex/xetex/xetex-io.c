@@ -9,7 +9,6 @@
 #include "xetex-xetexd.h"
 
 #include <stdio.h>
-#include <unicode/ucnv.h>
 
 char *name_of_input_file = NULL;
 
@@ -87,7 +86,7 @@ void
 set_input_file_encoding(UFILE* f, int32_t mode, int32_t encodingData)
 {
     if ((f->encodingMode == ICUMAPPING) && (f->conversionData != NULL))
-        ucnv_close((UConverter*)(f->conversionData));
+        tt_encoding_close((TtEncodingHandle*)(f->conversionData));
     f->conversionData = 0;
 
     switch (mode) {
@@ -101,14 +100,11 @@ set_input_file_encoding(UFILE* f, int32_t mode, int32_t encodingData)
         case ICUMAPPING:
             {
                 char* name = gettexstring(encodingData);
-                UErrorCode err = U_ZERO_ERROR;
-                UConverter* cnv = ucnv_open(name, &err);
+                TtEncodingHandle* cnv = tt_encoding_open(name);
                 if (cnv == NULL) {
                     begin_diagnostic();
                     print_nl('E');
-                    print_c_string("rror ");
-                    print_int(err);
-                    print_c_string(" creating Unicode converter for `");
+                    print_c_string("rror creating Unicode converter for `");
                     print_c_string(name);
                     print_c_string("'; reading as raw bytes");
                     end_diagnostic(1);
@@ -233,9 +229,8 @@ input_line(UFILE* f)
 
     if (f->encodingMode == ICUMAPPING) {
         uint32_t bytesRead = 0;
-        UConverter* cnv;
-        int outLen;
-        UErrorCode errorCode = U_ZERO_ERROR;
+        TtEncodingHandle* cnv;
+        size_t written = 0;
 
         if (byteBuffer == NULL)
             byteBuffer = xmalloc(buf_size + 1);
@@ -261,32 +256,25 @@ input_line(UFILE* f)
             buffer_overflow();
 
         /* now apply the mapping to turn external bytes into Unicode characters in buffer */
-        cnv = (UConverter*)(f->conversionData);
+        cnv = (TtEncodingHandle*)(f->conversionData);
         switch (norm) {
             case 1: // NFC
             case 2: // NFD
                 if (utf32Buf == NULL)
                     utf32Buf = xcalloc(buf_size, sizeof(uint32_t));
-                tmpLen = ucnv_toAlgorithmic(UCNV_UTF32_NativeEndian, cnv,
-                                            (char*)utf32Buf, buf_size * sizeof(*utf32Buf),
-                                            byteBuffer, bytesRead, &errorCode);
-                if (errorCode != 0) {
-                    conversion_error((int)errorCode);
+                if (tt_encoding_to_utf32(cnv, (const uint8_t*)byteBuffer, bytesRead, utf32Buf, buf_size, &written) != 0) {
+                    conversion_error(1);
                     return false;
                 }
-                apply_normalization(utf32Buf, tmpLen / sizeof(*utf32Buf), norm); // sets 'last' correctly
+                apply_normalization(utf32Buf, (int)written, norm); // sets 'last' correctly
                 break;
 
             default: // none
-                outLen = ucnv_toAlgorithmic(UCNV_UTF32_NativeEndian, cnv,
-                                            (char*)&buffer[first], sizeof(*buffer) * (buf_size - first),
-                                            byteBuffer, bytesRead, &errorCode);
-                if (errorCode != 0) {
-                    conversion_error((int)errorCode);
+                if (tt_encoding_to_utf32(cnv, (const uint8_t*)byteBuffer, bytesRead, (uint32_t*)&buffer[first], buf_size - first, &written) != 0) {
+                    conversion_error(1);
                     return false;
                 }
-                outLen /= sizeof(*buffer);
-                last = first + outLen;
+                last = first + written;
                 break;
         }
     } else {
@@ -364,7 +352,7 @@ u_close(UFILE* f)
     ttstub_input_close (f->handle);
 
     if (f->encodingMode == ICUMAPPING && f->conversionData != NULL)
-        ucnv_close ((UConverter*) f->conversionData);
+        tt_encoding_close ((TtEncodingHandle*) f->conversionData);
 
     free (f);
 }

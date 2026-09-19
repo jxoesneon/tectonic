@@ -22,6 +22,8 @@ use std::{ffi::CString, time::SystemTime};
 use tectonic_bridge_core::{CoreBridgeLauncher, EngineAbortedError};
 use tectonic_errors::prelude::*;
 
+pub mod unicode;
+
 /// A serial number describing the detailed binary layout of the TeX "format
 /// files" used by this crate. This number will occasionally increment,
 /// indicating that the format file structure has changed. There is no provision
@@ -257,8 +259,7 @@ mod linkage {
     #[allow(unused_imports)]
     use tectonic_xetex_layout as clipyrenamehack2;
 
-    #[allow(unused_imports)]
-    use tectonic_bridge_icu as clipyrenamehack3;
+
 }
 
 /// Does our resulting executable link correctly?

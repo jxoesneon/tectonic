@@ -21,7 +21,6 @@ fn main() {
     let freetype_include_path = env::var("DEP_FREETYPE2_INCLUDE_PATH").unwrap();
     let harfbuzz_include_path = env::var("DEP_HARFBUZZ_INCLUDE_PATH").unwrap();
     let fontconfig_include_path = env::var("DEP_FONTCONFIG_INCLUDE_PATH");
-    let icu_include_path = env::var("DEP_ICUUC_INCLUDE_PATH").unwrap();
 
     // If we want to profile, the default assumption is that we must force the
     // compiler to include frame pointers. We whitelist platforms that are
@@ -89,10 +88,6 @@ fn main() {
         cxx_cfg.include(item);
     }
 
-    for item in icu_include_path.split(';') {
-        c_cfg.include(item);
-        cxx_cfg.include(item);
-    }
 
     if let Ok(fc_includes) = fontconfig_include_path {
         for item in fc_includes.split(';') {

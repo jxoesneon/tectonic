@@ -229,17 +229,22 @@ impl FontManagerBackend for FcBackend {
                             && name_rec.language_id == ft::LanguageId::MAC_ENGLISH
                         {
                             let str = Str::<MacRoman>::from_bytes_infallible(name_rec.string);
-                            utf8_name = Some(
-                                enrede::CString::try_from(str.recode::<Utf8>().unwrap()).unwrap(),
-                            );
-                            preferred_name = true;
+                            if let Ok(recoded) = str.recode::<Utf8>() {
+                                if let Ok(c_str) = enrede::CString::try_from(recoded) {
+                                    utf8_name = Some(c_str);
+                                    preferred_name = true;
+                                }
+                            }
                         } else if name_rec.platform_id == ft::PlatformId::APPLE_UNICODE
                             || name_rec.platform_id == ft::PlatformId::MICROSOFT
                         {
-                            let str = Str::<Utf16BE>::from_bytes(name_rec.string).unwrap();
-                            utf8_name = Some(
-                                enrede::CString::try_from(str.recode::<Utf8>().unwrap()).unwrap(),
-                            );
+                            if let Ok(str) = Str::<Utf16BE>::from_bytes(name_rec.string) {
+                                if let Ok(recoded) = str.recode::<Utf8>() {
+                                    if let Ok(c_str) = enrede::CString::try_from(recoded) {
+                                        utf8_name = Some(c_str);
+                                    }
+                                }
+                            }
                         }
 
                         if let Some(name) = utf8_name {
