@@ -274,6 +274,10 @@ enum TokenListTarget {
     Sparse(i32),
 }
 
+/// Resolved picture path and `(x, y, w, h)` bounds in TeX points
+/// (`find_pic_file`'s `*path` + `*bounds` out-params).
+type PicFile = (String, (f64, f64, f64, f64));
+
 fn transform_point(point: (f64, f64), transform: (f64, f64, f64, f64, f64, f64)) -> (f64, f64) {
     (
         point.0 * transform.0 + point.1 * transform.2 + transform.4,
@@ -2465,7 +2469,7 @@ impl TeXEngineState {
             ));
         }
         self.scan_file_name()?;
-        let path = self.packed_file_name();
+        self.pack_name_of_file();
         let mut page = 0;
         let mut pdf_box_type = 0;
         if is_pdf {
@@ -2473,6 +2477,8 @@ impl TeXEngineState {
                 self.scan_int()?;
                 page = self.cur_val;
             }
+            // C `pdfbox_none` (6): stored in the node, but bounds are probed
+            // with `pdfbox_crop`.
             pdf_box_type = if self.scan_keyword("crop")? {
                 1
             } else if self.scan_keyword("media")? {
@@ -2484,11 +2490,13 @@ impl TeXEngineState {
             } else if self.scan_keyword("art")? {
                 5
             } else {
-                0
+                6
             };
         }
 
-        let (x, y, width, height) = self.picture_bounds.get(&path).copied().unwrap_or_default();
+        let probe_box = if pdf_box_type == 6 { 1 } else { pdf_box_type };
+        let result = self.find_pic_file(probe_box, page);
+        let (x, y, width, height) = result.as_ref().map(|r| r.1).unwrap_or_default();
         let mut corners = [
             (x, y),
             (x, y + height),
@@ -2523,14 +2531,36 @@ impl TeXEngineState {
             }
             if self.scan_keyword("width")? {
                 self.scan_dimen(false, false, false)?;
-                if self.cur_val > 0 {
+                if self.cur_val <= 0 {
+                    self.report_error(
+                        &format!(
+                            "Improper image size ({}pt) will be ignored",
+                            format_scaled_pt(self.cur_val)
+                        ),
+                        &[
+                            "I can't scale images to zero or negative sizes,",
+                            "so I'm ignoring this.",
+                        ],
+                    );
+                } else {
                     x_size_req = self.cur_val as f64 / 65_536.0;
                 }
                 continue;
             }
             if self.scan_keyword("height")? {
                 self.scan_dimen(false, false, false)?;
-                if self.cur_val > 0 {
+                if self.cur_val <= 0 {
+                    self.report_error(
+                        &format!(
+                            "Improper image size ({}pt) will be ignored",
+                            format_scaled_pt(self.cur_val)
+                        ),
+                        &[
+                            "I can't scale images to zero or negative sizes,",
+                            "so I'm ignoring this.",
+                        ],
+                    );
+                } else {
                     y_size_req = self.cur_val as f64 / 65_536.0;
                 }
                 continue;
@@ -2562,11 +2592,11 @@ impl TeXEngineState {
                 for corner in &mut corners {
                     *corner = transform_point(*corner, rotation);
                 }
-                let (xmin, _xmax, ymin, _ymax) = bounds_of_corners(&corners);
-                for corner in &mut corners {
-                    corner.0 -= xmin;
-                    corner.1 -= ymin;
-                }
+                // C replaces the corners with the rotated image's axis-aligned
+                // bounding box (`SET_POINT` ×4); the translation to the origin
+                // lives in `t` only, so chained rotations re-inflate the AABB.
+                let (xmin, xmax, ymin, ymax) = bounds_of_corners(&corners);
+                corners = [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin)];
                 continue;
             }
             break;
@@ -2594,24 +2624,111 @@ impl TeXEngineState {
             ),
         );
 
-        let path_bytes = path.as_bytes();
-        let size = 9 + (path_bytes.len() as i32 + 7) / 8;
-        let node = self.new_whatsit(if is_pdf { PDF_NODE } else { PIC_NODE }, size)?;
-        let idx = self.checked_engine_mem_index(node)?;
-        self.mem[idx + 4].set_b16_s1(path_bytes.len() as u16);
-        self.mem[idx + 4].set_b16_s0(page as u16);
-        self.mem[idx + 8].set_b16_s1(pdf_box_type as u16);
-        self.mem[idx + 1].s1 = d2fix(xmax - xmin);
-        self.mem[idx + 2].s1 = 0;
-        self.mem[idx + 3].s1 = d2fix(ymax - ymin);
-        self.mem[idx + 5].s0 = d2fix(transform.0);
-        self.mem[idx + 5].s1 = d2fix(transform.1);
-        self.mem[idx + 6].s0 = d2fix(transform.2);
-        self.mem[idx + 6].s1 = d2fix(transform.3);
-        self.mem[idx + 7].s0 = d2fix(transform.4);
-        self.mem[idx + 7].s1 = d2fix(transform.5);
-        write_pic_path(&mut self.mem[idx..], path_bytes);
+        match result {
+            Ok((pic_path, _bounds)) => {
+                let path_bytes = pic_path.as_bytes();
+                let size = 9 + (path_bytes.len() as i32 + 7) / 8;
+                let node = self.new_whatsit(if is_pdf { PDF_NODE } else { PIC_NODE }, size)?;
+                let idx = self.checked_engine_mem_index(node)?;
+                self.mem[idx + 4].set_b16_s1(path_bytes.len() as u16);
+                self.mem[idx + 4].set_b16_s0(page as u16);
+                self.mem[idx + 8].set_b16_s1(pdf_box_type as u16);
+                self.mem[idx + 1].s1 = d2fix(xmax - xmin);
+                self.mem[idx + 2].s1 = 0;
+                self.mem[idx + 3].s1 = d2fix(ymax - ymin);
+                self.mem[idx + 5].s0 = d2fix(transform.0);
+                self.mem[idx + 5].s1 = d2fix(transform.1);
+                self.mem[idx + 6].s0 = d2fix(transform.2);
+                self.mem[idx + 6].s1 = d2fix(transform.3);
+                self.mem[idx + 7].s0 = d2fix(transform.4);
+                self.mem[idx + 7].s1 = d2fix(transform.5);
+                write_pic_path(&mut self.mem[idx..], path_bytes);
+            }
+            Err(_) => {
+                // Tectonic's probe layer never yields C's -43
+                // (file-not-found) code, so the help text is always the
+                // unrecognized-format variant.
+                self.report_error(
+                    &format!(
+                        "Unable to load picture or PDF file '{}'",
+                        self.packed_file_name()
+                    ),
+                    &[
+                        "The requested image couldn't be read because",
+                        "it was not a recognized image format.",
+                    ],
+                );
+            }
+        }
         Ok(())
+    }
+
+    /// Opens `name_of_file` through the registered byte sources and probes its
+    /// bounds (`find_pic_file` + `pdf_get_rect`/`get_image_size_in_inches`).
+    ///
+    /// `picture_bounds` entries act as an embedder override; otherwise the
+    /// file's registered bytes are probed. `pdf_box_type != 0` selects the PDF
+    /// path (bp→pt at 72.27/72 after page clamping); 0 selects the raster
+    /// image path (pixels/DPI → inches → pt at 72.27). Returns the resolved
+    /// path and `(x, y, w, h)` in TeX points, or `Err` on open/probe failure.
+    fn find_pic_file(&mut self, pdf_box_type: i32, page: i32) -> Result<PicFile, i32> {
+        let name = String::from_utf8_lossy(&self.name_of_file).into_owned();
+        if let Some(&bounds) = self.picture_bounds.get(&name) {
+            return Ok((name, bounds));
+        }
+        let bytes = self.input_byte_sources.get(&name).cloned().ok_or(1)?;
+        if pdf_box_type != 0 {
+            // `pdf_get_rect`: clamp the page into [1, total] (negative counts
+            // back from the last page), probe the requested box, convert bp→pt.
+            let total =
+                tectonic_image_probe::probe_pdf_page_count_bytes(&bytes).map_err(|_| -1)? as i32;
+            if total <= 0 {
+                return Err(-1);
+            }
+            let mut page_num = page;
+            if page_num > total {
+                page_num = total;
+            }
+            if page_num < 0 {
+                page_num += total + 1;
+            }
+            if page_num < 1 {
+                page_num = 1;
+            }
+            let (x0, y0, x1, y1) = tectonic_image_probe::probe_pdf_box_bytes(
+                &bytes,
+                page_num as usize,
+                tectonic_image_probe::PdfBoxType::from(pdf_box_type),
+            )
+            .map_err(|_| -1)?;
+            const BP_TO_PT: f64 = 72.27 / 72.0;
+            Ok((
+                name,
+                (
+                    BP_TO_PT * x0,
+                    BP_TO_PT * y0,
+                    BP_TO_PT * (x1 - x0),
+                    BP_TO_PT * (y1 - y0),
+                ),
+            ))
+        } else {
+            // `get_image_size_in_inches`: pixel dimensions ÷ DPI (72 when the
+            // format carries no resolution), then inches → pt at 72.27.
+            let info = tectonic_image_probe::probe_image_bytes(&bytes).map_err(|_| 1)?;
+            let w_px = info.width as f64;
+            let h_px = info.height as f64;
+            let wd = if info.x_dpi > 0.0 {
+                w_px / info.x_dpi
+            } else {
+                w_px / 72.0
+            };
+            let ht = if info.y_dpi > 0.0 {
+                h_px / info.y_dpi
+            } else {
+                h_px / 72.0
+            };
+            Ok((name, (0.0, 0.0, wd * 72.27, ht * 72.27)))
+        }
     }
 
     /// Applies `\XeTeXinputencoding` to the current in-memory input source.
@@ -15488,6 +15605,178 @@ mod tests {
         assert_eq!(state.mem[node as usize + 4].b16_s1(), 9);
         assert_eq!(state.mem[node as usize + 8].b16_s1(), 1);
         assert_eq!(state.mem[node as usize + 1].s1, 5 * 65_536);
+    }
+
+    fn png_fixture(width: u32, height: u32) -> Vec<u8> {
+        let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+        png.extend_from_slice(&13u32.to_be_bytes());
+        png.extend_from_slice(b"IHDR");
+        png.extend_from_slice(&width.to_be_bytes());
+        png.extend_from_slice(&height.to_be_bytes());
+        png.extend_from_slice(&[8, 2, 0, 0, 0]);
+        png.extend_from_slice(&[0; 4]);
+        png.extend_from_slice(&0u32.to_be_bytes());
+        png.extend_from_slice(b"IEND");
+        png.extend_from_slice(&[0; 4]);
+        png
+    }
+
+    fn two_page_pdf_fixture() -> Vec<u8> {
+        b"%PDF-1.4\n\
+          1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\
+          2 0 obj\n<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>\nendobj\n\
+          3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /CropBox [10 20 300 400] >>\nendobj\n\
+          4 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>\nendobj\n\
+          trailer\n<< /Root 1 0 R >>\n"
+            .to_vec()
+    }
+
+    #[test]
+    fn picfile_probes_registered_raster_bytes() {
+        let mut state = engine();
+        state.register_input_byte_source("img.png", png_fixture(100, 50));
+        state.set_source_text("\\XeTeXpicfile{img.png}");
+
+        state.dispatch_x_command().unwrap();
+
+        let node = state.tail;
+        assert_eq!(state.node_subtype(node).unwrap(), PIC_NODE);
+        assert_eq!(state.error_count, 0);
+        // 100px at 72dpi → 100.375pt; 50px → 50.1875pt.
+        assert_eq!(state.mem[node as usize + 1].s1, d2fix(100.375));
+        assert_eq!(state.mem[node as usize + 3].s1, d2fix(50.1875));
+        assert_eq!(state.mem[node as usize + 4].b16_s1(), 7);
+    }
+
+    #[test]
+    fn picfile_missing_or_unrecognized_reports_error_without_node() {
+        let mut state = engine();
+        state.set_source_text("\\XeTeXpicfile{missing.png}");
+        state.dispatch_x_command().unwrap();
+        assert_eq!(state.error_count, 1);
+        assert_eq!(state.tail, state.head);
+        assert!(state
+            .transcript
+            .iter()
+            .any(|l| l.contains("Unable to load picture or PDF file 'missing.png'")));
+
+        let mut state = engine();
+        state.register_input_byte_source("bad.png", b"not an image".to_vec());
+        state.set_source_text("\\XeTeXpicfile{bad.png}");
+        state.dispatch_x_command().unwrap();
+        assert_eq!(state.error_count, 1);
+        assert_eq!(state.tail, state.head);
+
+        // `\XeTeXpicfile` on a PDF fails the raster probe, as in C.
+        let mut state = engine();
+        state.register_input_byte_source("doc.pdf", two_page_pdf_fixture());
+        state.set_source_text("\\XeTeXpicfile{doc.pdf}");
+        state.dispatch_x_command().unwrap();
+        assert_eq!(state.error_count, 1);
+        assert_eq!(state.tail, state.head);
+    }
+
+    #[test]
+    fn pdffile_probes_crop_box_and_stores_pdfbox_none() {
+        let mut state = engine();
+        state.register_input_byte_source("doc.pdf", two_page_pdf_fixture());
+        state.set_source_text("\\XeTeXpdffile{doc.pdf}");
+
+        state.dispatch_x_command().unwrap();
+
+        let node = state.tail;
+        const BP_TO_PT: f64 = 72.27 / 72.0;
+        assert_eq!(state.node_subtype(node).unwrap(), PDF_NODE);
+        assert_eq!(state.error_count, 0);
+        assert_eq!(state.mem[node as usize + 8].b16_s1(), 6);
+        // pdfbox_none probes the CropBox [10 20 300 400] → 290×380 bp.
+        assert_eq!(state.mem[node as usize + 1].s1, d2fix(290.0 * BP_TO_PT));
+        assert_eq!(state.mem[node as usize + 3].s1, d2fix(380.0 * BP_TO_PT));
+    }
+
+    #[test]
+    fn pdffile_media_keyword_selects_the_media_box() {
+        let mut state = engine();
+        state.register_input_byte_source("doc.pdf", two_page_pdf_fixture());
+        state.set_source_text("\\XeTeXpdffile{doc.pdf} media");
+
+        state.dispatch_x_command().unwrap();
+
+        let node = state.tail;
+        const BP_TO_PT: f64 = 72.27 / 72.0;
+        assert_eq!(state.mem[node as usize + 8].b16_s1(), 2);
+        assert_eq!(state.mem[node as usize + 1].s1, d2fix(612.0 * BP_TO_PT));
+        assert_eq!(state.mem[node as usize + 3].s1, d2fix(792.0 * BP_TO_PT));
+    }
+
+    #[test]
+    fn pdffile_clamps_out_of_range_and_negative_pages() {
+        for opts in ["page 99", "page -1", "page -2"] {
+            let mut state = engine();
+            state.register_input_byte_source("doc.pdf", two_page_pdf_fixture());
+            state.set_source_text(&format!("\\XeTeXpdffile{{doc.pdf}} {opts} media"));
+
+            state.dispatch_x_command().unwrap();
+
+            let node = state.tail;
+            const BP_TO_PT: f64 = 72.27 / 72.0;
+            // page 99 clamps to 2; -1 resolves to 2; -2 resolves to 1.
+            let (w, h) = if opts == "page -2" {
+                (612.0 * BP_TO_PT, 792.0 * BP_TO_PT)
+            } else {
+                (200.0 * BP_TO_PT, 200.0 * BP_TO_PT)
+            };
+            assert_eq!(state.mem[node as usize + 1].s1, d2fix(w), "{opts}");
+            assert_eq!(state.mem[node as usize + 3].s1, d2fix(h), "{opts}");
+        }
+    }
+
+    #[test]
+    fn improper_image_size_reports_error_and_is_ignored() {
+        let mut state = engine();
+        state.register_input_byte_source("img.png", png_fixture(100, 50));
+        state.set_source_text("\\XeTeXpicfile{img.png} width -5pt");
+
+        state.dispatch_x_command().unwrap();
+
+        assert_eq!(state.error_count, 1);
+        assert!(state
+            .transcript
+            .iter()
+            .any(|l| l.starts_with("! Improper image size")));
+        let node = state.tail;
+        assert_eq!(state.node_subtype(node).unwrap(), PIC_NODE);
+        // The invalid width is ignored → natural probed size.
+        assert_eq!(state.mem[node as usize + 1].s1, d2fix(100.375));
+    }
+
+    #[test]
+    fn rotated_picfile_snaps_corners_to_the_aabb() {
+        // Two chained 30° rotations: C snaps the corners to the rotated
+        // AABB each pass (≈143.8×137.1pt), so width ends up larger than
+        // height — corner-shifting semantics would instead produce the
+        // 60°-rotated original (≈93.7×112.0pt).
+        let mut state = engine();
+        state.register_input_byte_source("img.png", png_fixture(100, 50));
+        state.set_source_text("\\XeTeXpicfile{img.png} rotated 30 rotated 30");
+
+        state.dispatch_x_command().unwrap();
+
+        let node = state.tail;
+        let w = state.mem[node as usize + 1].s1;
+        let h = state.mem[node as usize + 3].s1;
+        assert!(w > h && w > d2fix(120.0));
+    }
+
+    #[test]
+    fn pdf_page_count_probes_registered_bytes() {
+        let mut state = engine();
+        state.register_input_byte_source("doc.pdf", two_page_pdf_fixture());
+        state.cur_name = "doc.pdf".chars().map(|c| c as i32).collect();
+        assert_eq!(state.count_pdf_file_pages(), 2);
+
+        state.register_pdf_page_count("doc.pdf", 9);
+        assert_eq!(state.count_pdf_file_pages(), 9);
     }
 
     #[test]

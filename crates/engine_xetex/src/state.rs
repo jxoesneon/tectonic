@@ -6313,11 +6313,18 @@ impl TeXEngineState {
 
     /// Returns the page count for the currently scanned file name
     /// (`count_pdf_file_pages`), 0 when the file is unknown — the same
-    /// recovery C uses for an unopenable file.
+    /// recovery C uses for an unopenable file. Registered overrides win;
+    /// otherwise the file's registered bytes are probed like C's
+    /// `tt_probe_pdf_page_count_data` over the VFS handle.
     pub fn count_pdf_file_pages(&self) -> i32 {
-        self.pdf_page_counts
-            .get(&self.file_name_string())
-            .copied()
+        let name = self.file_name_string();
+        if let Some(&pages) = self.pdf_page_counts.get(&name) {
+            return pages.max(0);
+        }
+        self.input_byte_sources
+            .get(&name)
+            .and_then(|bytes| tectonic_image_probe::probe_pdf_page_count_bytes(bytes).ok())
+            .map(|pages| pages.min(i32::MAX as usize) as i32)
             .unwrap_or(0)
             .max(0)
     }
