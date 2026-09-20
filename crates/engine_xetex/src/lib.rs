@@ -24,11 +24,13 @@ use tectonic_errors::prelude::*;
 
 pub mod commands;
 pub mod expand;
+pub mod output;
 pub mod primitives;
 pub mod scan;
 pub mod scanner;
 pub mod shipout;
 pub mod state;
+pub mod strpool;
 pub mod unicode;
 
 pub use primitives::{primitive_defs, PrimitiveDef, PrimitiveExtraInit, PrimitiveRegistryError};

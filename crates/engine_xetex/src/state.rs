@@ -1623,6 +1623,28 @@ pub const SELECTOR_TERM_AND_LOG: i32 = 19;
 /// Selector that accumulates text into the string pool (`SELECTOR_NEW_STRING`).
 pub const SELECTOR_NEW_STRING: i32 = 21;
 
+/// Selector that records text into the show-context trick buffer (`SELECTOR_PSEUDO`).
+pub const SELECTOR_PSEUDO: i32 = 20;
+
+/// Largest code point representable as a bare `str_number` (`BIGGEST_CHAR`).
+pub const BIGGEST_CHAR: i32 = 0xFFFF;
+/// Largest Unicode scalar value (`BIGGEST_USV`).
+pub const BIGGEST_USV: i32 = 0x10FFFF;
+/// `str_number` of the empty string constant (`EMPTY_STRING`).
+pub const EMPTY_STRING: i32 = TOO_BIG_CHAR + 1;
+
+/// No errors seen yet (`HISTORY_SPOTLESS`).
+pub const HISTORY_SPOTLESS: u8 = 0;
+/// A warning has been issued (`HISTORY_WARNING_ISSUED`).
+pub const HISTORY_WARNING_ISSUED: u8 = 1;
+/// A recoverable error has been issued (`HISTORY_ERROR_ISSUED`).
+pub const HISTORY_ERROR_ISSUED: u8 = 2;
+/// A fatal error has been issued (`HISTORY_FATAL_ERROR`).
+pub const HISTORY_FATAL_ERROR: u8 = 3;
+
+/// `\errorcontextlines` integer parameter (`INT_PAR__error_context_lines`).
+pub const INT_PAR_ERROR_CONTEXT_LINES: usize = 54;
+
 /// Empty page-builder contents (`EMPTY`).
 pub const PAGE_EMPTY: u8 = 0;
 /// Page contains insertions only (`INSERTS_ONLY`).
@@ -2283,8 +2305,77 @@ pub struct TeXEngineState {
     pub log_opened: bool,
     /// State-owned terminal/log text emitted by message and diagnostic commands.
     pub transcript: Vec<String>,
-    /// Interned TeX strings used by whatsits, encodings, and packed file names.
-    pub string_pool: Vec<Vec<i32>>,
+    /// Flat UTF-16 string pool (`str_pool`); one entry per code unit.
+    pub str_pool: Vec<i32>,
+    /// Per-string start offsets (`str_start`), indexed by
+    /// `str_number - TOO_BIG_CHAR`.
+    pub str_start: Vec<i32>,
+    /// String-pool write cursor (`pool_ptr`).
+    pub pool_ptr: i32,
+    /// One past the highest allocated string number (`str_ptr`).
+    pub str_ptr: i32,
+    /// Enforced pool capacity (`pool_size`).
+    pub pool_size: i32,
+    /// Enforced string-table capacity (`max_strings`).
+    pub max_strings: i32,
+    /// `pool_ptr` after engine initialization (`init_pool_ptr`).
+    pub init_pool_ptr: i32,
+    /// `str_ptr` after engine initialization (`init_str_ptr`).
+    pub init_str_ptr: i32,
+    /// Pool space reserved for the runtime (`string_vacancies`).
+    pub string_vacancies: i32,
+    /// Pool headroom allowed on top of a dumped format (`pool_free`).
+    pub pool_free: i32,
+    /// String slots allowed on top of a dumped format (`strings_free`).
+    pub strings_free: i32,
+    /// Terminal line cursor for diagnostics (`term_offset`).
+    pub term_offset: i32,
+    /// Log-file line cursor for diagnostics (`file_offset`).
+    pub file_offset: i32,
+    /// Maximum characters per diagnostic output line (`max_print_line`).
+    pub max_print_line: i32,
+    /// Show-context window width (`error_line`).
+    pub error_line: i32,
+    /// Show-context buffer (`trick_buf`), indexed by `tally % error_line`.
+    pub trick_buf: Vec<i32>,
+    /// Number of characters recorded toward the show-context window
+    /// (`trick_count`).
+    pub trick_count: i32,
+    /// Running count of characters printed (`tally`).
+    pub tally: i32,
+    /// Decimal-digit scratch buffer used by the numeric print routines
+    /// (`dig`).
+    pub dig: [u8; 23],
+    /// First string number allocated at runtime (`first_str`), used when
+    /// dumping format files.
+    pub first_str: i32,
+    /// Terminal text emitted by the print machinery (`rust_stdout`
+    /// replacement).
+    pub term_out: Vec<u8>,
+    /// Log-file text emitted by the print machinery (`log_file`
+    /// replacement).
+    pub log_out: Vec<u8>,
+    /// Active diagnostic capture (`current_diagnostic` replacement).
+    pub diag_capture: Option<Vec<u8>>,
+    /// Error-context help text lines (`help_line`).
+    pub help_line: Vec<String>,
+    /// Number of active help lines (`help_ptr`).
+    pub help_ptr: usize,
+    /// Worst error level seen so far (`history`: `HISTORY_*`).
+    pub history: u8,
+    /// Whether file:line-style error prefixes are enabled
+    /// (`file_line_error_style_p`).
+    pub file_line_error_style_p: bool,
+    /// Whether `\errhelp` text applies to the next error (`use_err_help`).
+    pub use_err_help: bool,
+    /// Abort on the first recoverable error (`halt_on_error_p`).
+    pub halt_on_error_p: bool,
+    /// Selector saved by `begin_diagnostic` (`old_setting`).
+    pub old_setting: i32,
+    /// Tally recorded at the current-context boundary (`first_count`).
+    pub first_count: i32,
+    /// Half the context window width (`half_error_line`).
+    pub half_error_line: i32,
     /// Whether each TeX output stream is open (`write_open`).
     pub write_open: Vec<bool>,
     /// State-owned output streams indexed by TeX stream number.
@@ -2894,7 +2985,38 @@ impl TeXEngineState {
             selector: SELECTOR_TERM_ONLY,
             log_opened: false,
             transcript: Vec::new(),
-            string_pool: Vec::new(),
+            str_pool: Vec::new(),
+            str_start: vec![0],
+            pool_ptr: 0,
+            str_ptr: TOO_BIG_CHAR,
+            pool_size: 6_250_000,
+            max_strings: 565_536,
+            init_pool_ptr: 0,
+            init_str_ptr: TOO_BIG_CHAR,
+            string_vacancies: 90_000,
+            pool_free: 47_500,
+            strings_free: 100,
+            term_offset: 0,
+            file_offset: 0,
+            max_print_line: 79,
+            error_line: 79,
+            trick_buf: vec![0; 79],
+            trick_count: 0,
+            tally: 0,
+            dig: [0; 23],
+            first_str: 0,
+            term_out: Vec::new(),
+            log_out: Vec::new(),
+            diag_capture: None,
+            help_line: Vec::new(),
+            help_ptr: 0,
+            history: HISTORY_SPOTLESS,
+            file_line_error_style_p: false,
+            use_err_help: false,
+            halt_on_error_p: false,
+            old_setting: 0,
+            first_count: 0,
+            half_error_line: 50,
             write_open: vec![false; 16],
             write_streams: vec![None; 16],
             long_help_seen: false,
@@ -3183,6 +3305,7 @@ impl TeXEngineState {
             state.eqtb[p].s1 = 0;
         }
         state.font_table[0].name = "nullfont".chars().map(|c| c as i32).collect();
+        state.get_strings_started();
         state
     }
 
@@ -6973,25 +7096,25 @@ impl TeXEngineState {
         Ok(())
     }
 
-    /// Interns a TeX string and returns its compact string id (`str_number`).
+    /// Interns a TeX string and returns its `str_number` (`slow_make_string`).
     pub fn intern_string(&mut self, units: &[i32]) -> i32 {
-        if let Some(index) = self.string_pool.iter().position(|item| item == units) {
-            return (index + 1) as i32;
-        }
-        self.string_pool.push(units.to_vec());
-        self.string_pool.len() as i32
+        self.str_pool.extend_from_slice(units);
+        self.pool_ptr = self.str_pool.len() as i32;
+        self.slow_make_string().unwrap_or(0)
     }
 
-    /// Returns the UTF-16/code-unit data for an interned string id.
+    /// Returns the UTF-16/code-unit data for a pool `str_number`.
     pub fn string_units(&self, id: i32) -> Option<&[i32]> {
-        usize::try_from(id)
-            .ok()
-            .and_then(|index| index.checked_sub(1))
-            .and_then(|index| self.string_pool.get(index))
-            .map(Vec::as_slice)
+        if id < TOO_BIG_CHAR {
+            return None;
+        }
+        let index = (id - TOO_BIG_CHAR) as usize;
+        let start = *self.str_start.get(index)?;
+        let end = *self.str_start.get(index + 1)?;
+        Some(&self.str_pool[start as usize..end as usize])
     }
 
-    /// Converts an interned string id to text for diagnostics.
+    /// Converts a pool `str_number` to text for diagnostics.
     pub fn string_text(&self, id: i32) -> Option<String> {
         self.string_units(id).map(|units| {
             units

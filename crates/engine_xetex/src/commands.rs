@@ -6867,8 +6867,10 @@ impl TeXEngineState {
 
     /// Converts the collected math list to a horizontal list
     /// (`mlist_to_hlist`); the conversion engine is WP-13b-ii.
-    /// Returns a `Confusion`-equivalent internal error (`confusion`).
-    pub(crate) fn confusion(&self, context: &'static str) -> TeXMouthError {
+    /// Returns a `Confusion`-equivalent internal error (`confusion`),
+    /// emitting the C `confusion` diagnostic through the print machinery.
+    pub(crate) fn confusion(&mut self, context: &'static str) -> TeXMouthError {
+        self.print_confusion(context);
         TeXMouthError::UnsupportedPrimitive(match context {
             "mlist1" => "internal inconsistency: mlist1",
             "mlist2" => "internal inconsistency: mlist2",
