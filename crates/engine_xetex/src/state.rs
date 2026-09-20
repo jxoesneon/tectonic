@@ -1174,6 +1174,8 @@ pub const INT_PAR_NEW_LINE_CHAR: usize = 49;
 pub const INT_PAR_TRACING_SCAN_TOKENS: usize = 59;
 /// Integer parameter offset for `\savingvdiscards`.
 pub const INT_PAR_SAVING_VDISCARDS: usize = 63;
+/// `\savinghyphcodes` integer parameter (`INT_PAR__saving_hyph_codes`).
+pub const INT_PAR_SAVING_HYPH_CODES: usize = 64;
 /// Integer parameter offset for `\looseness`.
 pub const INT_PAR_LOOSENESS: usize = 19;
 /// Integer parameter offset for `\pretolerance`.
@@ -1271,6 +1273,18 @@ pub const INT_PAR_XETEX_INTER_CHAR_TOKENS: usize = 73;
 pub const INT_PAR_XETEX_INTERWORD_SPACE_SHAPING: usize = 78;
 /// Integer parameter offset for `\XeTeXhyphenatablelength`.
 pub const INT_PAR_XETEX_HYPHENATABLE_LENGTH: usize = 80;
+/// `INT_PAR__time` — minutes since midnight.
+pub const INT_PAR_TIME: usize = 20;
+/// `INT_PAR__day` — day of month.
+pub const INT_PAR_DAY: usize = 21;
+/// `INT_PAR__month` — month of year.
+pub const INT_PAR_MONTH: usize = 22;
+/// `INT_PAR__year` — year.
+pub const INT_PAR_YEAR: usize = 23;
+/// `INT_PAR__tracing_stats` — statistics printing level.
+pub const INT_PAR_TRACING_STATS: usize = 31;
+/// First font number (`FONT_BASE`); `nullfont` is `FONT_BASE`.
+pub const FONT_BASE: i32 = 0;
 /// Integer parameter offset for `\tracinglostchars`.
 pub const INT_PAR_TRACING_LOST_CHARS: usize = 35;
 /// Integer parameter offset for `\suppressfontnotfounderror`.
@@ -1408,6 +1422,160 @@ pub const MATH_SHIFT_GROUP: u8 = 15;
 pub const MATH_LEFT_GROUP: u8 = 16;
 /// Maximum language code accepted by XeTeX's `\language` parameter.
 pub const BIGGEST_LANG: i32 = 255;
+/// One past the largest language code (`TOO_BIG_LANG`).
+pub const TOO_BIG_LANG: i32 = 256;
+/// Hash modulus of the hyphenation exception table (`HYPH_PRIME`).
+pub const HYPH_PRIME: i32 = 607;
+/// Size of the hyphenation exception table (`hyph_size`).
+pub const HYPH_SIZE: usize = 8191;
+/// Maximum number of hyphenation ops (`TRIE_OP_SIZE`).
+pub const TRIE_OP_SIZE: i32 = 35111;
+/// Negative op-hash bound (`NEG_TRIE_OP_SIZE`).
+pub const NEG_TRIE_OP_SIZE: i32 = -TRIE_OP_SIZE;
+/// Empty op code (`MIN_TRIE_OP`).
+pub const MIN_TRIE_OP: i32 = 0;
+/// Largest op code (`MAX_TRIE_OP`).
+pub const MAX_TRIE_OP: i32 = 65535;
+/// Packed-trie capacity (`trie_size`).
+pub const FMT_TRIE_SIZE: i32 = 1_000_000;
+
+// === Format-file (version 33) C-layout constants ===
+// These mirror the `xetex_format` v33 symbol table: the serialization
+// image materialized by `store_fmt_file`/`load_fmt_file` uses C's absolute
+// eqtb/hash layout even though the live engine uses compact tables.
+/// Number of Unicode scalar values (`NUMBER_USVS`).
+pub const C_NUMBER_USVS: i32 = 0x11_0000;
+/// Number of registers per class (`NUMBER_REGS`).
+pub const C_NUMBER_REGS: i32 = 256;
+/// Number of math-family slots (`NUMBER_MATH_FONTS` = 3 * 256).
+pub const C_NUMBER_MATH_FONTS: i32 = 768;
+/// Control-sequence hash modulus (`HASH_PRIME`).
+pub const C_HASH_PRIME: i32 = 8501;
+/// Control-sequence hash table size (`HASH_SIZE`).
+pub const C_HASH_SIZE: i32 = 15000;
+/// Offset between `yhash` storage and `hash` indices (`hash_offset`).
+pub const C_HASH_OFFSET: i32 = 514;
+/// Extra hash slots above `EQTB_SIZE` (`hash_extra`).
+pub const C_HASH_EXTRA: i32 = 600_000;
+/// Primitive hash table size (`PRIM_SIZE`).
+pub const C_PRIM_SIZE: i32 = 2100;
+/// Primitive hash modulus (`PRIM_PRIME`).
+pub const C_PRIM_PRIME: i32 = 1777;
+/// First primitive hash slot (`PRIM_BASE`).
+pub const C_PRIM_BASE: i32 = 1;
+/// Undefined-primitive sentinel (`UNDEFINED_PRIMITIVE`).
+pub const C_UNDEFINED_PRIMITIVE: i32 = 0;
+/// Maximum font number (`MAX_FONT_MAX`).
+pub const C_MAX_FONT_MAX: i32 = 9000;
+/// Highest dynamic-memory index (`MEM_TOP`).
+pub const C_MEM_TOP: i32 = 4_999_999;
+/// First eqtb slot: active characters (`ACTIVE_BASE`).
+pub const C_ACTIVE_BASE: i32 = 1;
+/// One-letter control sequences (`SINGLE_BASE`).
+pub const C_SINGLE_BASE: i32 = C_ACTIVE_BASE + C_NUMBER_USVS;
+/// The null control sequence (`NULL_CS`).
+pub const C_NULL_CS: i32 = C_SINGLE_BASE + C_NUMBER_USVS;
+/// Multiletter hash-table base (`HASH_BASE`).
+pub const C_HASH_BASE: i32 = C_NULL_CS + 1;
+/// First frozen control sequence (`FROZEN_CONTROL_SEQUENCE`).
+pub const C_FROZEN_CONTROL_SEQUENCE: i32 = C_HASH_BASE + C_HASH_SIZE;
+/// Frozen `\primitive`-protected cs (`FROZEN_PROTECTION`).
+pub const C_FROZEN_PROTECTION: i32 = C_FROZEN_CONTROL_SEQUENCE;
+/// Frozen `\cr` (`FROZEN_CR`).
+pub const C_FROZEN_CR: i32 = C_FROZEN_CONTROL_SEQUENCE + 1;
+/// Frozen `\endgroup` (`FROZEN_END_GROUP`).
+pub const C_FROZEN_END_GROUP: i32 = C_FROZEN_CONTROL_SEQUENCE + 2;
+/// Frozen `\right` (`FROZEN_RIGHT`).
+pub const C_FROZEN_RIGHT: i32 = C_FROZEN_CONTROL_SEQUENCE + 3;
+/// Frozen `\fi` (`FROZEN_FI`).
+pub const C_FROZEN_FI: i32 = C_FROZEN_CONTROL_SEQUENCE + 4;
+/// Frozen `\endtemplate` (`FROZEN_END_TEMPLATE`).
+pub const C_FROZEN_END_TEMPLATE: i32 = C_FROZEN_CONTROL_SEQUENCE + 5;
+/// Frozen `\endv` (`FROZEN_ENDV`).
+pub const C_FROZEN_ENDV: i32 = C_FROZEN_CONTROL_SEQUENCE + 6;
+/// Frozen `\relax` (`FROZEN_RELAX`).
+pub const C_FROZEN_RELAX: i32 = C_FROZEN_CONTROL_SEQUENCE + 7;
+/// Frozen `\endwrite` token (`END_WRITE`).
+pub const C_END_WRITE: i32 = C_FROZEN_CONTROL_SEQUENCE + 8;
+/// Frozen `\notexpanded:` (`FROZEN_DONT_EXPAND`).
+pub const C_FROZEN_DONT_EXPAND: i32 = C_FROZEN_CONTROL_SEQUENCE + 9;
+/// Frozen `\special` (`FROZEN_SPECIAL`).
+pub const C_FROZEN_SPECIAL: i32 = C_FROZEN_CONTROL_SEQUENCE + 10;
+/// Frozen `\primitive` (`FROZEN_PRIMITIVE`).
+pub const C_FROZEN_PRIMITIVE: i32 = C_FROZEN_CONTROL_SEQUENCE + 11;
+/// Primitive eqtb region (`PRIM_EQTB_BASE`).
+pub const C_PRIM_EQTB_BASE: i32 = C_FROZEN_CONTROL_SEQUENCE + 12;
+/// Frozen `\nullfont` (`FROZEN_NULL_FONT` = `FONT_ID_BASE`).
+pub const C_FROZEN_NULL_FONT: i32 = C_PRIM_EQTB_BASE + C_PRIM_SIZE;
+/// Font-id eqtb region (`FONT_ID_BASE`).
+pub const C_FONT_ID_BASE: i32 = C_FROZEN_NULL_FONT;
+/// Dummy eqtb slot for undefined control sequences
+/// (`UNDEFINED_CONTROL_SEQUENCE`).
+pub const C_UNDEFINED_CONTROL_SEQUENCE: i32 = C_FROZEN_NULL_FONT + C_MAX_FONT_MAX + 1;
+/// Glue parameters (`GLUE_BASE`).
+pub const C_GLUE_BASE: i32 = C_UNDEFINED_CONTROL_SEQUENCE + 1;
+/// Number of glue parameters (v33 `GLUE_PARS`).
+pub const C_GLUE_PARS: i32 = 19;
+/// Skip registers (`SKIP_BASE`).
+pub const C_SKIP_BASE: i32 = C_GLUE_BASE + C_GLUE_PARS;
+/// Mu-skip registers (`MU_SKIP_BASE`).
+pub const C_MU_SKIP_BASE: i32 = C_SKIP_BASE + C_NUMBER_REGS;
+/// Local parameters (`LOCAL_BASE`).
+pub const C_LOCAL_BASE: i32 = C_MU_SKIP_BASE + C_NUMBER_REGS;
+/// Number of local parameters (v33 `NUM_LOCALS`).
+pub const C_NUM_LOCALS: i32 = 13;
+/// Token registers (`TOKS_BASE`).
+pub const C_TOKS_BASE: i32 = C_LOCAL_BASE + C_NUM_LOCALS;
+/// e-TeX penalty parameters (`ETEX_PEN_BASE`).
+pub const C_ETEX_PEN_BASE: i32 = C_TOKS_BASE + C_NUMBER_REGS;
+/// Number of e-TeX penalty parameters (`NUM_ETEX_PENALTIES`).
+pub const C_NUM_ETEX_PENALTIES: i32 = 4;
+/// Box registers (`BOX_BASE`).
+pub const C_BOX_BASE: i32 = C_ETEX_PEN_BASE + C_NUM_ETEX_PENALTIES;
+/// Current-font eqtb slot (`CUR_FONT_LOC`).
+pub const C_CUR_FONT_LOC: i32 = C_BOX_BASE + C_NUMBER_REGS;
+/// Math-family font eqtb region (`MATH_FONT_BASE`).
+pub const C_MATH_FONT_BASE: i32 = C_CUR_FONT_LOC + 1;
+/// `\catcode` table (`CAT_CODE_BASE`).
+pub const C_CAT_CODE_BASE: i32 = C_MATH_FONT_BASE + C_NUMBER_MATH_FONTS;
+/// `\lccode` table (`LC_CODE_BASE`).
+pub const C_LC_CODE_BASE: i32 = C_CAT_CODE_BASE + C_NUMBER_USVS;
+/// `\uccode` table (`UC_CODE_BASE`).
+pub const C_UC_CODE_BASE: i32 = C_LC_CODE_BASE + C_NUMBER_USVS;
+/// `\sfcode` table (`SF_CODE_BASE`).
+pub const C_SF_CODE_BASE: i32 = C_UC_CODE_BASE + C_NUMBER_USVS;
+/// `\mathcode` table (`MATH_CODE_BASE`).
+pub const C_MATH_CODE_BASE: i32 = C_SF_CODE_BASE + C_NUMBER_USVS;
+/// Integer parameters (`INT_BASE`; v33 omits `CHAR_SUB_CODE_BASE`).
+pub const C_INT_BASE: i32 = C_MATH_CODE_BASE + C_NUMBER_USVS;
+/// Number of integer parameters (v33 `INT_PARS`).
+pub const C_INT_PARS: i32 = 83;
+/// Count registers (`COUNT_BASE`).
+pub const C_COUNT_BASE: i32 = C_INT_BASE + C_INT_PARS;
+/// `\delcode` table (`DEL_CODE_BASE`).
+pub const C_DEL_CODE_BASE: i32 = C_COUNT_BASE + C_NUMBER_REGS;
+/// Dimension parameters (`DIMEN_BASE`).
+pub const C_DIMEN_BASE: i32 = C_DEL_CODE_BASE + C_NUMBER_USVS;
+/// Number of dimension parameters (v33 `DIMEN_PARS`).
+pub const C_DIMEN_PARS: i32 = 23;
+/// Scaled registers (`SCALED_BASE`).
+pub const C_SCALED_BASE: i32 = C_DIMEN_BASE + C_DIMEN_PARS;
+/// Highest eqtb index (`EQTB_SIZE`).
+pub const C_EQTB_SIZE: i32 = C_SCALED_BASE + C_NUMBER_REGS - 1;
+/// Highest eqtb index including extra hash (`EQTB_TOP`).
+pub const C_EQTB_TOP: i32 = C_EQTB_SIZE + C_HASH_EXTRA;
+/// Format-file magic (`FORMAT_HEADER_MAGIC` = `"TTNC"`).
+pub const FORMAT_HEADER_MAGIC: i32 = 0x5454_4E43;
+/// Format-file trailer magic (`FORMAT_FOOTER_MAGIC`).
+pub const FORMAT_FOOTER_MAGIC: i32 = 0x0000_029A;
+/// Format serial this engine reads and writes (`FORMAT_SERIAL` = v33).
+pub const FORMAT_SERIAL: i32 = 33;
+/// Upper bound on loaded string count (`sup_max_strings`).
+pub const SUP_MAX_STRINGS: i32 = 2_097_151;
+/// Upper bound on `fmem_ptr` (`sup_font_mem_size`).
+pub const SUP_FONT_MEM_SIZE: i32 = 147_483_647;
+/// Upper bound on `pool_ptr` (`sup_pool_size`).
+pub const SUP_POOL_SIZE: i32 = 40_000_000;
 
 /// Uninitialized equivalents-table level (`LEVEL_ZERO`).
 pub const LEVEL_ZERO: u16 = 0;
@@ -2298,6 +2466,26 @@ pub struct TeXEngineState {
     pub job_stopped: bool,
     /// `\setbox` permission inside `do_assignments` (`set_box_allowed`).
     pub set_box_allowed: bool,
+    /// Whether box contents may be deleted during error recovery
+    /// (`deletions_allowed`).
+    pub deletions_allowed: bool,
+    /// Whether an insertion is being split (`ins_disc`).
+    pub ins_disc: bool,
+    /// Unclosed output-file-name parentheses (`open_parens`).
+    pub open_parens: i32,
+    /// Mode shown by `\showlists`/`trapnl` diagnostics (`shown_mode`).
+    pub shown_mode: i32,
+    /// First character of the editable portion of `name_of_file`
+    /// (`edit_name_start`).
+    pub edit_name_start: i32,
+    /// Current typesetting font (`cur_f`).
+    pub cur_f: i32,
+    /// Whether the current character node is a ligature (`ligature_present`).
+    pub ligature_present: bool,
+    /// Whether the discretionary's left arm hit (`lft_hit`).
+    pub lft_hit: bool,
+    /// Whether the discretionary's right arm hit (`rt_hit`).
+    pub rt_hit: bool,
     /// Penalty count accumulated by insertions (`insert_penalties`).
     pub insert_penalties: i32,
     /// Current interaction mode.
@@ -2558,6 +2746,127 @@ pub struct TeXEngineState {
     pub hyph_exceptions: HashMap<Vec<i32>, Vec<i32>>,
     /// INITEX hyphenation patterns keyed by language and pattern text.
     pub hyph_patterns: HashMap<Vec<i32>, Vec<i32>>,
+
+    // === INITEX / format-file state (`xetex-ini.c`) ===
+    /// Unpacked hyphenation trie characters (`trie_c`), build-time only.
+    pub fmt_trie_c: Vec<u16>,
+    /// Unpacked trie op codes (`trie_o`).
+    pub fmt_trie_o: Vec<i32>,
+    /// Unpacked trie left (child) links (`trie_l`).
+    pub fmt_trie_l: Vec<i32>,
+    /// Unpacked trie right (sibling) links (`trie_r`).
+    pub fmt_trie_r: Vec<i32>,
+    /// Highest allocated unpacked trie node (`trie_ptr`).
+    pub fmt_trie_ptr: i32,
+    /// Trie packing hash table (`trie_hash`).
+    pub fmt_trie_hash: Vec<i32>,
+    /// Packed-position occupancy marks (`trie_taken`).
+    pub fmt_trie_taken: Vec<bool>,
+    /// Lowest free packed position per character (`trie_min`).
+    pub fmt_trie_min: Vec<i32>,
+    /// Highest occupied packed trie position (`trie_max`).
+    pub fmt_trie_max: i32,
+    /// Packed trie link table (`trie_trl` — next-position pointer).
+    pub trie_trl: Vec<i32>,
+    /// Packed trie op table (`trie_tro`).
+    pub trie_tro: Vec<i32>,
+    /// Packed trie character table (`trie_trc`).
+    pub trie_trc: Vec<u16>,
+    /// Hyphenation op distances (`hyf_distance`), 1-based.
+    pub hyf_distance: Vec<i16>,
+    /// Hyphenation op values (`hyf_num`), 1-based.
+    pub hyf_num: Vec<i16>,
+    /// Hyphenation op chains (`hyf_next`), 1-based.
+    pub hyf_next: Vec<u16>,
+    /// Language owning each hyphenation op (`trie_op_lang`), 1-based.
+    pub trie_op_lang: Vec<u8>,
+    /// Per-language serial assigned to each op (`trie_op_val`), 1-based.
+    pub trie_op_val: Vec<u16>,
+    /// Trie-op hash buckets (`trie_op_hash`), indexed
+    /// `-TRIE_OP_SIZE..=TRIE_OP_SIZE` with offset `TRIE_OP_SIZE`.
+    pub trie_op_hash: Vec<i32>,
+    /// Number of allocated hyphenation ops (`trie_op_ptr`).
+    pub trie_op_ptr: i32,
+    /// Ops allocated per language (`trie_used`).
+    pub trie_used: Vec<i32>,
+    /// First op index of each language (`op_start`).
+    pub op_start: Vec<i32>,
+    /// Largest op serial issued (`max_op_used`).
+    pub max_op_used: i32,
+    /// Whether the packed hyphenation trie still needs building
+    /// (`trie_not_ready`).
+    pub trie_not_ready: bool,
+    /// Packed position of the `\lccode` trie root (`hyph_start`).
+    pub hyph_start: i32,
+    /// Largest character seen in hyphenation data (`max_hyph_char`).
+    pub fmt_max_hyph_char: i32,
+    /// Exception-table word strings (`hyph_word`), `str_number`s.
+    pub hyph_word: Vec<i32>,
+    /// Exception-table discretionary lists (`hyph_list`).
+    pub hyph_list: Vec<i32>,
+    /// Exception-table collision links (`hyph_link`).
+    pub hyph_link: Vec<u16>,
+    /// Number of stored hyphenation exceptions (`hyph_count`).
+    pub hyph_count: i32,
+    /// Next free exception slot candidate (`hyph_next`).
+    pub hyph_next: i32,
+    /// Language node inside the packed `\lccode` trie used while scanning
+    /// `\hyphenation` (`hyph_index`).
+    pub hyph_index: i32,
+    /// Lower boundary of the dense hash region (`hash_used`).
+    pub hash_used: i32,
+    /// High-water mark of the extra hash region (`hash_high`).
+    pub hash_high: i32,
+    /// Extra hash slots beyond `EQTB_SIZE` (`hash_extra`).
+    pub hash_extra: i32,
+    /// Last valid control-sequence hash index (`hash_top`).
+    pub hash_top: i32,
+    /// Last valid eqtb index (`eqtb_top`).
+    pub eqtb_top: i32,
+    /// C-layout control-sequence hash image (`hash`/`yhash`), sparse: maps
+    /// eqtb-region index → `TwoHalves` (`s0` link, `s1` name).
+    pub fmt_hash: HashMap<i32, TwoHalves>,
+    /// C-layout eqtb image for control-sequence and primitive entries
+    /// (`eqtb[cur_val]`, `eqtb[PRIM_EQTB_BASE + p]`, frozen entries).
+    pub fmt_eqtb: HashMap<i32, MemoryWord>,
+    /// `\par` position in the C-layout image (`par_loc` counterpart).
+    pub fmt_par_loc: i32,
+    /// `\write` position in the C-layout image (`write_loc` counterpart).
+    pub fmt_write_loc: i32,
+    /// Primitive hash table (`prim[0..=PRIM_SIZE]`).
+    pub prim: Vec<TwoHalves>,
+    /// Lowest free primitive slot (`prim_used`).
+    pub prim_used: i32,
+    /// Number of multiletter control sequences (`cs_count`).
+    pub cs_count: i32,
+    /// `str_number` of the format identification line (`format_ident`).
+    pub format_ident: i32,
+    /// Highest allocated `mem` word (`mem_end`).
+    pub mem_end: i32,
+    /// One-word memory usage reported by `\dump` (`var_used`).
+    pub var_used: i32,
+    /// Multi-word memory usage reported by `\dump` (`dyn_used`).
+    pub dyn_used: i32,
+    /// `font_info` words in use (`fmem_ptr`).
+    pub fmem_ptr: i32,
+    /// Serialized format-file image produced by `store_fmt_file`; the
+    /// driver flushes it to `<jobname>.fmt`.
+    pub fmt_bytes: Vec<u8>,
+    /// Default format-file name stem (`TEX_format_default`).
+    pub tex_format_default: String,
+    /// Internal-consistency failure code from `tt_run_engine` (`bad`).
+    pub bad: i32,
+    /// Largest legal register number (`max_reg_num`).
+    pub max_reg_num: i32,
+    /// Help text for register-number range errors (`max_reg_help_line`).
+    pub max_reg_help_line: String,
+    /// Pseudo-input file list for the `\input` recorder (`pseudo_files`).
+    pub pseudo_files: i32,
+    /// Output filename extension (`output_file_extension`).
+    pub output_file_extension: String,
+    /// Whether the generic char-warning help was already printed
+    /// (`gave_char_warning_help`).
+    pub gave_char_warning_help: bool,
 
     /// Head of the passive breakpoint chain built by `try_break`
     /// (`passive`).
@@ -3007,6 +3316,15 @@ impl TeXEngineState {
             dead_cycles: 0,
             job_stopped: false,
             set_box_allowed: true,
+            deletions_allowed: true,
+            ins_disc: false,
+            open_parens: 0,
+            shown_mode: 0,
+            edit_name_start: 0,
+            cur_f: 0,
+            ligature_present: false,
+            lft_hit: false,
+            rt_hit: false,
             insert_penalties: 0,
             interaction: ERROR_STOP_MODE,
             selector: SELECTOR_TERM_ONLY,
@@ -3127,6 +3445,62 @@ impl TeXEngineState {
             in_initex_mode: false,
             hyph_exceptions: HashMap::new(),
             hyph_patterns: HashMap::new(),
+            fmt_trie_c: Vec::new(),
+            fmt_trie_o: Vec::new(),
+            fmt_trie_l: Vec::new(),
+            fmt_trie_r: Vec::new(),
+            fmt_trie_ptr: 0,
+            fmt_trie_hash: Vec::new(),
+            fmt_trie_taken: Vec::new(),
+            fmt_trie_min: Vec::new(),
+            fmt_trie_max: 0,
+            trie_trl: Vec::new(),
+            trie_tro: Vec::new(),
+            trie_trc: Vec::new(),
+            hyf_distance: vec![0; (TRIE_OP_SIZE + 1) as usize],
+            hyf_num: vec![0; (TRIE_OP_SIZE + 1) as usize],
+            hyf_next: vec![0; (TRIE_OP_SIZE + 1) as usize],
+            trie_op_lang: vec![0; (TRIE_OP_SIZE + 1) as usize],
+            trie_op_val: vec![0; (TRIE_OP_SIZE + 1) as usize],
+            trie_op_hash: vec![0; (2 * TRIE_OP_SIZE + 1) as usize],
+            trie_op_ptr: 0,
+            trie_used: vec![MIN_TRIE_OP; (BIGGEST_LANG + 1) as usize],
+            op_start: vec![0; (BIGGEST_LANG + 1) as usize],
+            max_op_used: MIN_TRIE_OP,
+            trie_not_ready: true,
+            hyph_start: 0,
+            fmt_max_hyph_char: TOO_BIG_LANG,
+            hyph_word: vec![0; HYPH_SIZE + 1],
+            hyph_list: vec![TEX_NULL; HYPH_SIZE + 1],
+            hyph_link: vec![0; HYPH_SIZE + 1],
+            hyph_count: 0,
+            hyph_next: HYPH_PRIME + 1,
+            hyph_index: 0,
+            hash_used: C_FROZEN_CONTROL_SEQUENCE,
+            hash_high: 0,
+            hash_extra: 0,
+            hash_top: C_UNDEFINED_CONTROL_SEQUENCE,
+            eqtb_top: C_EQTB_SIZE,
+            fmt_bytes: Vec::new(),
+            fmt_hash: HashMap::new(),
+            fmt_eqtb: HashMap::new(),
+            fmt_par_loc: 0,
+            fmt_write_loc: 0,
+            prim: vec![TwoHalves::default(); (C_PRIM_SIZE + 1) as usize],
+            prim_used: C_PRIM_SIZE,
+            cs_count: 0,
+            format_ident: 0,
+            mem_end: 0,
+            var_used: 0,
+            dyn_used: 0,
+            fmem_ptr: 7,
+            tex_format_default: String::new(),
+            bad: 0,
+            max_reg_num: 32767,
+            max_reg_help_line: "A register number must be between 0 and 32767.".to_string(),
+            pseudo_files: TEX_NULL,
+            output_file_extension: ".xdv".to_string(),
+            gave_char_warning_help: false,
             lb_passive: TEX_NULL,
             lb_cur_active_width: [0; 7],
             lb_background: [0; 7],
@@ -7362,7 +7736,7 @@ impl TeXEngineState {
         self.cat_codes[c as usize] = code;
     }
 
-    fn default_code_table_value(&self, table: u8, character: u32) -> i32 {
+    pub(crate) fn default_code_table_value(&self, table: u8, character: u32) -> i32 {
         let c = character as i32;
         match table {
             CODE_TABLE_CAT => i32::from(self.cat_code(character)),
@@ -7396,7 +7770,7 @@ impl TeXEngineState {
         }
     }
 
-    fn code_table_word(&self, table: u8, character: u32) -> MemoryWord {
+    pub(crate) fn code_table_word(&self, table: u8, character: u32) -> MemoryWord {
         if table == CODE_TABLE_CAT {
             let mut word = MemoryWord::default();
             word.set_b16_s0(

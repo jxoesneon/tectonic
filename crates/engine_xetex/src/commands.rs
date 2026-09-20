@@ -336,16 +336,6 @@ fn write_pic_path(words: &mut [crate::state::MemoryWord], path: &[u8]) {
     }
 }
 
-fn push_hyphenation_char(word: &mut Vec<i32>, mapped: i32) {
-    if mapped < 65_536 {
-        word.push(mapped);
-    } else {
-        let value = mapped - 65_536;
-        word.push(value / 1024 + 55_296);
-        word.push(value % 1024 + 56_320);
-    }
-}
-
 impl TeXEngineState {
     /// Reads one expanded token and dispatches the implemented mode-independent
     /// command cases (`main_control`'s `big_switch` prefix).
@@ -708,6 +698,7 @@ impl TeXEngineState {
                             self.finalize_dvi_file()?;
                             self.dvi_finalized = true;
                         }
+                        self.final_cleanup()?;
                     }
                     Ok(())
                 } else if self.mode.abs() == TeXMode::Mmode as i16 {
@@ -2653,99 +2644,6 @@ impl TeXEngineState {
         self.new_hyph_exceptions()
     }
 
-    /// Scans `\hyphenation` exception words (`new_hyph_exceptions`).
-    fn new_hyph_exceptions(&mut self) -> Result<(), TeXMouthError> {
-        self.scan_left_brace()?;
-        let language = self.int_par(INT_PAR_LANGUAGE)?;
-        self.cur_lang = if (1..=BIGGEST_LANG).contains(&language) {
-            language
-        } else {
-            0
-        };
-
-        let mut word = Vec::new();
-        let mut positions = Vec::new();
-        loop {
-            self.get_x_token()?;
-            match CommandCode::from_u8(self.cur_cmd) {
-                Some(CommandCode::Letter | CommandCode::OtherChar | CommandCode::CharGiven) => {
-                    if self.cur_chr == i32::from(b'-') {
-                        positions.push(word.len() as i32);
-                    } else {
-                        let character = u32::try_from(self.cur_chr)
-                            .map_err(|_| TeXMouthError::InvalidCharacter(self.cur_chr))?;
-                        let mapped = self.lc_code(character);
-                        if mapped != 0 {
-                            push_hyphenation_char(&mut word, mapped);
-                        }
-                    }
-                }
-                Some(CommandCode::CharNum) => {
-                    self.scan_char_num()?;
-                    let character = u32::try_from(self.cur_val)
-                        .map_err(|_| TeXMouthError::InvalidCharacter(self.cur_val))?;
-                    let mapped = self.lc_code(character);
-                    if mapped != 0 {
-                        push_hyphenation_char(&mut word, mapped);
-                    }
-                }
-                Some(CommandCode::Spacer | CommandCode::RightBrace) => {
-                    if word.len() > 1 {
-                        let mut key = word.clone();
-                        key.push(self.cur_lang);
-                        self.hyph_exceptions.insert(key, positions.clone());
-                    }
-                    if self.cur_cmd == CommandCode::RightBrace as u8 {
-                        return Ok(());
-                    }
-                    word.clear();
-                    positions.clear();
-                }
-                _ => self.error_count += 1,
-            }
-        }
-    }
-
-    /// Scans INITEX `\patterns` into state-owned pattern storage.
-    fn new_patterns(&mut self) -> Result<(), TeXMouthError> {
-        self.scan_left_brace()?;
-        let language = self.int_par(INT_PAR_LANGUAGE)?;
-        self.cur_lang = if (1..=BIGGEST_LANG).contains(&language) {
-            language
-        } else {
-            0
-        };
-        let mut pattern = Vec::new();
-        let mut digits = Vec::new();
-        loop {
-            self.get_x_token()?;
-            match CommandCode::from_u8(self.cur_cmd) {
-                Some(CommandCode::Letter | CommandCode::OtherChar | CommandCode::CharGiven) => {
-                    let c = self.cur_chr;
-                    pattern.push(c);
-                    if (i32::from(b'0')..=i32::from(b'9')).contains(&c) {
-                        digits.push(c - i32::from(b'0'));
-                    } else {
-                        digits.push(0);
-                    }
-                }
-                Some(CommandCode::Spacer | CommandCode::RightBrace) => {
-                    if !pattern.is_empty() {
-                        let mut key = pattern.clone();
-                        key.push(self.cur_lang);
-                        self.hyph_patterns.insert(key, digits.clone());
-                        pattern.clear();
-                        digits.clear();
-                    }
-                    if self.cur_cmd == CommandCode::RightBrace as u8 {
-                        return Ok(());
-                    }
-                }
-                _ => self.error_count += 1,
-            }
-        }
-    }
-
     /// Emits a `\show*` diagnostic (`show_whatever`).
     fn show_whatever(&mut self) -> Result<(), TeXMouthError> {
         let show_ok = match self.cur_chr {
@@ -3070,7 +2968,7 @@ impl TeXEngineState {
     }
 
     /// Emits the active group chain (`show_save_groups`).
-    fn show_save_groups(&mut self) -> Result<(), TeXMouthError> {
+    pub(crate) fn show_save_groups(&mut self) -> Result<(), TeXMouthError> {
         self.transcript.push(String::new());
         let mut nest_index = self.nest_ptr;
         let mut group = self.cur_group;
@@ -15567,7 +15465,7 @@ mod tests {
         let mut key = "a1b".chars().map(|c| c as i32).collect::<Vec<_>>();
         key.push(0);
         assert_eq!(state.hyph_patterns[&key], vec![0, 1, 0]);
-        let mut key = ".c2d".chars().map(|c| c as i32).collect::<Vec<_>>();
+        let mut key = vec![0, i32::from(b'c'), i32::from(b'2'), i32::from(b'd')];
         key.push(0);
         assert_eq!(state.hyph_patterns[&key], vec![0, 0, 2, 0]);
     }

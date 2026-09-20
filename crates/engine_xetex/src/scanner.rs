@@ -248,6 +248,8 @@ pub enum TeXMouthError {
     MissingInputFile(String),
     /// A single input line exceeded `buf_size` (`buffer_overflow`).
     BufferOverflow(usize),
+    /// A format file failed a load-time consistency check (`bad_fmt`).
+    BadFormatFile,
 }
 
 impl fmt::Display for TeXMouthError {
@@ -285,6 +287,7 @@ impl fmt::Display for TeXMouthError {
             Self::BufferOverflow(size) => {
                 write!(f, "unable to read an entire line (buf_size={size})")
             }
+            Self::BadFormatFile => write!(f, "fatal format file error"),
         }
     }
 }
@@ -2851,7 +2854,7 @@ impl TeXEngineState {
         Ok(())
     }
 
-    fn end_file_reading(&mut self) -> Result<(), TeXMouthError> {
+    pub(crate) fn end_file_reading(&mut self) -> Result<(), TeXMouthError> {
         if self.input_ptr == 0 {
             return Err(TeXMouthError::EndOfInput);
         }

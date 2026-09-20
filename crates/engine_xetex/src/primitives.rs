@@ -39,6 +39,9 @@ pub struct PrimitiveDef {
     pub command: CommandCode,
     /// `cur_chr`/subcommand payload in compact-`eqtb` coordinates.
     pub chr: i32,
+    /// `cur_chr`/subcommand payload in C `eqtb` coordinates, as written into
+    /// the format file's primitive-equivalents region.
+    pub c_chr: i32,
     /// C format-table initialization marker.
     pub extra_init: PrimitiveExtraInit,
 }
@@ -171,6 +174,7 @@ fn parse_primitive_entry(
             command_value,
         ))?;
     let chr = translate_chr(command_name, chr_expr, symbols)?;
+    let c_chr = eval_expression(chr_expr, symbols)?;
     let extra_init = match extra {
         "xf_prim_init_none" => PrimitiveExtraInit::None,
         "xf_prim_init_par" => PrimitiveExtraInit::Par,
@@ -182,6 +186,7 @@ fn parse_primitive_entry(
         name,
         command,
         chr,
+        c_chr,
         extra_init,
     })
 }

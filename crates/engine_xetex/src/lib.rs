@@ -24,6 +24,8 @@ use tectonic_errors::prelude::*;
 
 pub mod commands;
 pub mod expand;
+pub mod fmtio;
+pub mod ini;
 pub mod input;
 pub mod output;
 pub mod primitives;
