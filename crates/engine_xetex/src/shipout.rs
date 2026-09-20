@@ -926,6 +926,8 @@ impl TeXEngineState {
             let save_h = self.cur_h;
             self.temp_ptr = p;
             p = self.new_kern(0)?;
+            // SyncTeX: too late to record this kern (`SYNCTEX_tag = 0`).
+            self.mem[(p + 2) as usize].s0 = 0;
             self.mem[p as usize].s1 = TEX_NULL;
             self.mem[prev_p as usize].s1 = p;
             self.cur_h = 0;
@@ -993,8 +995,11 @@ impl TeXEngineState {
                 }
 
                 // §644: emit the non-char node p and move to the next.
-                let mut rule_ht: i32;
-                let mut rule_dp: i32;
+                // `rule_ht`/`rule_dp`/`rule_wd` are C globals shared with the
+                // SyncTeX recorder; seeding from the context reproduces the
+                // cross-node persistence of the C statics.
+                let mut rule_ht: i32 = self.synctex.rule_ht;
+                let mut rule_dp: i32 = self.synctex.rule_dp;
                 let mut rule_wd: i32;
                 let mut reswitch = false;
 
@@ -1058,6 +1063,10 @@ impl TeXEngineState {
                             }
                             // move_past
                             self.cur_h += rule_wd;
+                            // SyncTeX reads the resolved rule dims (C globals).
+                            self.synctex.rule_wd = rule_wd;
+                            self.synctex.rule_ht = rule_ht;
+                            self.synctex.rule_dp = rule_dp;
                             self.synctex_horizontal_rule_or_glue(p, this_box);
                         }
                         WHATSIT_NODE => {
@@ -1142,6 +1151,10 @@ impl TeXEngineState {
                                         self.dvi_h += rule_wd;
                                     }
                                     self.cur_h += rule_wd;
+                                    // SyncTeX reads the resolved rule dims.
+                                    self.synctex.rule_wd = rule_wd;
+                                    self.synctex.rule_ht = rule_ht;
+                                    self.synctex.rule_dp = rule_dp;
                                     self.synctex_horizontal_rule_or_glue(p, this_box);
                                     break 'dispatch;
                                 }
@@ -1216,6 +1229,10 @@ impl TeXEngineState {
                             }
                             // move_past
                             self.cur_h += rule_wd;
+                            // SyncTeX reads the resolved rule dims (C globals).
+                            self.synctex.rule_wd = rule_wd;
+                            self.synctex.rule_ht = rule_ht;
+                            self.synctex.rule_dp = rule_dp;
                             self.synctex_horizontal_rule_or_glue(p, this_box);
                         }
                         MARGIN_KERN_NODE => {

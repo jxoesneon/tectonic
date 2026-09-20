@@ -1051,6 +1051,13 @@ impl TeXEngineState {
         self.cur_input.name = name_id;
         self.cur_input.state = NEW_LINE;
         self.line = 1;
+        // The name as opened, consumed by SyncTeX's `get_current_name` (C
+        // receives the filesystem path from the I/O provider; under
+        // virtualized I/O the resolved byte-source name is the equivalent).
+        self.abspath_of_input_file = match &byte_name {
+            Some(resolved) => resolved.clone(),
+            None => name.to_string(),
+        };
 
         if let Some(resolved) = byte_name {
             self.name_of_file = resolved.into_bytes();
@@ -1065,6 +1072,10 @@ impl TeXEngineState {
             }
             self.input_file[self.in_open] = f;
         }
+
+        // C `open_input` tail: assign the frame's sync tag and record the
+        // tag↔name mapping.
+        self.synctex_start_input();
 
         if !self.load_next_source_line(false)? {
             self.cur_input.limit = self.cur_input.start - 1;

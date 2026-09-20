@@ -2018,8 +2018,10 @@ mod tests {
     #[test]
     fn run_engine_initex_dumps_then_load_drives_a_job() {
         // INITEX pass: `\dump` produces a format image.
-        let mut ini = TeXEngineState::default();
-        ini.in_initex_mode = true;
+        let mut ini = TeXEngineState {
+            in_initex_mode: true,
+            ..TeXEngineState::default()
+        };
         ini.register_input_source("job.tex", "\\dump");
         let history = ini
             .run_engine(

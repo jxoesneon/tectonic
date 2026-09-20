@@ -2333,7 +2333,7 @@ impl TeXEngineState {
     }
 
     /// Allocates and appends a whatsit node (`new_whatsit`).
-    fn new_whatsit(&mut self, subtype: u16, size: i32) -> Result<i32, TeXMouthError> {
+    pub(crate) fn new_whatsit(&mut self, subtype: u16, size: i32) -> Result<i32, TeXMouthError> {
         let node = self.get_node(size)?;
         self.set_node_type(node, WHATSIT_NODE)?;
         self.set_node_subtype(node, subtype)?;
@@ -5999,6 +5999,9 @@ impl TeXEngineState {
                 match self.node_type(p)? {
                     x if x == HLIST_NODE || x == VLIST_NODE => {
                         r = self.get_node(BOX_NODE_SIZE)?;
+                        // SyncTeX: preserve the source node's tag/line
+                        // (`SYNCTEX_tag/line(r, BOX_NODE_SIZE)`).
+                        self.mem[(r + 7) as usize] = self.mem[(p + 7) as usize];
                         self.mem[(r + 6) as usize] = self.mem[(p + 6) as usize];
                         self.mem[(r + 5) as usize] = self.mem[(p + 5) as usize];
                         words = 5;
@@ -6019,6 +6022,9 @@ impl TeXEngineState {
                     }
                     x if x == GLUE_NODE => {
                         r = self.get_node(MEDIUM_NODE_SIZE)?;
+                        // SyncTeX: preserve the source node's tag/line
+                        // (`SYNCTEX_tag/line(r, MEDIUM_NODE_SIZE)`).
+                        self.mem[(r + 2) as usize] = self.mem[(p + 2) as usize];
                         let spec = self.mem[(p + 1) as usize].s0;
                         self.add_glue_ref(spec)?;
                         self.mem[(r + 1) as usize].s0 = spec;
@@ -6411,7 +6417,7 @@ impl TeXEngineState {
             self.eq_word_define(DIMEN_PAR_BASE + DIMEN_PAR_DISPLAY_WIDTH, l)?;
             self.eq_word_define(DIMEN_PAR_BASE + DIMEN_PAR_DISPLAY_INDENT, s)?;
             if self.insert_src_special_every_display {
-                // SyncTeX source specials are not yet emitted by the port.
+                self.insert_src_special()?;
             }
             let every_display = self.local(LOCAL_EVERY_DISPLAY)?;
             if every_display != TEX_NULL {
@@ -6425,7 +6431,7 @@ impl TeXEngineState {
             self.push_math(MATH_SHIFT_GROUP)?;
             self.eq_word_define(INT_PAR_BASE + INT_PAR_CUR_FAM, -1)?;
             if self.insert_src_special_every_math {
-                // SyncTeX source specials are not yet emitted by the port.
+                self.insert_src_special()?;
             }
             let every_math = self.local(LOCAL_EVERY_MATH)?;
             if every_math != TEX_NULL {
@@ -6441,7 +6447,7 @@ impl TeXEngineState {
         self.push_math(MATH_SHIFT_GROUP)?;
         self.eq_word_define(INT_PAR_BASE + INT_PAR_CUR_FAM, -1)?;
         if self.insert_src_special_every_math {
-            // SyncTeX source specials are not yet emitted by the port.
+            self.insert_src_special()?;
         }
         let every_math = self.local(LOCAL_EVERY_MATH)?;
         if every_math != TEX_NULL {
@@ -6897,7 +6903,7 @@ impl TeXEngineState {
                 self.mode = -(TeXMode::Vmode as i16);
                 self.aux.s1 = IGNORE_DEPTH;
                 if self.insert_src_special_every_vbox {
-                    // SyncTeX source specials are not yet emitted by the port.
+                    self.insert_src_special()?;
                 }
                 let every_vbox = self.local(LOCAL_EVERY_VBOX)?;
                 if every_vbox != TEX_NULL {
@@ -9100,6 +9106,9 @@ impl TeXEngineState {
             self.mem[self.head as usize].s1 = indent_box;
             self.tail = indent_box;
             self.mem[indent_box as usize + 1].s1 = self.dimen_par(DIMEN_PAR_PAR_INDENT)?;
+            if self.insert_src_special_every_par {
+                self.insert_src_special()?;
+            }
         }
         let every = self.local(LOCAL_EVERY_PAR)?;
         if every != TEX_NULL {
@@ -9212,6 +9221,10 @@ impl TeXEngineState {
     /// Processes a scanned character in horizontal mode (`main_loop`,
     /// C ~17509). `cur_chr` holds the character code.
     fn main_loop_char(&mut self) -> Result<(), TeXMouthError> {
+        // C `main_loop` head: a fresh nonempty-mode list records its source.
+        if self.head == self.tail && self.mode > 0 && self.insert_src_special_auto {
+            self.append_src_special()?;
+        }
         self.prev_class = CHAR_CLASS_LIMIT - 1;
         let main_f = self.eqtb[CUR_FONT_LOC].s1;
         if self.is_native_font(main_f) {

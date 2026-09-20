@@ -35,6 +35,7 @@ pub mod scanner;
 pub mod shipout;
 pub mod state;
 pub mod strpool;
+pub mod synctex;
 pub mod teckit;
 pub mod texmfmp;
 pub mod unicode;

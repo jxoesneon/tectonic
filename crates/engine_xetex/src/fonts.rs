@@ -1114,11 +1114,13 @@ mod tests {
 
     /// Registers a bare native source record with ' ' and 'x'/'X' glyphs.
     fn register_native(state: &mut TeXEngineState, name: &str) {
-        let mut record = FontRecord::default();
-        record.dsize = 655_360; // 10pt
-        record.height_base = 46_000;
-        record.depth_base = -12_000;
-        record.params = vec![0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let mut record = FontRecord {
+            dsize: 655_360, // 10pt
+            height_base: 46_000,
+            depth_base: -12_000,
+            params: vec![0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ..FontRecord::default()
+        };
         record.char_to_glyph.insert(u32::from(b' '), 3);
         record.char_to_glyph.insert(u32::from(b'x'), 24);
         record.char_to_glyph.insert(u32::from(b'X'), 56);

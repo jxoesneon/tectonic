@@ -1267,6 +1267,8 @@ pub const INT_PAR_XETEX_UPWARDS: usize = 71;
 pub const INT_PAR_XETEX_USE_GLYPH_METRICS: usize = 72;
 /// Integer parameter offset for `\XeTeXgenerateactualtext`.
 pub const INT_PAR_XETEX_GENERATE_ACTUAL_TEXT: usize = 79;
+/// `\synctex` integer parameter (vendored table index 81).
+pub const INT_PAR_SYNCTEX: usize = 81;
 /// Integer parameter offset for `\XeTeXlinebreakpenalty`.
 pub const INT_PAR_XETEX_LINEBREAK_PENALTY: usize = 67;
 /// Integer parameter offset for `\XeTeXdashbreakstate`.
@@ -2743,6 +2745,9 @@ pub struct TeXEngineState {
     /// Whether SyncTeX recording is enabled; all `synctex_*` recorders
     /// early-return when false, matching the C guards.
     pub synctex_enabled: bool,
+    /// SyncTeX synchronization context (`synctex_ctxt`; recorders in
+    /// `synctex.rs`).
+    pub synctex: crate::synctex::SyncTeXContext,
     /// Per-glyph positioning data attached to native-word/glyph nodes:
     /// the memory-safe replacement for C's `native_glyph_info_ptr`
     /// malloc'd side buffer, keyed by node address.
@@ -3273,6 +3278,16 @@ pub struct TeXEngineState {
     pub insert_src_special_every_display: bool,
     /// SyncTeX `insert_src_special_every_vbox` flag.
     pub insert_src_special_every_vbox: bool,
+    /// SyncTeX `insert_src_special_every_par` flag (`new_graf`).
+    pub insert_src_special_every_par: bool,
+    /// SyncTeX `insert_src_special_auto` flag (`main_loop` head).
+    pub insert_src_special_auto: bool,
+    /// Last source name remembered by `remember_source_info` (C's
+    /// `last_source_name` static).
+    pub src_last_name: String,
+    /// Last source line remembered by `remember_source_info`
+    /// (`last_lineno`).
+    pub src_last_lineno: i32,
     /// Whether unknown control sequences should resolve to `undefined_cs`.
     pub no_new_control_sequence: bool,
     /// Whether the next end-of-file has been forced by `\endinput`.
@@ -3490,6 +3505,7 @@ impl TeXEngineState {
             doing_leaders: false,
             doing_special: false,
             synctex_enabled: false,
+            synctex: crate::synctex::SyncTeXContext::default(),
             native_glyph_info: HashMap::new(),
             xtx_ligature_present: false,
             prev_class: 0,
@@ -3729,6 +3745,10 @@ impl TeXEngineState {
             insert_src_special_every_math: false,
             insert_src_special_every_display: false,
             insert_src_special_every_vbox: false,
+            insert_src_special_every_par: false,
+            insert_src_special_auto: false,
+            src_last_name: String::new(),
+            src_last_lineno: 0,
             no_new_control_sequence: true,
             force_eof: false,
             used_tectonic_coda_tokens: false,
@@ -4820,6 +4840,12 @@ impl TeXEngineState {
 
             if let Some(r) = found_node {
                 self.mem[r as usize].s1 = TEX_NULL;
+                if s >= MEDIUM_NODE_SIZE {
+                    // SyncTeX: every node of at least MEDIUM_NODE_SIZE carries
+                    // the current input tag and line in its trailing word.
+                    self.mem[(r + s - 1) as usize].s0 = self.cur_input.synctex_tag;
+                    self.mem[(r + s - 1) as usize].s1 = self.line;
+                }
                 return Ok(r);
             }
 
@@ -5063,6 +5089,9 @@ impl TeXEngineState {
                 match node_type {
                     HLIST_NODE | VLIST_NODE | UNSET_NODE => {
                         let r = self.get_node(BOX_NODE_SIZE)?;
+                        // SyncTeX: preserve the source node's tag/line
+                        // (`SYNCTEX_tag/line(r, BOX_NODE_SIZE)`).
+                        self.mem[(r + 7) as usize] = self.mem[(p + 7) as usize];
                         self.mem[(r + 6) as usize] = self.mem[(p + 6) as usize];
                         self.mem[(r + 5) as usize] = self.mem[(p + 5) as usize];
                         let list = self.mem[(p + 5) as usize].s1;
@@ -5202,7 +5231,7 @@ impl TeXEngineState {
         let p = self.get_node(BOX_NODE_SIZE)?;
         self.set_node_type(p, HLIST_NODE)?;
         self.set_node_subtype(p, 0)?;
-        for offset in 1..BOX_NODE_SIZE {
+        for offset in 1..BOX_NODE_SIZE - 1 {
             self.mem[(p + offset) as usize] = MemoryWord::default();
         }
         Ok(p)
@@ -5244,9 +5273,11 @@ impl TeXEngineState {
         let q = self.get_node(GLUE_SPEC_SIZE)?;
         self.mem[q as usize] = self.mem[p as usize];
         self.mem[q as usize].s1 = TEX_NULL;
-        self.mem[(q + 1) as usize] = self.mem[(p + 1) as usize];
-        self.mem[(q + 2) as usize] = self.mem[(p + 2) as usize];
-        self.mem[(q + 3) as usize] = self.mem[(p + 3) as usize];
+        // C copies only the `s1` (scaled-value) halves; the `s0` halves keep
+        // whatever `get_node` stamped (including the SyncTeX tag at q+3).
+        self.mem[(q + 1) as usize].s1 = self.mem[(p + 1) as usize].s1;
+        self.mem[(q + 2) as usize].s1 = self.mem[(p + 2) as usize].s1;
+        self.mem[(q + 3) as usize].s1 = self.mem[(p + 3) as usize].s1;
         Ok(q)
     }
 
@@ -6675,32 +6706,6 @@ impl TeXEngineState {
         self.output_file_name = format!("{base}{extension}");
         self.output_file_opened = true;
     }
-
-    /// SyncTeX recorders: faithful no-ops while `synctex_enabled` is
-    /// false, matching the early returns in `xetex-synctex.c`.
-    pub fn synctex_sheet(&self, _mag: i32) {}
-    /// SyncTeX `synctex_teehs` (end of sheet).
-    pub fn synctex_teehs(&self) {}
-    /// SyncTeX `synctex_hlist` (entering an hlist).
-    pub fn synctex_hlist(&self, _p: i32) {}
-    /// SyncTeX `synctex_tsilh` (leaving an hlist).
-    pub fn synctex_tsilh(&self, _p: i32) {}
-    /// SyncTeX `synctex_vlist` (entering a vlist).
-    pub fn synctex_vlist(&self, _p: i32) {}
-    /// SyncTeX `synctex_tsilv` (leaving a vlist).
-    pub fn synctex_tsilv(&self, _p: i32) {}
-    /// SyncTeX `synctex_void_vlist` (empty vlist).
-    pub fn synctex_void_vlist(&self, _p: i32, _this_box: i32) {}
-    /// SyncTeX `synctex_void_hlist` (empty hlist).
-    pub fn synctex_void_hlist(&self, _p: i32, _this_box: i32) {}
-    /// SyncTeX `synctex_math` (math node).
-    pub fn synctex_math(&self, _p: i32, _this_box: i32) {}
-    /// SyncTeX `synctex_kern` (kern node).
-    pub fn synctex_kern(&self, _p: i32, _this_box: i32) {}
-    /// SyncTeX `synctex_horizontal_rule_or_glue`.
-    pub fn synctex_horizontal_rule_or_glue(&self, _p: i32, _this_box: i32) {}
-    /// SyncTeX `synctex_current` (end of a character run).
-    pub fn synctex_current(&self) {}
 
     /// Returns the Unicode scalar at UTF-16 index `i` of a native-word
     /// node, combining surrogate pairs (`get_native_usv`).

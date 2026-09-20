@@ -1282,6 +1282,8 @@ impl TeXEngineState {
             self.print_nl_cstr("(see the transcript file for additional information)")?;
             self.selector = SELECTOR_TERM_AND_LOG;
         }
+        // C `close_files_and_terminate`: SyncTeX postamble + stream close.
+        self.synctex_terminate(self.log_opened);
         if c == 1 {
             if self.in_initex_mode {
                 for m in TOP_MARK_CODE..=SPLIT_BOT_MARK_CODE {
@@ -1332,6 +1334,8 @@ impl TeXEngineState {
         self.tex_format_default = dump_name.to_string();
 
         self.initialize_more_variables();
+        // C `main_init` tail: map the driver SyncTeX flag onto `\synctex`.
+        self.synctex_init_command();
 
         if self.in_initex_mode {
             self.get_strings_started();
