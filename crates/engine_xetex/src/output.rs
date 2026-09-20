@@ -43,7 +43,7 @@ impl TeXEngineState {
     /// Pushes `file:line: ` (or `!`) into the diagnostic capture,
     /// duplicating `print_file_line`'s logic
     /// (`diagnostic_print_file_line`).
-    fn diagnostic_print_file_line(&mut self) {
+    pub(crate) fn diagnostic_print_file_line(&mut self) {
         let mut level = self.in_open;
         while level > 0
             && self

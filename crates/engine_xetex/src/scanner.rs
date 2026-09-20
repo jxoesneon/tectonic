@@ -246,6 +246,8 @@ pub enum TeXMouthError {
     },
     /// `\input` referenced a source that is not registered.
     MissingInputFile(String),
+    /// A single input line exceeded `buf_size` (`buffer_overflow`).
+    BufferOverflow(usize),
 }
 
 impl fmt::Display for TeXMouthError {
@@ -280,6 +282,9 @@ impl fmt::Display for TeXMouthError {
                 "macro argument token {found:#X} does not match expected token {expected:#X}"
             ),
             Self::MissingInputFile(name) => write!(f, "input source {name:?} is not registered"),
+            Self::BufferOverflow(size) => {
+                write!(f, "unable to read an entire line (buf_size={size})")
+            }
         }
     }
 }
@@ -824,6 +829,7 @@ impl TeXEngineState {
         self.in_open = 0;
         self.file_sources.clear();
         self.file_sources.push(FileInputSource::default());
+        self.input_file.clear();
         self.eof_seen.clear();
         self.eof_seen.push(false);
         self.line_stack.clear();
@@ -881,9 +887,29 @@ impl TeXEngineState {
         }
     }
 
-    fn load_next_source_line(&mut self, advance_line: bool) -> bool {
+    fn load_next_source_line(&mut self, advance_line: bool) -> Result<bool, TeXMouthError> {
+        if let Some(mut f) = self.input_file.get_mut(self.in_open).and_then(Option::take) {
+            self.first = 0;
+            let got = self.input_line(&mut f);
+            self.input_file[self.in_open] = Some(f);
+            if got? {
+                self.cur_input.start = 0;
+                self.cur_input.loc = 0;
+                self.cur_input.limit = self.last;
+                self.cur_input.state = NEW_LINE;
+                self.apply_end_line_char();
+                self.first = self.cur_input.limit + 1;
+                self.last = self.cur_input.limit;
+                if advance_line {
+                    self.line += 1;
+                }
+                return Ok(true);
+            }
+            return Ok(false);
+        }
+
         let Some(units) = self.source_lines.pop_front() else {
-            return false;
+            return Ok(false);
         };
         self.buffer = units;
         self.cur_input.start = 0;
@@ -896,7 +922,7 @@ impl TeXEngineState {
         if advance_line {
             self.line += 1;
         }
-        true
+        Ok(true)
     }
 
     fn encode_source_text(source: &str) -> VecDeque<Vec<i32>> {
@@ -915,9 +941,12 @@ impl TeXEngineState {
     }
 
     /// Registers an in-memory TeX source for `\input` lookups.
+    ///
+    /// Sources are stored as raw UTF-8 bytes so that opening them runs the
+    /// same `u_open_in`/`input_line` decode path C applies to real files.
     pub fn register_input_source(&mut self, name: impl Into<String>, source: &str) {
-        self.input_sources
-            .insert(name.into(), Self::encode_source_text(source));
+        self.input_byte_sources
+            .insert(name.into(), source.as_bytes().to_vec());
     }
 
     /// Registers an already-encoded TeX source for `\input` lookups.
@@ -974,6 +1003,9 @@ impl TeXEngineState {
         if self.if_stack.len() <= self.in_open {
             self.if_stack.resize(self.in_open + 1, TEX_NULL);
         }
+        if self.input_file.len() <= self.in_open {
+            self.input_file.resize_with(self.in_open + 1, || None);
+        }
 
         self.eof_seen[self.in_open] = false;
         self.grp_stack[self.in_open] = self.cur_boundary;
@@ -993,33 +1025,45 @@ impl TeXEngineState {
 
     /// Attaches a registered source to the current file-reading frame and
     /// preloads its first input line (`start_input` file-open path).
+    ///
+    /// Byte sources open through `u_open_in` exactly like C's `a_open_in`;
+    /// registered unit-line sources remain as a compatibility fallback.
     pub fn open_file_source(&mut self, name: &str) -> Result<(), TeXMouthError> {
-        let lines = self
-            .input_sources
-            .get(name)
-            .cloned()
-            .or_else(|| {
-                if name
-                    .rsplit('/')
-                    .next()
-                    .is_some_and(|stem| !stem.contains('.'))
-                {
-                    self.input_sources.get(&format!("{name}.tex")).cloned()
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| TeXMouthError::MissingInputFile(name.to_string()))?;
+        let byte_name = self.input_byte_source_name(name);
+        let lines = if byte_name.is_none() {
+            self.input_source_lines(name)
+        } else {
+            None
+        };
+        if byte_name.is_none() && lines.is_none() {
+            return Err(TeXMouthError::MissingInputFile(name.to_string()));
+        }
 
         let name_id = self.next_source_name;
         self.next_source_name += 1;
-        self.file_sources[self.in_open] = FileInputSource::new(name, name_id, lines);
+        self.file_sources[self.in_open] =
+            FileInputSource::new(name, name_id, lines.unwrap_or_default());
         self.buffer = std::mem::take(&mut self.file_sources[self.in_open].buffer);
         self.source_lines = std::mem::take(&mut self.file_sources[self.in_open].lines);
         self.cur_input.name = name_id;
         self.cur_input.state = NEW_LINE;
         self.line = 1;
-        if !self.load_next_source_line(false) {
+
+        if let Some(resolved) = byte_name {
+            self.name_of_file = resolved.into_bytes();
+            self.name_length = self.name_of_file.len() as i32;
+            let f = self.u_open_in(
+                crate::input::TTBC_FILE_FORMAT_TEX,
+                crate::input::INPUT_MODE_AUTO,
+                0,
+            );
+            if self.input_file.len() <= self.in_open {
+                self.input_file.resize_with(self.in_open + 1, || None);
+            }
+            self.input_file[self.in_open] = f;
+        }
+
+        if !self.load_next_source_line(false)? {
             self.cur_input.limit = self.cur_input.start - 1;
             self.cur_input.loc = self.cur_input.start;
             self.first = self.cur_input.start;
@@ -1064,37 +1108,26 @@ impl TeXEngineState {
         self.open_file_source(&name)
     }
 
-    /// Opens or closes a numbered TeX read stream (`open_or_close_in`).
-    pub fn open_or_close_in(&mut self) -> Result<(), TeXMouthError> {
-        let opening = self.cur_chr != 0;
-        self.scan_four_bit_int()?;
-        let n = usize::try_from(self.cur_val)
-            .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
-        if n >= self.read_open.len() || n >= self.read_sources.len() {
-            return Err(TeXMouthError::InputOutOfBounds(self.cur_val));
-        }
-
-        self.read_open[n] = ReadOpen::Closed;
-        self.read_sources[n] = None;
-        if !opening {
-            return Ok(());
-        }
-
-        self.scan_optional_equals()?;
-        self.scan_file_name()?;
-        let name = self.file_name_string();
-        if let Some(lines) = self.input_source_lines(&name) {
-            let name_id = self.next_source_name;
-            self.next_source_name += 1;
-            self.read_sources[n] = Some(FileInputSource::new(name, name_id, lines));
-            self.read_open[n] = ReadOpen::JustOpen;
-        }
-        Ok(())
-    }
-
     /// Reads one line from a numbered TeX read stream into the current input
-    /// buffer (`input_line(read_file[m])` for in-memory sources).
+    /// buffer (`input_line(read_file[m])`).
     fn input_line_from_read_stream(&mut self, m: usize) -> Result<bool, TeXMouthError> {
+        if let Some(mut f) = self.read_file.get_mut(m).and_then(Option::take) {
+            self.first = 0;
+            let got = self.input_line(&mut f);
+            self.read_file[m] = Some(f);
+            if !got? {
+                return Ok(false);
+            }
+            self.cur_input.start = 0;
+            self.cur_input.loc = 0;
+            self.cur_input.limit = self.last;
+            self.cur_input.state = NEW_LINE;
+            self.apply_end_line_char();
+            self.first = self.cur_input.limit + 1;
+            self.last = self.cur_input.limit;
+            return Ok(true);
+        }
+
         let Some(source) = self.read_sources.get_mut(m).and_then(Option::as_mut) else {
             return Ok(false);
         };
@@ -1120,9 +1153,12 @@ impl TeXEngineState {
         if let Some(source) = self.read_sources.get_mut(m) {
             *source = None;
         }
+        if let Some(f) = self.read_file.get_mut(m) {
+            *f = None;
+        }
     }
 
-    fn input_source_lines(&self, name: &str) -> Option<VecDeque<Vec<i32>>> {
+    pub(crate) fn input_source_lines(&self, name: &str) -> Option<VecDeque<Vec<i32>>> {
         self.input_sources.get(name).cloned().or_else(|| {
             if name
                 .rsplit('/')
@@ -1323,7 +1359,7 @@ impl TeXEngineState {
         Ok(())
     }
 
-    fn begin_name(&mut self) {
+    pub(crate) fn begin_name(&mut self) {
         self.area_delimiter = 0;
         self.ext_delimiter = 0;
         self.quoted_filename = false;
@@ -1333,7 +1369,7 @@ impl TeXEngineState {
         self.cur_ext.clear();
     }
 
-    fn more_name(&mut self, c: i32) -> bool {
+    pub(crate) fn more_name(&mut self, c: i32) -> bool {
         if self.stop_at_space && self.file_name_quote_char == 0 && c == i32::from(b' ') {
             return false;
         }
@@ -1360,7 +1396,7 @@ impl TeXEngineState {
         true
     }
 
-    fn end_name(&mut self) {
+    pub(crate) fn end_name(&mut self) {
         let name = std::mem::take(&mut self.cur_name);
         if self.area_delimiter == 0 {
             self.cur_area.clear();
@@ -2461,7 +2497,7 @@ impl TeXEngineState {
 
                         if self.cur_input.name > 17 {
                             self.first = self.cur_input.start;
-                            if !self.force_eof && self.load_next_source_line(true) {
+                            if !self.force_eof && self.load_next_source_line(true)? {
                                 continue 'restart;
                             }
 
@@ -2491,7 +2527,7 @@ impl TeXEngineState {
                             }
                         }
 
-                        if self.load_next_source_line(true) {
+                        if self.load_next_source_line(true)? {
                             continue 'restart;
                         }
 
@@ -2825,6 +2861,11 @@ impl TeXEngineState {
             self.line = self.line_stack[index];
         }
         self.first = self.cur_input.start;
+
+        if self.cur_input.name > 17 && index < self.input_file.len() {
+            // C `u_close(input_file[cur_input.index])` for real input files.
+            self.input_file[index] = None;
+        }
 
         self.input_ptr -= 1;
         self.cur_input = self.input_stack[self.input_ptr];

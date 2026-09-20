@@ -1237,6 +1237,9 @@ pub const INT_PAR_RIGHT_HYPHEN_MIN: usize = 52;
 /// String slot used by `\XeTeXlinebreaklocale`.
 pub const INT_PAR_XETEX_LINEBREAK_LOCALE: usize = 66;
 /// Integer parameter offset for `\XeTeXdefaultencoding`'s input mode.
+/// `INT_PAR__xetex_input_normalization`.
+pub const INT_PAR_XETEX_INPUT_NORMALIZATION: usize = 74;
+/// `INT_PAR__xetex_default_input_mode`.
 pub const INT_PAR_XETEX_DEFAULT_INPUT_MODE: usize = 75;
 /// String slot used by `\XeTeXdefaultencoding`.
 pub const INT_PAR_XETEX_DEFAULT_INPUT_ENCODING: usize = 76;
@@ -2784,6 +2787,30 @@ pub struct TeXEngineState {
     pub read_open: Vec<ReadOpen>,
     /// Sources attached to TeX `\read` streams.
     pub read_sources: Vec<Option<FileInputSource>>,
+    /// Registered raw file bytes available to `\input`/`\openin`
+    /// (`ttstub_input_open`'s virtualized backing store).
+    pub input_byte_sources: HashMap<String, Vec<u8>>,
+    /// C `input_file[in_open]` byte streams for real input files.
+    pub input_file: Vec<Option<crate::input::UFile>>,
+    /// C `read_file[0..=16]` byte streams for `\read` streams.
+    pub read_file: Vec<Option<crate::input::UFile>>,
+    /// Packed file name bytes produced by `pack_file_name` (`name_of_file`).
+    pub name_of_file: Vec<u8>,
+    /// Length of `name_of_file` (`name_length`).
+    pub name_length: i32,
+    /// `name_of_file` re-encoded as UTF-16 code units (`name_of_file16`).
+    pub name_of_file16: Vec<u16>,
+    /// Length of `name_of_file16` (`name_length16`).
+    pub name_length16: i32,
+    /// Most recently opened input file name (`name_of_input_file`).
+    pub name_of_input_file: Option<String>,
+    /// Absolute path of the last opened input for SyncTeX
+    /// (`abspath_of_input_file`); empty under virtualized I/O.
+    pub abspath_of_input_file: String,
+    /// Byte scratch used by the `ICUMAPPING` `input_line` path.
+    pub io_byte_buf: Vec<u8>,
+    /// Scalar scratch used by the normalization `input_line` paths.
+    pub io_utf32_buf: Vec<u32>,
     /// Current TeX line number.
     pub line: i32,
     /// Whether file-name scanning stops at an unquoted space.
@@ -3202,6 +3229,17 @@ impl TeXEngineState {
             if_stack: vec![TEX_NULL],
             read_open: vec![ReadOpen::Closed; 17],
             read_sources: vec![None; 17],
+            input_byte_sources: HashMap::new(),
+            input_file: Vec::new(),
+            read_file: vec![None; 17],
+            name_of_file: Vec::new(),
+            name_length: 0,
+            name_of_file16: Vec::new(),
+            name_length16: 0,
+            name_of_input_file: None,
+            abspath_of_input_file: String::new(),
+            io_byte_buf: Vec::new(),
+            io_utf32_buf: Vec::new(),
             line: 0,
             stop_at_space: true,
             file_name_quote_char: 0,

@@ -3542,6 +3542,7 @@ dependencies = [
  "tectonic_image_probe",
  "tectonic_xetex_layout",
  "unicode-bidi",
+ "unicode-normalization",
 ]
 
 [[package]]

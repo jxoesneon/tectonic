@@ -2596,6 +2596,11 @@ impl TeXEngineState {
             source.input_mode = mode;
             source.input_encoding = encoding;
         }
+        // C `set_input_file_encoding(input_file[in_open], mode, encodingData)`.
+        if let Some(mut f) = self.input_file.get_mut(self.in_open).and_then(Option::take) {
+            self.set_input_file_encoding(&mut f, mode, encoding);
+            self.input_file[self.in_open] = Some(f);
+        }
         Ok(())
     }
 
