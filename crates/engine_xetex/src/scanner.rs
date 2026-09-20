@@ -1227,6 +1227,11 @@ impl TeXEngineState {
                     if !self.input_line_from_read_stream(m)? {
                         self.close_read_stream(m);
                         if self.align_state != 1_000_000 {
+                            self.runaway()?;
+                            self.report_error(
+                                "File ended within \\read",
+                                &["This \\read has unbalanced braces."],
+                            );
                             self.align_state = 1_000_000;
                             self.cur_input.limit = 0;
                         }
@@ -2117,6 +2122,27 @@ impl TeXEngineState {
                 self.cur_input.limit = self.param_ptr as i32;
             } else {
                 self.cur_input.loc = self.mem[idx].s1;
+                if self
+                    .int_par(crate::state::INT_PAR_TRACING_MACROS)
+                    .unwrap_or(0)
+                    > 1
+                {
+                    let name = match kind {
+                        MARK_TEXT => "\\mark".to_string(),
+                        WRITE_TEXT => "\\write".to_string(),
+                        _ => self
+                            .cmd_chr_text(
+                                CommandCode::AssignToks as u8,
+                                (crate::state::LOCAL_BASE + crate::state::LOCAL_OUTPUT_ROUTINE)
+                                    as i32
+                                    + i32::from(kind)
+                                    - i32::from(OUTPUT_TEXT),
+                            )
+                            .unwrap_or_default(),
+                    };
+                    let shown = self.token_list_display_string(p)?;
+                    self.transcript.push(format!("{name}->{shown}"));
+                }
             }
         } else {
             self.cur_input.loc = p;
@@ -2678,12 +2704,93 @@ impl TeXEngineState {
         }
     }
 
+    /// C `check_outer_validity` (§350–§354): when an `\outer` control
+    /// sequence or end-of-file arrives while the scanner is inside a
+    /// restricted context, TeX reports the runaway, pushes back the
+    /// offending control sequence, and inserts a recovery token so the
+    /// run can continue.
     fn check_outer_validity(&mut self) -> Result<(), TeXMouthError> {
-        if self.cur_cmd >= CommandCode::OuterCall as u8 && self.scanner_status != NORMAL {
-            if self.cur_cs != 0 {
-                return Err(TeXMouthError::ForbiddenControlSequence(self.cur_cs));
+        if self.cur_cmd < CommandCode::OuterCall as u8 || self.scanner_status == NORMAL {
+            return Ok(());
+        }
+
+        if self.cur_cs != 0 {
+            if self.cur_input.state == TOKEN_LIST
+                || self.cur_input.name < 1
+                || self.cur_input.name > 17
+            {
+                let p = self.get_avail()?;
+                self.mem[p as usize].s0 = CS_TOKEN_FLAG + self.cur_cs;
+                self.begin_token_list(p, BACKED_UP)?;
             }
-            return Err(TeXMouthError::ForbiddenControlSequence(0));
+            self.cur_cmd = CommandCode::Spacer as u8;
+            self.cur_chr = i32::from(b' ');
+        }
+
+        if self.scanner_status > SKIPPING {
+            self.runaway()?;
+            let headline = if self.cur_cs == 0 {
+                "File ended"
+            } else {
+                self.cur_cs = 0;
+                "Forbidden control sequence found"
+            };
+
+            let (kind, head) = match self.scanner_status {
+                DEFINING => ("definition", RIGHT_BRACE_TOKEN + i32::from(b'}')),
+                MATCHING => {
+                    self.long_state = CommandCode::OuterCall as u8;
+                    ("use", self.par_token)
+                }
+                ALIGNING => ("preamble", RIGHT_BRACE_TOKEN + i32::from(b'}')),
+                _ => ("text", RIGHT_BRACE_TOKEN + i32::from(b'}')),
+            };
+
+            let p = self.get_avail()?;
+            self.mem[p as usize].s0 = head;
+            let list = if self.scanner_status == ALIGNING {
+                let q = self.get_avail()?;
+                self.mem[q as usize].s0 = CS_TOKEN_FLAG + FROZEN_CR_ID;
+                self.mem[q as usize].s1 = p;
+                self.align_state = -1_000_000;
+                q
+            } else {
+                p
+            };
+            self.begin_token_list(list, INSERTED)?;
+
+            let name = self.cs_name_text(self.warning_index);
+            self.report_error(
+                &format!("{headline} while scanning {kind} of \\{name}"),
+                &[
+                    "I suspect you have forgotten a `}', causing me",
+                    "to read past where you wanted me to stop.",
+                    "I'll try to recover; but if the error is serious,",
+                    "you'd better type `E' or `X' now and fix your file.",
+                ],
+            );
+        } else {
+            let if_name = self
+                .cmd_chr_text(CommandCode::IfTest as u8, i32::from(self.cur_if))
+                .unwrap_or_default();
+            let skipped = if self.cur_cs != 0 {
+                self.cur_cs = 0;
+                "A forbidden control sequence occurred in skipped text."
+            } else {
+                "The file ended while I was skipping conditional text."
+            };
+            self.cur_tok = CS_TOKEN_FLAG + FROZEN_FI_ID;
+            self.ins_error(
+                &format!(
+                    "Incomplete {if_name}; all text was ignored after line {}",
+                    self.skip_line
+                ),
+                &[
+                    skipped,
+                    "This kind of error happens when you say `\\if...' and forget",
+                    "the matching `\\fi'. I've inserted a `\\fi'; this might work.",
+                ],
+            )?;
         }
         Ok(())
     }

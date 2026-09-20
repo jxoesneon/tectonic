@@ -1290,6 +1290,8 @@ pub const INT_PAR_DAY: usize = 21;
 pub const INT_PAR_MONTH: usize = 22;
 /// `INT_PAR__year` — year.
 pub const INT_PAR_YEAR: usize = 23;
+/// `INT_PAR__tracing_macros` — macro-argument echo level.
+pub const INT_PAR_TRACING_MACROS: usize = 30;
 /// `INT_PAR__tracing_stats` — statistics printing level.
 pub const INT_PAR_TRACING_STATS: usize = 31;
 /// First font number (`FONT_BASE`); `nullfont` is `FONT_BASE`.
@@ -1298,6 +1300,8 @@ pub const FONT_BASE: i32 = 0;
 pub const INT_PAR_TRACING_LOST_CHARS: usize = 35;
 /// Integer parameter offset for `\tracingcommands`.
 pub const INT_PAR_TRACING_COMMANDS: usize = 36;
+/// Integer parameter offset for `\tracingstacklevels`.
+pub const INT_PAR_TRACING_STACK_LEVELS: usize = 55;
 /// Integer parameter offset for `\tracingifs`.
 pub const INT_PAR_TRACING_IFS: usize = 58;
 /// Integer parameter offset for `\tracingnesting`.
@@ -6053,8 +6057,11 @@ impl TeXEngineState {
         } else {
             units.push(c.max(0) as u16);
         }
+        let has_mapping = self
+            .font_record(f)
+            .is_some_and(|record| record.mapping_name.is_some() || !record.text_mapping.is_empty());
         let units = self.apply_text_mapping(f, &units);
-        if self.int_par(INT_PAR_TRACING_LOST_CHARS)? > 0 {
+        if has_mapping || self.int_par(INT_PAR_TRACING_LOST_CHARS)? > 0 {
             let mut i = 0;
             while i < units.len() {
                 let scalar = if units[i] >= 0xD800 && units[i] < 0xDC00 {
@@ -6115,9 +6122,38 @@ impl TeXEngineState {
         output
     }
 
-    /// Records a `char_warning` for an unmapped character
-    /// (`Missing character: There is no <c> in font <name>`).
+    /// Returns the `print_file_line` prefix (`name:line: ` or `! `).
+    fn file_line_prefix(&self) -> String {
+        let mut level = self.in_open;
+        while level > 0
+            && self
+                .file_sources
+                .get(level)
+                .is_none_or(|src| src.name.is_empty())
+        {
+            level -= 1;
+        }
+        if level == 0 {
+            return "! ".to_string();
+        }
+        let name = self.file_sources[level].name.clone();
+        let line = if level == self.in_open {
+            self.line
+        } else {
+            self.line_stack.get(level + 1).copied().unwrap_or(0)
+        };
+        format!("{name}:{line}: ")
+    }
+
+    /// Records a `char_warning` for an unmapped character (`Missing
+    /// character: There is no <c> in font <name>`). The transcript
+    /// diagnostic honors `\tracinglostchars` levels (`>1` forces it
+    /// online, `>2` promotes it to an error, `>3` drops the `!`), while
+    /// the `could not represent character` terminal warning and the
+    /// one-time fontspec hint are unconditional like C's
+    /// `ttstub_issue_warning` calls.
     pub fn char_warning(&mut self, f: i32, c: i32) {
+        let tracing = self.int_par(INT_PAR_TRACING_LOST_CHARS).unwrap_or(0);
         let name = self
             .font_record(f)
             .map(|record| {
@@ -6128,11 +6164,53 @@ impl TeXEngineState {
                     .collect::<String>()
             })
             .unwrap_or_default();
-        let shown = char::from_u32(c.max(0) as u32).unwrap_or('\u{FFFD}');
-        self.transcript.push(format!(
-            "Missing character: There is no {} in font {}!",
-            shown, name
-        ));
+        let shown = self.display_character(c);
+
+        if tracing > 0 {
+            let old_online = self.int_par(INT_PAR_TRACING_ONLINE).unwrap_or(0);
+            if tracing > 1 {
+                let _ = self.set_int_par(INT_PAR_TRACING_ONLINE, 1);
+            }
+            let code = if self.is_native_font(f) {
+                format!("U+{:04X}", c.max(0))
+            } else {
+                format!("\"{:X}", c.max(0))
+            };
+            let mut message =
+                format!("Missing character: There is no {shown} ({code}) in font {name}");
+            if tracing < 3 {
+                message.push('!');
+            }
+            if tracing > 2 {
+                if self.file_line_error_style_p {
+                    let prefix = self.file_line_prefix();
+                    self.transcript.push(format!("{prefix}{message}"));
+                    self.error_count += 1;
+                } else {
+                    self.report_error(&message, &[]);
+                }
+            } else {
+                self.transcript.push(message);
+            }
+            let _ = self.set_int_par(INT_PAR_TRACING_ONLINE, old_online);
+        }
+
+        self.term_out.extend_from_slice(
+            format!(
+                "could not represent character \"{shown}\" (0x{:x}) in font \"{name}\"\n",
+                c.max(0)
+            )
+            .as_bytes(),
+        );
+        if !self.gave_char_warning_help {
+            self.term_out.extend_from_slice(
+                b"  you may need to load the `fontspec` package and use (e.g.) \\setmainfont to\n",
+            );
+            self.term_out.extend_from_slice(
+                b"  choose a different font that covers the unrepresentable character(s)\n",
+            );
+            self.gave_char_warning_help = true;
+        }
     }
 
     /// Creates a ligature node (`new_ligature`): `lig_char`/`lig_font`
@@ -8732,5 +8810,66 @@ mod tests {
         assert_eq!(TeXMode::Vmode as i16, 1);
         assert_eq!(TeXMode::Hmode as i16, 104);
         assert_eq!(TeXMode::Mmode as i16, 207);
+    }
+
+    fn state_with_font() -> TeXEngineState {
+        let mut state = TeXEngineState::new(2000);
+        state.font_table.push(FontRecord {
+            name: "cmr10".chars().map(|c| c as i32).collect(),
+            ..FontRecord::default()
+        });
+        state
+    }
+
+    #[test]
+    fn test_char_warning_level_one() {
+        let mut state = state_with_font();
+        state.set_int_par(INT_PAR_TRACING_LOST_CHARS, 1).unwrap();
+        state.char_warning(1, i32::from(b'x'));
+        assert_eq!(
+            state.transcript,
+            ["Missing character: There is no x (\"78) in font cmr10!"]
+        );
+        assert_eq!(state.error_count, 0);
+    }
+
+    #[test]
+    fn test_char_warning_level_three_error() {
+        let mut state = state_with_font();
+        state.set_int_par(INT_PAR_TRACING_LOST_CHARS, 3).unwrap();
+        state.char_warning(1, i32::from(b'x'));
+        assert_eq!(
+            state.transcript,
+            ["! Missing character: There is no x (\"78) in font cmr10"]
+        );
+        assert_eq!(state.error_count, 1);
+    }
+
+    #[test]
+    fn test_char_warning_native_font_ucs_code() {
+        let mut state = state_with_font();
+        state.font_area.insert(1, AAT_FONT_FLAG);
+        state.set_int_par(INT_PAR_TRACING_LOST_CHARS, 1).unwrap();
+        state.char_warning(1, 0x4E2D);
+        assert_eq!(
+            state.transcript,
+            ["Missing character: There is no \u{4E2D} (U+4E2D) in font cmr10!"]
+        );
+    }
+
+    #[test]
+    fn test_char_warning_terminal_notice_unconditional() {
+        let mut state = state_with_font();
+        state.char_warning(1, i32::from(b'x'));
+        assert!(state.transcript.is_empty());
+        let term = String::from_utf8(state.term_out.clone()).unwrap();
+        assert!(term.contains("could not represent character \"x\" (0x78) in font \"cmr10\""));
+        assert!(term.contains("fontspec"));
+        let term_len = term.len();
+        state.char_warning(1, i32::from(b'x'));
+        let term = String::from_utf8(state.term_out.clone()).unwrap();
+        assert!(term[term_len..].contains("could not represent character \"x\" (0x78)"));
+        assert!(!term[term_len..].contains("fontspec"));
+        assert!(state.gave_char_warning_help);
     }
 }

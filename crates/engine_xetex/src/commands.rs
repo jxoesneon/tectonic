@@ -4675,7 +4675,7 @@ impl TeXEngineState {
 
     /// Reports a recoverable error that also back-inputs the current token
     /// (`ins_error`).
-    fn ins_error(&mut self, message: &str, help: &[&str]) -> Result<(), TeXMouthError> {
+    pub(crate) fn ins_error(&mut self, message: &str, help: &[&str]) -> Result<(), TeXMouthError> {
         self.back_input()?;
         self.report_error(message, help);
         Ok(())
@@ -5646,8 +5646,11 @@ impl TeXEngineState {
     /// wrong group context (`off_save`).
     fn off_save(&mut self) -> Result<(), TeXMouthError> {
         if self.cur_group == BOTTOM_LEVEL {
+            let cmd = self
+                .cmd_chr_text(self.cur_cmd, self.cur_chr)
+                .unwrap_or_default();
             self.report_error(
-                "Extra group-closing token",
+                &format!("Extra {cmd}"),
                 &["Things are pretty mixed up, but I think the worst is over."],
             );
             return Ok(());
@@ -5658,26 +5661,32 @@ impl TeXEngineState {
         let temp_head = self.temp_head();
         self.mem[temp_head as usize].s1 = p;
 
-        match self.cur_group {
+        let missing = match self.cur_group {
             SEMI_SIMPLE_GROUP => {
                 self.mem[p as usize].s0 = CS_TOKEN_FLAG + FROZEN_END_GROUP_ID;
+                "\\endgroup"
             }
             MATH_SHIFT_GROUP => {
                 self.mem[p as usize].s0 = MATH_SHIFT_TOKEN + i32::from(b'$');
+                "$"
             }
             MATH_LEFT_GROUP => {
                 self.mem[p as usize].s0 = CS_TOKEN_FLAG + FROZEN_RIGHT_ID;
                 let q = self.get_avail()?;
                 self.mem[p as usize].s1 = q;
                 self.mem[q as usize].s0 = OTHER_TOKEN + i32::from(b'.');
+                "\\right."
             }
             _ => {
                 self.mem[p as usize].s0 = RIGHT_BRACE_TOKEN + i32::from(b'}');
+                "}"
             }
-        }
+        };
 
+        let list = self.mem[temp_head as usize].s1;
+        self.begin_token_list(list, INSERTED)?;
         self.report_error(
-            "Missing group-closing token inserted",
+            &format!("Missing {missing} inserted"),
             &[
                 "I've inserted something that you may have forgotten.",
                 "(See the <inserted text> above.)",
@@ -5686,8 +5695,6 @@ impl TeXEngineState {
                 "my insertion and my current dilemma will both disappear.",
             ],
         );
-        let list = self.mem[temp_head as usize].s1;
-        self.begin_token_list(list, INSERTED)?;
         Ok(())
     }
 
@@ -17292,8 +17299,8 @@ mod tests {
             state
                 .transcript
                 .iter()
-                .any(|line| line.contains("Missing group-closing token inserted")
-                    || line.contains("Extra group-closing token")),
+                .any(|line| line.contains("Missing") && line.contains("inserted")
+                    || line.starts_with("! Extra ")),
             "expected off_save diagnostic, got {:?}",
             state.transcript
         );
@@ -17308,8 +17315,7 @@ mod tests {
             state
                 .transcript
                 .iter()
-                .any(|line| line.contains("Missing group-closing token inserted")
-                    || line.contains("Extra group-closing token")),
+                .any(|line| line == "! Extra \\endgroup"),
             "expected off_save diagnostic, got {:?}",
             state.transcript
         );

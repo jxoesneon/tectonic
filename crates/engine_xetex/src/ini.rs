@@ -1226,6 +1226,21 @@ impl TeXEngineState {
         self.name_length = self.name_of_file.len() as i32;
         self.selector = SELECTOR_TERM_AND_LOG;
         self.log_opened = true;
+
+        if let Some(top) = self.input_stack.first().copied() {
+            self.print_nl_cstr("**")?;
+            let mut l = top.limit;
+            if l >= 0
+                && (l as usize) < self.buffer.len()
+                && self.buffer[l as usize] == self.int_par(INT_PAR_END_LINE_CHAR).unwrap_or(-1)
+            {
+                l -= 1;
+            }
+            for k in 1..=l {
+                self.print(self.buffer[k as usize])?;
+            }
+            self.print_ln();
+        }
         Ok(())
     }
 

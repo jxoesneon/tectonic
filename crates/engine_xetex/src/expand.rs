@@ -22,8 +22,8 @@ use crate::scanner::{
 };
 use crate::state::{
     CommandCode, TeXEngineState, TeXMode, ADJUST_NODE, DISC_NODE, GLUE_NODE, HLIST_NODE, INS_NODE,
-    KERN_NODE, MARGIN_KERN_NODE, MARK_NODE, MATH_NODE, NORMAL as NODE_NORMAL, PENALTY_NODE,
-    SA_BOX_VAL, SA_MARK_VAL, TEX_NULL,
+    INT_PAR_TRACING_MACROS, INT_PAR_TRACING_STACK_LEVELS, KERN_NODE, MARGIN_KERN_NODE, MARK_NODE,
+    MATH_NODE, NORMAL as NODE_NORMAL, PENALTY_NODE, SA_BOX_VAL, SA_MARK_VAL, TEX_NULL,
 };
 
 pub(crate) const IF_CODE: u8 = 1;
@@ -293,7 +293,26 @@ impl TeXEngineState {
                     self.flush_list(*head)?;
                 }
             }
+            if matches!(err, TeXMouthError::ParagraphInShortArgument) {
+                // C §414 `goto exit`: the aborted macro yields nothing and
+                // the run continues; the wrapper restores scanner state.
+                return Ok(());
+            }
             return Err(err);
+        }
+
+        if arg_count > 0 {
+            let tracing = self.int_par(INT_PAR_TRACING_MACROS)?;
+            let stack_limit = self.int_par(INT_PAR_TRACING_STACK_LEVELS)?;
+            if tracing > 0 && (stack_limit == 0 || (self.input_ptr as i32) < stack_limit) {
+                for (index, head) in self.pstack.iter().take(arg_count).enumerate() {
+                    if *head == TEX_NULL {
+                        continue;
+                    }
+                    let shown = self.token_list_display_string(*head)?;
+                    self.transcript.push(format!("#{}<-{shown}", index + 1));
+                }
+            }
         }
 
         while self.cur_input.state == TOKEN_LIST
@@ -413,7 +432,8 @@ impl TeXEngineState {
                 return Ok(inner);
             }
             if (LEFT_BRACE_LIMIT..RIGHT_BRACE_LIMIT).contains(&self.cur_tok) {
-                return Err(TeXMouthError::ExtraRightBrace);
+                self.recover_extra_right_brace()?;
+                continue;
             }
             return Ok(vec![self.cur_tok]);
         }
@@ -474,7 +494,8 @@ impl TeXEngineState {
             return Ok(());
         }
         if (LEFT_BRACE_LIMIT..RIGHT_BRACE_LIMIT).contains(&self.cur_tok) {
-            return Err(TeXMouthError::ExtraRightBrace);
+            self.recover_extra_right_brace()?;
+            return Ok(());
         }
         argument.push(self.cur_tok);
         Ok(())
@@ -486,7 +507,12 @@ impl TeXEngineState {
 
         loop {
             self.get_token()?;
-            self.check_argument_par_token()?;
+            if let Err(err) = self.check_argument_par_token() {
+                if matches!(err, TeXMouthError::ParagraphInShortArgument) {
+                    self.align_state -= unbalance;
+                }
+                return Err(err);
+            }
             if self.cur_tok < LEFT_BRACE_LIMIT {
                 unbalance += 1;
             } else if (LEFT_BRACE_LIMIT..RIGHT_BRACE_LIMIT).contains(&self.cur_tok) {
@@ -499,10 +525,45 @@ impl TeXEngineState {
         }
     }
 
-    fn check_argument_par_token(&self) -> Result<(), TeXMouthError> {
+    fn check_argument_par_token(&mut self) -> Result<(), TeXMouthError> {
         if self.cur_tok == self.par_token && self.long_state != CommandCode::LongCall as u8 {
+            self.runaway()?;
+            let name = self.cs_name_text(self.warning_index);
+            self.back_input()?;
+            self.report_error(
+                &format!("Paragraph ended before \\{name} was complete"),
+                &[
+                    "I suspect you've forgotten a `}', causing me to apply this",
+                    "control sequence to too much text. How can we recover?",
+                    "My plan is to forget the whole thing and hope for the best.",
+                ],
+            );
             return Err(TeXMouthError::ParagraphInShortArgument);
         }
+        Ok(())
+    }
+
+    /// C §413: a `}` that does not match a group inside an argument is
+    /// reported, pushed back along with a synthetic `\par`, and the runaway
+    /// machinery then aborts the argument scan on the next iteration.
+    fn recover_extra_right_brace(&mut self) -> Result<(), TeXMouthError> {
+        self.back_input()?;
+        let name = self.cs_name_text(self.warning_index);
+        self.report_error(
+            &format!("Argument of \\{name} has an extra }}"),
+            &[
+                "I've run across a `}' that doesn't seem to match anything.",
+                "For example, `\\def\\a#1{...}' and `\\a}' would produce",
+                "this error. If you simply proceed now, the `\\par' that",
+                "I've just inserted will cause me to report a runaway",
+                "argument that might be the root of the problem. But if",
+                "your `}' was spurious, just type `2' and it will go away.",
+            ],
+        );
+        self.align_state += 1;
+        self.long_state = CommandCode::Call as u8;
+        self.cur_tok = self.par_token;
+        self.back_input()?;
         Ok(())
     }
 
@@ -1330,7 +1391,10 @@ impl TeXEngineState {
         self.insert_character_tokens(text.chars())
     }
 
-    fn token_list_display_string(&self, reference: i32) -> Result<String, TeXMouthError> {
+    pub(crate) fn token_list_display_string(
+        &self,
+        reference: i32,
+    ) -> Result<String, TeXMouthError> {
         let mut output = String::new();
         let mut p = self.mem[self.checked_engine_mem_index(reference)?].s1;
         while p != TEX_NULL {
@@ -1886,7 +1950,7 @@ mod tests {
     }
 
     #[test]
-    fn short_macro_arguments_reject_par_tokens() {
+    fn short_macro_arguments_recover_par_tokens() {
         let mut state = state();
         state
             .define_macro(
@@ -1898,8 +1962,48 @@ mod tests {
             .unwrap();
         state.set_source_text("\\arg \\par");
 
-        let err = state.next_expanded_token().unwrap_err();
-        assert!(matches!(err, TeXMouthError::ParagraphInShortArgument));
+        // C §414: runaway diagnostic, the macro yields nothing, the `\par`
+        // is pushed back and resurfaces as the next token.
+        assert_eq!(state.next_expanded_token().unwrap(), state.par_token);
+        assert!(
+            state
+                .transcript
+                .iter()
+                .any(|line| line == "! Paragraph ended before \\arg was complete"),
+            "expected paragraph-ended diagnostic, got {:?}",
+            state.transcript
+        );
+        let term = String::from_utf8_lossy(&state.term_out);
+        assert!(
+            term.contains("Runaway argument"),
+            "expected runaway diagnostic, got {term:?}"
+        );
+    }
+
+    #[test]
+    fn extra_right_brace_in_argument_recovers_through_runaway() {
+        let mut state = state();
+        state
+            .define_macro(
+                "arg",
+                &[MATCH_MARK, END_MATCH_TOKEN],
+                &[OUT_PARAM_TOKEN + 1],
+                CommandCode::Call,
+            )
+            .unwrap();
+        state.set_source_text("\\arg }");
+
+        // C §413: the `}` error is reported, then the synthetic `\par`
+        // aborts the argument scan through §414's runaway path.
+        assert_eq!(state.next_expanded_token().unwrap(), state.par_token);
+        assert!(
+            state
+                .transcript
+                .iter()
+                .any(|line| line == "! Argument of \\arg has an extra }"),
+            "expected extra-brace diagnostic, got {:?}",
+            state.transcript
+        );
     }
 
     #[test]
