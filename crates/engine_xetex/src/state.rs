@@ -1164,6 +1164,10 @@ pub const ETEX_PEN_DISPLAY_WIDOW: usize = 3;
 
 /// Integer parameter offset for `\escapechar`.
 pub const INT_PAR_ESCAPE_CHAR: usize = 45;
+/// `INT_PAR__default_hyphen_char`.
+pub const INT_PAR_DEFAULT_HYPHEN_CHAR: usize = 46;
+/// `INT_PAR__default_skew_char`.
+pub const INT_PAR_DEFAULT_SKEW_CHAR: usize = 47;
 /// Integer parameter offset for `\globaldefs`.
 pub const INT_PAR_GLOBAL_DEFS: usize = 43;
 /// Integer parameter offset for `\endlinechar`.
@@ -1273,6 +1277,9 @@ pub const INT_PAR_XETEX_INTER_CHAR_TOKENS: usize = 73;
 pub const INT_PAR_XETEX_INTERWORD_SPACE_SHAPING: usize = 78;
 /// Integer parameter offset for `\XeTeXhyphenatablelength`.
 pub const INT_PAR_XETEX_HYPHENATABLE_LENGTH: usize = 80;
+/// Integer parameter offset for `\XeTeXtracingfonts`
+/// (`INT_PAR__xetex_tracing_fonts`).
+pub const INT_PAR_XETEX_TRACING_FONTS: usize = 77;
 /// `INT_PAR__time` — minutes since midnight.
 pub const INT_PAR_TIME: usize = 20;
 /// `INT_PAR__day` — day of month.
@@ -2328,6 +2335,10 @@ pub struct FontRecord {
     /// greedy longest-match UTF-16 rewrites applied to collected words
     /// before metrics are computed.
     pub text_mapping: Vec<(Vec<u16>, Vec<u16>)>,
+    /// Name of the `font_mapping` converter attached at load time
+    /// (`mapping=` feature or `:mapping=` TFM suffix); resolves through
+    /// [`TeXEngineState::font_mappings`].
+    pub mapping_name: Option<String>,
     /// `tfm_font_mapping` character substitution (the `effective_char`
     /// seam).
     pub tfm_font_mapping: HashMap<u32, u32>,
@@ -2388,6 +2399,7 @@ impl Default for FontRecord {
             bchar: TOO_BIG_CHAR,
             false_bchar: TOO_BIG_CHAR,
             text_mapping: Vec::new(),
+            mapping_name: None,
             tfm_font_mapping: HashMap::new(),
         }
     }
@@ -2426,6 +2438,41 @@ pub struct TeXEngineState {
     pub font_id_cs: Vec<i32>,
     /// Deterministic picture bounds registered by embedders, as `(x, y, width, height)`.
     pub picture_bounds: HashMap<String, (f64, f64, f64, f64)>,
+    /// Parsed feature strings per loaded native font (`font_layout_engine`
+    /// payload): script/language/shaper selection plus feature settings.
+    pub font_specs: HashMap<i32, crate::fonts::FontSpec>,
+    /// Raw `.tec` mapping bytes registered by embedders, keyed by mapping
+    /// name (the `load_mapping_file` backend seam).
+    pub tec_sources: HashMap<String, Vec<u8>>,
+    /// Loaded TECkit/text converters keyed by mapping name
+    /// (`font_mapping[f]` resolution seam).
+    pub font_mappings: HashMap<String, crate::fonts::FontMapping>,
+    /// Font-area flag of the most recently loaded native font
+    /// (`native_font_type_flag`).
+    pub native_font_type_flag: u16,
+    /// Mapping name produced by the last `load_ot_font` `mapping=` feature
+    /// (`loaded_font_mapping`); `None` when no converter is attached.
+    pub loaded_font_mapping: Option<String>,
+    /// Font flags produced by the last `load_ot_font` (`loaded_font_flags`).
+    pub loaded_font_flags: u16,
+    /// Letter-space produced by the last `load_ot_font`
+    /// (`loaded_font_letter_space`), in scaled points.
+    pub loaded_font_letter_space: i32,
+    /// Design size of the most recently loaded native font
+    /// (`loaded_font_design_size`), in scaled points.
+    pub loaded_font_design_size: i32,
+    /// Requested rendering engine for the current font spec
+    /// (`getReqEngine`/`setReqEngine`): `b'A'`, `b'O'`, `b'G'`, or 0.
+    pub req_engine: u8,
+    /// Saved `:mapping=` name captured by `check_for_tfm_font_mapping`
+    /// (`saved_mapping_name`).
+    pub saved_mapping_name: Option<String>,
+    /// Resolved scaled size from the `find_native_font` dsize probe (C's
+    /// `scaled_size` out-parameter update).
+    pub find_native_font_scaled: i32,
+    /// Font spec produced by `find_native_font`→`load_ot_font`, awaiting
+    /// attachment to the loaded font slot in `load_native_font`.
+    pub pending_font_spec: Option<crate::fonts::FontSpec>,
 
     /// Current scanned value (`cur_val`).
     pub cur_val: i32,
@@ -3297,6 +3344,18 @@ impl TeXEngineState {
             font_sources: HashMap::new(),
             font_id_cs: vec![-1],
             picture_bounds: HashMap::new(),
+            font_specs: HashMap::new(),
+            tec_sources: HashMap::new(),
+            font_mappings: HashMap::new(),
+            native_font_type_flag: 0,
+            loaded_font_mapping: None,
+            loaded_font_flags: 0,
+            loaded_font_letter_space: 0,
+            loaded_font_design_size: 0,
+            req_engine: 0,
+            saved_mapping_name: None,
+            find_native_font_scaled: 0,
+            pending_font_spec: None,
             cur_val: 0,
             cur_cmd: 0,
             cur_chr: 0,
@@ -5848,9 +5907,16 @@ impl TeXEngineState {
         let mapped = if self.xtx_ligature_present {
             c
         } else {
-            self.font_record(f)
-                .and_then(|record| record.tfm_font_mapping.get(&(c.max(0) as u32)).copied())
-                .map_or(c, |m| m as i32)
+            match self.font_record(f).and_then(|r| r.mapping_name.clone()) {
+                // A `:mapping=` byte converter (`apply_tfm_font_mapping`).
+                Some(name) if self.font_mappings.contains_key(&name) => {
+                    i32::from(self.apply_tfm_font_mapping(&name, c.max(0) as u16))
+                }
+                _ => self
+                    .font_record(f)
+                    .and_then(|record| record.tfm_font_mapping.get(&(c.max(0) as u32)).copied())
+                    .map_or(c, |m| m as i32),
+            }
         };
         self.xtx_ligature_present = false;
         mapped
@@ -5963,12 +6029,18 @@ impl TeXEngineState {
     }
 
     /// Applies the font's registered text mapping (`apply_mapping`):
-    /// greedy longest-match substitution over UTF-16 code units, identity
-    /// when the record carries no `text_mapping`.
+    /// the named `font_mappings` converter attached by `mapping=` when
+    /// present, else greedy longest-match substitution over the record's
+    /// `text_mapping` pairs; identity when neither exists.
     pub fn apply_text_mapping(&self, f: i32, input: &[u16]) -> Vec<u16> {
         let Some(record) = self.font_record(f) else {
             return input.to_vec();
         };
+        if let Some(name) = &record.mapping_name {
+            if let Some(mapping) = self.font_mappings.get(name) {
+                return mapping.converter.convert_text(input);
+            }
+        }
         if record.text_mapping.is_empty() {
             return input.to_vec();
         }

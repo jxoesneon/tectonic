@@ -80,26 +80,26 @@ use crate::state::{
     INT_PAR_XETEX_DEFAULT_INPUT_ENCODING, INT_PAR_XETEX_DEFAULT_INPUT_MODE,
     INT_PAR_XETEX_INTERWORD_SPACE_SHAPING, INT_PAR_XETEX_INTER_CHAR_TOKENS,
     INT_PAR_XETEX_LINEBREAK_LOCALE, INT_PAR_XETEX_LINEBREAK_PENALTY, INT_PAR_XETEX_PROTRUDE_CHARS,
-    INT_PAR_XETEX_UPWARDS, KERN_NODE, LANGUAGE_NODE, LAST_BOX_CODE, LC_CODE_BASE, LEADER_FLAG,
-    LEFT_NOAD, LEFT_TO_RIGHT, LIGATURE_NODE, LIG_TAG, LOCAL_BASE, LOCAL_ERR_HELP, LOCAL_EVERY_CR,
-    LOCAL_EVERY_DISPLAY, LOCAL_EVERY_HBOX, LOCAL_EVERY_MATH, LOCAL_EVERY_PAR, LOCAL_EVERY_VBOX,
-    LOCAL_OUTPUT_ROUTINE, LOCAL_PAR_SHAPE, LOCAL_XETEX_INTER_CHAR_TOKS, LOOSE_FIT, LP_CODE_BASE,
-    L_CODE, MARGIN_KERN_NODE, MARK_NODE, MATH_CHAR, MATH_CHOICE_GROUP, MATH_CODE_BASE,
-    MATH_FIELD_EMPTY, MATH_FONT_BASE_C, MATH_GROUP, MATH_LEFT_GROUP, MATH_NODE, MATH_SHIFT_GROUP,
-    MAX_HALFWORD, MAX_HYPH_CHAR, MEDIUM_NODE_SIZE, MIN_HALFWORD, MSKIP_CODE, MU_GLUE, MU_SKIP_BASE,
-    NATIVE_WORD_NODE, NATIVE_WORD_NODE_AT, NON_ADDRESS, NORMAL, NO_ALIGN_GROUP, NULL_FLAG,
-    OPEN_NODE, OPEN_NODE_SIZE, OP_NOAD, ORD_NOAD, OUTPUT_GROUP, OVER_CODE, PAGE_BOX_THERE,
-    PAGE_EMPTY, PAGE_INSERTS_ONLY, PAGE_INS_NODE_SIZE, PAGE_SO_FAR_COUNT, PASSIVE_NODE_SIZE,
-    PDF_NODE, PDF_SAVE_POS_NODE, PENALTY_NODE, PIC_NODE, PIC_NODE_SIZE, QUAD_CODE, RADICAL_NOAD,
-    RADICAL_NOAD_SIZE, RIGHT_NOAD, RIGHT_TO_LEFT, RULE_NODE, RULE_NODE_SIZE, R_CODE, SA_BOX_VAL,
-    SA_INTER_CHAR_VAL, SA_MARK_VAL, SA_TOK_VAL, SCRIPT_SCRIPT_SIZE, SCRIPT_SIZE, SELECTOR_NO_PRINT,
-    SELECTOR_TERM_ONLY, SEMI_SIMPLE_GROUP, SF_CODE_BASE, SHIP_OUT_FLAG, SHRINKING, SIMPLE_GROUP,
-    SKIP_BASE, SKIP_CODE, SLANT_CODE, SMALL_NODE_SIZE, SPACE_ADJUSTMENT, SPACE_CODE,
-    SPACE_SHRINK_CODE, SPACE_STRETCH_CODE, SPAN_NODE_SIZE, SPECIAL_NODE, STRETCHING, SUB_BOX,
-    SUB_MLIST, TEXT_SIZE, TEXT_STYLE, TEX_NULL, TIGHT_FIT, TOKS_BASE, TOO_BIG_CHAR, TOP_MARK_CODE,
-    TOTAL_MATHEX_PARAMS, TOTAL_MATHSY_PARAMS, UC_CODE_BASE, UNHYPHENATED, UNSET_NODE, VBOX_GROUP,
-    VCENTER_GROUP, VERY_LOOSE_FIT, VLIST_NODE, VSPLIT_CODE, VTOP_CODE, VTOP_GROUP, WHATSIT_NODE,
-    WRITE_NODE, WRITE_NODE_SIZE, X_HEIGHT_CODE,
+    INT_PAR_XETEX_TRACING_FONTS, INT_PAR_XETEX_UPWARDS, KERN_NODE, LANGUAGE_NODE, LAST_BOX_CODE,
+    LC_CODE_BASE, LEADER_FLAG, LEFT_NOAD, LEFT_TO_RIGHT, LIGATURE_NODE, LIG_TAG, LOCAL_BASE,
+    LOCAL_ERR_HELP, LOCAL_EVERY_CR, LOCAL_EVERY_DISPLAY, LOCAL_EVERY_HBOX, LOCAL_EVERY_MATH,
+    LOCAL_EVERY_PAR, LOCAL_EVERY_VBOX, LOCAL_OUTPUT_ROUTINE, LOCAL_PAR_SHAPE,
+    LOCAL_XETEX_INTER_CHAR_TOKS, LOOSE_FIT, LP_CODE_BASE, L_CODE, MARGIN_KERN_NODE, MARK_NODE,
+    MATH_CHAR, MATH_CHOICE_GROUP, MATH_CODE_BASE, MATH_FIELD_EMPTY, MATH_FONT_BASE_C, MATH_GROUP,
+    MATH_LEFT_GROUP, MATH_NODE, MATH_SHIFT_GROUP, MAX_HALFWORD, MAX_HYPH_CHAR, MEDIUM_NODE_SIZE,
+    MIN_HALFWORD, MSKIP_CODE, MU_GLUE, MU_SKIP_BASE, NATIVE_WORD_NODE, NATIVE_WORD_NODE_AT,
+    NON_ADDRESS, NORMAL, NO_ALIGN_GROUP, NULL_FLAG, OPEN_NODE, OPEN_NODE_SIZE, OP_NOAD, ORD_NOAD,
+    OUTPUT_GROUP, OVER_CODE, PAGE_BOX_THERE, PAGE_EMPTY, PAGE_INSERTS_ONLY, PAGE_INS_NODE_SIZE,
+    PAGE_SO_FAR_COUNT, PASSIVE_NODE_SIZE, PDF_NODE, PDF_SAVE_POS_NODE, PENALTY_NODE, PIC_NODE,
+    PIC_NODE_SIZE, QUAD_CODE, RADICAL_NOAD, RADICAL_NOAD_SIZE, RIGHT_NOAD, RIGHT_TO_LEFT,
+    RULE_NODE, RULE_NODE_SIZE, R_CODE, SA_BOX_VAL, SA_INTER_CHAR_VAL, SA_MARK_VAL, SA_TOK_VAL,
+    SCRIPT_SCRIPT_SIZE, SCRIPT_SIZE, SELECTOR_NO_PRINT, SELECTOR_TERM_ONLY, SEMI_SIMPLE_GROUP,
+    SF_CODE_BASE, SHIP_OUT_FLAG, SHRINKING, SIMPLE_GROUP, SKIP_BASE, SKIP_CODE, SLANT_CODE,
+    SMALL_NODE_SIZE, SPACE_ADJUSTMENT, SPACE_CODE, SPACE_SHRINK_CODE, SPACE_STRETCH_CODE,
+    SPAN_NODE_SIZE, SPECIAL_NODE, STRETCHING, SUB_BOX, SUB_MLIST, TEXT_SIZE, TEXT_STYLE, TEX_NULL,
+    TIGHT_FIT, TOKS_BASE, TOO_BIG_CHAR, TOP_MARK_CODE, TOTAL_MATHEX_PARAMS, TOTAL_MATHSY_PARAMS,
+    UC_CODE_BASE, UNHYPHENATED, UNSET_NODE, VBOX_GROUP, VCENTER_GROUP, VERY_LOOSE_FIT, VLIST_NODE,
+    VSPLIT_CODE, VTOP_CODE, VTOP_GROUP, WHATSIT_NODE, WRITE_NODE, WRITE_NODE_SIZE, X_HEIGHT_CODE,
 };
 use crate::state::{
     OtMathAssembly, BIN_NOAD, CHOICE_NODE, CLOSE_NOAD, DIMEN_PAR_DELIMITER_SHORTFALL,
@@ -1678,10 +1678,13 @@ impl TeXEngineState {
         Ok(None)
     }
 
-    /// Loads a font record through the registered `font_sources` registry
-    /// (`read_font_info`). Unregistered names follow the C error path: a
-    /// transcript diagnostic (suppressed by `\suppressfontnotfounderror`) and
-    /// `nullfont` substitution.
+    /// Loads a font record (`read_font_info`), following C's dispatch:
+    /// `quoted_filename` (or any name carrying `[`/`:`/`/` native syntax)
+    /// goes straight to `load_native_font`; otherwise the registered
+    /// `font_sources`/`input_byte_sources` TFM seam is tried first and a
+    /// miss falls back to `load_native_font` before the `bad_tfm` error.
+    /// `\XeTeXtracingfonts` diagnostics and the `:mapping=` suffix handling
+    /// mirror the C path.
     fn read_font_info(&mut self, s: i32) -> Result<i32, TeXMouthError> {
         let key: String = self
             .cur_area
@@ -1695,12 +1698,46 @@ impl TeXEngineState {
             .filter_map(|&unit| char::from_u32(unit as u32))
             .collect();
 
+        if self.int_par(INT_PAR_XETEX_TRACING_FONTS)? > 0 {
+            let size_text = if s < 0 {
+                format!(" scaled {}", -s)
+            } else {
+                format!(" at {}pt", s as f64 / 65_536.0)
+            };
+            self.transcript
+                .push(format!("Requested font \"{key}\"{size_text}"));
+        }
+
+        // `name_of_file` carries the packed name for the native loader and
+        // the `:mapping=` check.
+        self.name_of_file = key.bytes().collect();
+        self.name_length = self.name_of_file.len() as i32;
+
+        let native_syntax = self.quoted_filename
+            || name_key.starts_with('[')
+            || name_key.contains(':')
+            || name_key.contains('/');
+        if native_syntax {
+            let font = self.load_native_font(s)?;
+            if font != 0 {
+                return Ok(font);
+            }
+        }
+
+        self.check_for_tfm_font_mapping();
+
         let Some(mut record) = self
             .font_sources
             .get(&key)
             .or_else(|| self.font_sources.get(&name_key))
             .cloned()
         else {
+            if !native_syntax {
+                let font = self.load_native_font(s)?;
+                if font != 0 {
+                    return Ok(font);
+                }
+            }
             if self.int_par(INT_PAR_SUPPRESS_FONTNOTFOUND_ERROR)? <= 0 {
                 self.transcript.push(format!(
                     "! Font ={key} not loadable: Metric (TFM) file or installed font not found"
@@ -1722,6 +1759,10 @@ impl TeXEngineState {
         let font = self.font_table.len() as i32;
         self.font_table.push(record);
         self.font_id_cs.push(-1);
+        // `font_mapping[f] = load_tfm_font_mapping()`.
+        if let Some(name) = self.load_tfm_font_mapping() {
+            self.font_table[font as usize].mapping_name = Some(name);
+        }
         Ok(font)
     }
 
@@ -11399,6 +11440,20 @@ impl TeXEngineState {
         if !self.is_char_node(p) && self.node_type(p)? == WHATSIT_NODE {
             let subtype = self.node_subtype(p)?;
             if subtype == NATIVE_WORD_NODE || subtype == NATIVE_WORD_NODE_AT {
+                if self.has_native_glyph_info(p) {
+                    let f = i32::from(self.word_at(p, 4)?.b16_s2());
+                    let quad = self
+                        .font_record(f)
+                        .and_then(|record| {
+                            usize::try_from(QUAD_CODE)
+                                .ok()
+                                .and_then(|i| record.params.get(i))
+                                .copied()
+                        })
+                        .unwrap_or(0);
+                    let code = self.real_get_native_word_cp(p, side);
+                    return Ok(self.round_xn_over_d(quad, code, 1000));
+                }
                 return Ok(0);
             }
             if subtype == GLYPH_NODE {
