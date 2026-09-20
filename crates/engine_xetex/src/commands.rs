@@ -704,6 +704,10 @@ impl TeXEngineState {
                 if self.mode == TeXMode::Vmode as i16 {
                     if self.its_all_over()? {
                         self.job_stopped = true;
+                        if !self.dvi_finalized {
+                            self.finalize_dvi_file()?;
+                            self.dvi_finalized = true;
+                        }
                     }
                     Ok(())
                 } else if self.mode.abs() == TeXMode::Mmode as i16 {
@@ -2349,22 +2353,7 @@ impl TeXEngineState {
                 });
             }
             WRITE_NODE => {
-                let stream = self.word_at(p, 1)?.s0;
-                let reference = self.stored_token_list_start(self.word_at(p, 1)?.s1)?;
-                let text = self.token_list_to_string(reference)?;
-                if (0..16).contains(&stream) {
-                    let index = stream as usize;
-                    if self.write_stream_open(stream) {
-                        if let Some(target) = &mut self.write_streams[index] {
-                            target.text.push_str(&text);
-                            target.text.push('\n');
-                        }
-                    } else {
-                        self.transcript.push(text);
-                    }
-                } else {
-                    self.transcript.push(text);
-                }
+                self.write_out(p)?;
             }
             CLOSE_NODE => {
                 let stream = self.word_at(p, 1)?.s0;
@@ -2374,11 +2363,12 @@ impl TeXEngineState {
                 self.write_open[stream as usize] = false;
             }
             SPECIAL_NODE => {
-                let reference = self.stored_token_list_start(self.word_at(p, 1)?.s1)?;
-                self.special_texts
-                    .push(self.token_list_to_string(reference)?);
+                self.special_out(p)?;
             }
-            _ => {}
+            LANGUAGE_NODE => {}
+            _ => {
+                return Err(self.confusion("ext4"));
+            }
         }
         Ok(())
     }
@@ -6878,13 +6868,18 @@ impl TeXEngineState {
     /// Converts the collected math list to a horizontal list
     /// (`mlist_to_hlist`); the conversion engine is WP-13b-ii.
     /// Returns a `Confusion`-equivalent internal error (`confusion`).
-    fn confusion(&self, context: &'static str) -> TeXMouthError {
+    pub(crate) fn confusion(&self, context: &'static str) -> TeXMouthError {
         TeXMouthError::UnsupportedPrimitive(match context {
             "mlist1" => "internal inconsistency: mlist1",
             "mlist2" => "internal inconsistency: mlist2",
             "mlist3" => "internal inconsistency: mlist3",
             "mlist4" => "internal inconsistency: mlist4",
             "vcenter" => "internal inconsistency: vcenter",
+            "LR2" => "internal inconsistency: LR2",
+            "LR3" => "internal inconsistency: LR3",
+            "vlistout" => "internal inconsistency: vlistout",
+            "ext4" => "internal inconsistency: ext4",
+            "dvi length exceeds 0x7FFFFFFF" => "dvi length exceeds 0x7FFFFFFF",
             _ => "internal inconsistency",
         })
     }
@@ -10711,15 +10706,6 @@ impl TeXEngineState {
         Ok(())
     }
 
-    /// Ships a completed page box (`ship_out`).
-    ///
-    /// The pure-Rust engine records ownership transfer to the output backend;
-    /// DVI/XDV emission is layered above this state boundary.
-    fn ship_out(&mut self, boxed: i32) -> Result<(), TeXMouthError> {
-        self.shipped_pages.push(boxed);
-        Ok(())
-    }
-
     /// Runs the contribution transfer/output cycle (`build_page`).
     fn build_page(&mut self) -> Result<(), TeXMouthError> {
         #[derive(Clone, Copy, PartialEq, Eq)]
@@ -13842,7 +13828,7 @@ mod tests {
         TeXMode, ADJUST_NODE, BOX_FLAG, CHAR_CLASS_LIMIT, FIL, GLUE_NODE, HBOX_GROUP, INSERT_GROUP,
         INS_NODE, INT_PAR_END_LINE_CHAR, KERN_NODE, LEVEL_ONE, LEVEL_ZERO, LOCAL_BASE,
         LOCAL_EVERY_EOF, LOCAL_PAR_SHAPE, PAGE_BOX_THERE, PENALTY_NODE, SELECTOR_LOG_ONLY,
-        SELECTOR_TERM_ONLY,
+        SELECTOR_TERM_ONLY, XXX1,
     };
 
     const LETTER_TOKEN: i32 = 11 * MAX_CHAR_VAL;
@@ -15465,7 +15451,10 @@ mod tests {
         let special = state.tail;
         assert_eq!(state.node_subtype(special).unwrap(), SPECIAL_NODE);
         state.out_what(special).unwrap();
-        assert_eq!(state.special_texts, vec!["pdf:literal"]);
+        // XXX1 opcode + one-byte length + payload bytes.
+        let mut expected = vec![XXX1, b"pdf:literal".len() as u8];
+        expected.extend_from_slice(b"pdf:literal");
+        assert_eq!(&state.dvi_buf[..expected.len()], expected.as_slice());
         assert!(state.epochseconds > 0 || state.microseconds >= 0);
     }
 

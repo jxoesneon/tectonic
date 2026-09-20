@@ -675,6 +675,110 @@ pub const INF_BAD: i32 = 10_000;
 /// Infinite penalty suppressing a break (`inf_penalty`).
 pub const INF_PENALTY: i32 = 10_000;
 
+/// XDV output staging buffer capacity (`DVI_BUF_SIZE`).
+pub const DVI_BUF_SIZE: usize = 16_384;
+/// Half of the staging buffer; the `dvi_swap` granularity (`HALF_BUF`).
+pub const HALF_BUF: usize = 8_192;
+
+/// DVI opcode: set a character with a one-byte code (`set1`).
+pub const SET1: u8 = 128;
+/// DVI opcode: typeset a rule and advance (`set_rule`).
+pub const SET_RULE: u8 = 132;
+/// DVI opcode: typeset a rule without advancing (`put_rule`).
+pub const PUT_RULE: u8 = 137;
+/// DVI opcode: beginning of page (`bop`).
+pub const BOP: u8 = 139;
+/// DVI opcode: end of page (`eop`).
+pub const EOP: u8 = 140;
+/// DVI opcode: push position (`push`).
+pub const PUSH: u8 = 141;
+/// DVI opcode: pop position (`pop`).
+pub const POP: u8 = 142;
+/// DVI opcode: move right one byte (`right1`); `right2..right4` follow.
+pub const RIGHT1: u8 = 143;
+/// DVI opcode: move down one byte (`down1`); `down2..down4` follow.
+pub const DOWN1: u8 = 157;
+/// DVI opcode: select font 0 (`fnt_num_0`); fonts 1..=3 follow.
+pub const FNT_NUM_0: u8 = 171;
+/// DVI opcode: select font with a one-byte number (`fnt1`); up to `fnt4`.
+pub const FNT1: u8 = 235;
+/// DVI opcode: one-byte-length special (`xxx1`); `xxx2..xxx4` follow.
+pub const XXX1: u8 = 239;
+/// DVI opcode: four-byte-length special (`xxx4`).
+pub const XXX4: u8 = 242;
+/// DVI opcode: font definition with a one-byte number (`fnt_def1`).
+pub const FNT_DEF1: u8 = 243;
+/// DVI opcode: preamble (`pre`).
+pub const PRE: u8 = 247;
+/// DVI opcode: postamble (`post`).
+pub const POST: u8 = 248;
+/// DVI opcode: postamble tail (`post_post`).
+pub const POST_POST: u8 = 249;
+/// XDV opcode: native-font definition (`define_native_font`).
+pub const DEFINE_NATIVE_FONT: u8 = 252;
+/// XDV opcode: positioned glyph array (`set_glyphs`).
+pub const SET_GLYPHS: u8 = 253;
+/// XDV opcode: text plus positioned glyphs (`set_text_and_glyphs`).
+pub const SET_TEXT_AND_GLYPHS: u8 = 254;
+/// XDV format identification byte (`XDV_ID_BYTE`).
+pub const XDV_ID_BYTE: u8 = 7;
+/// Semantic-pagination format identification byte (`SPX_ID_BYTE`).
+pub const SPX_ID_BYTE: u8 = 100;
+/// Native-font definition flag: vertical forms (`XDV_FLAG_VERTICAL`).
+pub const XDV_FLAG_VERTICAL: u16 = 0x0100;
+/// Native-font definition flag: explicit color (`XDV_FLAG_COLORED`).
+pub const XDV_FLAG_COLORED: u16 = 0x0200;
+/// Native-font definition flag: horizontal extend (`XDV_FLAG_EXTEND`).
+pub const XDV_FLAG_EXTEND: u16 = 0x1000;
+/// Native-font definition flag: slant (`XDV_FLAG_SLANT`).
+pub const XDV_FLAG_SLANT: u16 = 0x2000;
+/// Native-font definition flag: embolden (`XDV_FLAG_EMBOLDEN`).
+pub const XDV_FLAG_EMBOLDEN: u16 = 0x4000;
+/// Native font flag: colored (`FONT_FLAGS_COLORED`).
+pub const FONT_FLAGS_COLORED: u16 = 0x01;
+/// Native font flag: vertical (`FONT_FLAGS_VERTICAL`).
+pub const FONT_FLAGS_VERTICAL: u16 = 0x02;
+
+/// Size of a movement-record node in memory words (`MOVEMENT_NODE_SIZE`).
+pub const MOVEMENT_NODE_SIZE: i32 = 3;
+/// Movement-record state: nothing seen yet (`MOV_NONE_SEEN`).
+pub const MOV_NONE_SEEN: i32 = 0;
+/// Movement-record state: this distance is the current `y` (`MOV_Y_HERE`).
+pub const MOV_Y_HERE: i32 = 1;
+/// Movement-record state: this distance is the current `z` (`MOV_Z_HERE`).
+pub const MOV_Z_HERE: i32 = 2;
+/// Movement-record state: distance usable as `y` or `z` (`MOV_YZ_OK`).
+pub const MOV_YZ_OK: i32 = 3;
+/// Movement-record state: distance usable as `y` only (`MOV_Y_OK`).
+pub const MOV_Y_OK: i32 = 4;
+/// Movement-record state: distance usable as `z` only (`MOV_Z_OK`).
+pub const MOV_Z_OK: i32 = 5;
+/// Movement-record state: a `y`-candidate was seen (`MOV_Y_SEEN`); C also
+/// spells this value `MOV_D_FIXED` in the "w0/z0 fixed" sense.
+pub const MOV_Y_SEEN: i32 = 6;
+/// Alias of [`MOV_Y_SEEN`] used when patching records to `d`-fixed
+/// (`MOV_D_FIXED`).
+pub const MOV_D_FIXED: i32 = MOV_Y_SEEN;
+/// Movement-record state: a `z`-candidate was seen (`MOV_Z_SEEN`).
+pub const MOV_Z_SEEN: i32 = 12;
+
+/// Box `lr_mode` marking a direction-reversed list (`reversed`).
+pub const REVERSED: i32 = 1;
+/// Box `lr_mode` marking a list reversed in a `dlist` context
+/// (`DLIST`).
+pub const DLIST: i32 = 2;
+
+/// `\hoffset` dimension parameter (`DIMEN_PAR__h_offset`).
+pub const DIMEN_PAR_H_OFFSET: usize = 18;
+/// `\voffset` dimension parameter (`DIMEN_PAR__v_offset`).
+pub const DIMEN_PAR_V_OFFSET: usize = 19;
+/// `\pdfpagewidth` dimension parameter (`DIMEN_PAR__pdf_page_width`).
+pub const DIMEN_PAR_PDF_PAGE_WIDTH: usize = 21;
+/// `\pdfpageheight` dimension parameter (`DIMEN_PAR__pdf_page_height`).
+pub const DIMEN_PAR_PDF_PAGE_HEIGHT: usize = 22;
+/// `\tracingoutput` integer parameter (`INT_PAR__tracing_output`).
+pub const INT_PAR_TRACING_OUTPUT: usize = 34;
+
 /// Size of an `if_node` in memory words.
 pub const IF_NODE_SIZE: i32 = 2;
 /// Size of a small node in memory words.
@@ -1468,6 +1572,10 @@ pub const SPLIT_UP: u16 = 1;
 pub const PAGE_INS_NODE_SIZE: i32 = 4;
 /// Leader glue subtype base (`A_LEADERS`).
 pub const A_LEADERS: i32 = 100;
+/// Leader glue subtype for centered leaders (`C_LEADERS`).
+pub const C_LEADERS: u16 = 101;
+/// Leader glue subtype for expanded leaders (`X_LEADERS`).
+pub const X_LEADERS: u16 = 102;
 /// Box context flag for `\setbox` (`BOX_FLAG`).
 pub const BOX_FLAG: i32 = 0x4000_0000;
 /// Box context flag for `\global\setbox` (`GLOBAL_BOX_FLAG`).
@@ -1795,6 +1903,29 @@ pub struct WriteStream {
     pub text: String,
 }
 
+/// Positioned-glyph record attached to a native-word or glyph node; the
+/// memory-safe equivalent of C's `native_glyph_info_ptr` buffer: one
+/// `FixedPoint` location plus a glyph id per glyph
+/// (`native_glyph_info_size = 10` bytes serialized).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct NativeGlyphLoc {
+    /// Horizontal offset of the glyph origin in scaled points.
+    pub x: i32,
+    /// Vertical offset of the glyph origin in scaled points.
+    pub y: i32,
+    /// Glyph index in the node's font.
+    pub glyph: u16,
+}
+
+/// Per-glyph positioning data attached to a native-word node
+/// (`native_glyph_info_ptr` + `native_glyph_count`).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct NativeGlyphInfo {
+    /// Locations and glyph ids, parallel to C's `locations`/`glyphIDs`
+    /// arrays.
+    pub glyphs: Vec<NativeGlyphLoc>,
+}
+
 /// Per-glyph metrics reported by a native layout engine
 /// (`getGlyphWidthFromEngine`, `getGlyphHeightDepth`, and
 /// `getGlyphSidebearings` data).
@@ -1961,6 +2092,25 @@ pub struct FontRecord {
     /// Native engine class reported by `\XeTeXfonttype` for `OTGR` fonts:
     /// `2` OpenType, `3` Graphite, `0` unknown.
     pub font_type: i32,
+    /// Font flag bits from the layout engine (`font_flags`:
+    /// [`FONT_FLAGS_COLORED`]/[`FONT_FLAGS_VERTICAL`]).
+    pub font_flags: u16,
+    /// Source file name reported by `getFontFilename` for XDV font
+    /// definitions.
+    pub layout_filename: String,
+    /// Face index within the font file (`getFontFilename` index output).
+    pub layout_face_index: u32,
+    /// Foreground color as packed RGBA (`getRgbValue`).
+    pub layout_rgba: u32,
+    /// Horizontal scale factor in `D2Fix` form (`getExtendFactor`;
+    /// `65536` = 1.0 = none).
+    pub layout_extend: i32,
+    /// Slant factor in `D2Fix` form (`getSlantFactor`; `0` = none).
+    pub layout_slant: i32,
+    /// Embolden factor in `D2Fix` form (`getEmboldenFactor`; `0` = none).
+    pub layout_embolden: i32,
+    /// Point size in scaled points (`getPointSize` as `D2Fix`).
+    pub layout_point_size: i32,
     /// TFM lig/kern program (`font_info` LIG/KERN words); index 0 is the
     /// `NON_ADDRESS` sentinel slot.
     pub lig_kern: Vec<LigKernInsn>,
@@ -2016,6 +2166,14 @@ impl Default for FontRecord {
             glyph_count: 0,
             letter_space: 0,
             font_type: 0,
+            font_flags: 0,
+            layout_filename: String::new(),
+            layout_face_index: 0,
+            layout_rgba: 0,
+            layout_extend: 65_536,
+            layout_slant: 0,
+            layout_embolden: 0,
+            layout_point_size: 0,
             has_math_table: false,
             mathsy_params: HashMap::new(),
             mathex_params: HashMap::new(),
@@ -2131,8 +2289,6 @@ pub struct TeXEngineState {
     pub write_open: Vec<bool>,
     /// State-owned output streams indexed by TeX stream number.
     pub write_streams: Vec<Option<WriteStream>>,
-    /// Expanded text emitted by immediate or shipped `\special` nodes.
-    pub special_texts: Vec<String>,
     /// Whether the long default `\errmessage` help text has already been shown.
     pub long_help_seen: bool,
     /// Page-builder contents state (`EMPTY`, `INSERTS_ONLY`, or `BOX_THERE`).
@@ -2191,6 +2347,77 @@ pub struct TeXEngineState {
     pub lr_ptr: i32,
     /// TeX--XeT direction-stack mismatch counter (`LR_problems`).
     pub lr_problems: i32,
+    /// XDV output staging buffer (`dvi_buf`), always [`DVI_BUF_SIZE`] bytes.
+    pub dvi_buf: Vec<u8>,
+    /// End of the writable half of [`Self::dvi_buf`] (`dvi_limit`).
+    pub dvi_limit: i32,
+    /// Next free byte in [`Self::dvi_buf`] (`dvi_ptr`).
+    pub dvi_ptr: i32,
+    /// Absolute output-stream offset of `dvi_buf[0]` (`dvi_offset`).
+    pub dvi_offset: i32,
+    /// Output bytes already flushed to the file (`dvi_gone`).
+    pub dvi_gone: i32,
+    /// Accumulated XDV file contents; the per-engine replacement for C's
+    /// `dvi_file` stream (`write_to_dvi` appends staged halves here).
+    pub dvi_bytes: Vec<u8>,
+    /// Set once `finalize_dvi_file` has written the postamble; guards
+    /// against re-entry if dispatch resumes after `job_stopped`.
+    pub dvi_finalized: bool,
+    /// Whether the XDV output stream has been opened this job
+    /// (`output_file_name != 0` in C).
+    pub output_file_opened: bool,
+    /// Resolved output file name once opened (`output_file_name`).
+    pub output_file_name: String,
+    /// Job name used to derive output file names (`job_name`; `None`
+    /// mirrors C's `job_name == 0`).
+    pub job_name: Option<String>,
+    /// Vertical movement-record list head (`down_ptr`).
+    pub down_ptr: i32,
+    /// Horizontal movement-record list head (`right_ptr`).
+    pub right_ptr: i32,
+    /// Horizontal position in the XDV stream (`dvi_h`).
+    pub dvi_h: i32,
+    /// Vertical position in the XDV stream (`dvi_v`).
+    pub dvi_v: i32,
+    /// Currently selected output font (`dvi_f`).
+    pub dvi_f: i32,
+    /// Reference-point horizontal coordinate (`cur_h`).
+    pub cur_h: i32,
+    /// Reference-point vertical coordinate (`cur_v`).
+    pub cur_v: i32,
+    /// Nesting depth of `push`/`pop` in the output (`cur_s`).
+    pub cur_s: i32,
+    /// Absolute horizontal page origin offset (`cur_h_offset`).
+    pub cur_h_offset: i32,
+    /// Absolute vertical page origin offset (`cur_v_offset`).
+    pub cur_v_offset: i32,
+    /// Current page width (`cur_page_width`).
+    pub cur_page_width: i32,
+    /// Current page height (`cur_page_height`).
+    pub cur_page_height: i32,
+    /// Tallest page height+depth+offset seen (`max_v`).
+    pub max_v: i32,
+    /// Widest page width+offset seen (`max_h`).
+    pub max_h: i32,
+    /// Deepest `push` nesting emitted (`max_push`).
+    pub max_push: i32,
+    /// Completed page count for the postamble (`total_pages`).
+    pub total_pages: i32,
+    /// Byte offset of the most recent `bop` (`last_bop`).
+    pub last_bop: i32,
+    /// Locked magnification for `prepare_mag` (`mag_set`).
+    pub mag_set: i32,
+    /// Whether leader boxes are being emitted (`doing_leaders`).
+    pub doing_leaders: bool,
+    /// Whether a `\special` is being emitted (`doing_special`).
+    pub doing_special: bool,
+    /// Whether SyncTeX recording is enabled; all `synctex_*` recorders
+    /// early-return when false, matching the C guards.
+    pub synctex_enabled: bool,
+    /// Per-glyph positioning data attached to native-word/glyph nodes:
+    /// the memory-safe replacement for C's `native_glyph_info_ptr`
+    /// malloc'd side buffer, keyed by node address.
+    pub native_glyph_info: HashMap<i32, NativeGlyphInfo>,
     /// Whether a XeTeX ligature node was encountered while packaging.
     pub xtx_ligature_present: bool,
     /// Previous `\XeTeXcharclass` seen by `main_loop` (`prev_class`).
@@ -2386,6 +2613,10 @@ pub struct TeXEngineState {
     pub microseconds: i32,
     /// Whether unrestricted shell escape is enabled (`shell_escape_enabled`).
     pub shell_escape_enabled: bool,
+    /// `\write18` command strings collected for the driver to execute
+    /// (replaces C's direct `ttstub_shell_escape` call; the pure engine
+    /// never spawns processes).
+    pub shell_escape_requests: Vec<String>,
     /// Horizontal position recorded by the most recent `\pdfsavepos`
     /// (`pdf_last_x_pos`).
     pub pdf_last_x_pos: i32,
@@ -2666,7 +2897,6 @@ impl TeXEngineState {
             string_pool: Vec::new(),
             write_open: vec![false; 16],
             write_streams: vec![None; 16],
-            special_texts: Vec::new(),
             long_help_seen: false,
             page_contents: PAGE_EMPTY,
             output_active: false,
@@ -2692,10 +2922,42 @@ impl TeXEngineState {
             page_max_depth: 0,
             semantic_pagination_enabled: false,
             shipped_pages: Vec::new(),
+            dvi_finalized: false,
             disc_ptr: [TEX_NULL; 4],
             temp_ptr: TEX_NULL,
             lr_ptr: TEX_NULL,
             lr_problems: 0,
+            dvi_buf: vec![0; DVI_BUF_SIZE],
+            dvi_limit: DVI_BUF_SIZE as i32,
+            dvi_ptr: 0,
+            dvi_offset: 0,
+            dvi_gone: 0,
+            dvi_bytes: Vec::new(),
+            output_file_opened: false,
+            output_file_name: String::new(),
+            job_name: None,
+            down_ptr: TEX_NULL,
+            right_ptr: TEX_NULL,
+            dvi_h: 0,
+            dvi_v: 0,
+            dvi_f: 0,
+            cur_h: 0,
+            cur_v: 0,
+            cur_s: -1,
+            cur_h_offset: 0,
+            cur_v_offset: 0,
+            cur_page_width: 0,
+            cur_page_height: 0,
+            max_v: 0,
+            max_h: 0,
+            max_push: 0,
+            total_pages: 0,
+            last_bop: -1,
+            mag_set: 0,
+            doing_leaders: false,
+            doing_special: false,
+            synctex_enabled: false,
+            native_glyph_info: HashMap::new(),
             xtx_ligature_present: false,
             prev_class: 0,
             space_class: 0,
@@ -2786,6 +3048,7 @@ impl TeXEngineState {
             epochseconds: 0,
             microseconds: 0,
             shell_escape_enabled: false,
+            shell_escape_requests: Vec::new(),
             pdf_last_x_pos: 0,
             pdf_last_y_pos: 0,
             pdf_page_counts: HashMap::new(),
@@ -5562,6 +5825,259 @@ impl TeXEngineState {
         self.mem[(p + 2) as usize].s1 = depth;
         Ok(())
     }
+
+    /// UTF-16 text of a native-word node (`NATIVE_NODE_text` contents).
+    pub fn native_word_text(&self, p: i32) -> Result<Vec<u16>, TeXMemoryError> {
+        let length = i32::from(self.word_at(p, 4)?.b16_s1());
+        let mut text = Vec::with_capacity(length.max(0) as usize);
+        for index in 0..length {
+            text.push(self.native_text_at(p, index)?);
+        }
+        Ok(text)
+    }
+
+    /// Attached positioned-glyph data; `None` mirrors C's
+    /// `native_glyph_info_ptr(p) == NULL`.
+    pub fn native_glyph_info(&self, p: i32) -> Option<&NativeGlyphInfo> {
+        self.native_glyph_info.get(&p)
+    }
+
+    /// Whether the node carries a positioned-glyph buffer
+    /// (`native_glyph_info_ptr(p) != NULL`).
+    pub fn has_native_glyph_info(&self, p: i32) -> bool {
+        self.native_glyph_info.contains_key(&p)
+    }
+
+    /// Number of positioned glyphs attached to the node
+    /// (`native_glyph_count`).
+    pub fn native_glyph_count(&self, p: i32) -> usize {
+        self.native_glyph_info
+            .get(&p)
+            .map_or(0, |info| info.glyphs.len())
+    }
+
+    /// Attaches positioned-glyph data to a native node
+    /// (`native_glyph_info_ptr(p) = info`).
+    pub fn set_native_glyph_info(&mut self, p: i32, info: NativeGlyphInfo) {
+        self.native_glyph_info.insert(p, info);
+    }
+
+    /// Removes a node's positioned-glyph buffer (used when nodes are
+    /// freed, mirroring C's `free(native_glyph_info_ptr)` cleanup).
+    pub fn drop_native_glyph_info(&mut self, p: i32) {
+        self.native_glyph_info.remove(&p);
+    }
+
+    /// Copies one node's positioned-glyph buffer to another
+    /// (`copy_native_glyph_info`).
+    pub fn copy_native_glyph_info(&mut self, src: i32, dest: i32) {
+        if let Some(info) = self.native_glyph_info.get(&src).cloned() {
+            self.native_glyph_info.insert(dest, info);
+        }
+    }
+
+    /// Fills a native-word node's positioned-glyph buffer and dimensions
+    /// (`measure_native_node`). Until the OT layout engine is ported,
+    /// shaping is one glyph per character via `map_char_to_glyph` with
+    /// cumulative advances — equivalent to `layoutChars` output for fonts
+    /// with no active GSUB/GPOS features. The `font_letter_space`
+    /// adjustment loop mirrors C exactly.
+    pub fn measure_native_node(
+        &mut self,
+        p: i32,
+        use_glyph_metrics: bool,
+    ) -> Result<(), TeXMemoryError> {
+        let info = self.word_at(p, 4)?;
+        let font = i32::from(info.b16_s2());
+        let length = i32::from(info.b16_s1());
+        let letter_space = self
+            .font_record(font)
+            .map_or(0, |record| record.letter_space);
+
+        let mut glyphs = Vec::new();
+        let mut advances = Vec::new();
+        let mut x = 0i64;
+        let mut index = 0i32;
+        while index < length {
+            let c = self.get_native_usv(p, index)?.max(0) as u32;
+            let glyph = self.map_char_to_glyph(font, c).max(0) as u16;
+            let advance = self.native_glyph_metric(font, u32::from(glyph)).width;
+            glyphs.push(NativeGlyphLoc {
+                x: x as i32,
+                y: 0,
+                glyph,
+            });
+            advances.push(advance);
+            x += i64::from(advance);
+            index += if c >= 0x10000 { 2 } else { 1 };
+        }
+
+        let mut width = x as i32;
+        if letter_space != 0 && !glyphs.is_empty() {
+            let mut ls_delta = 0i32;
+            for (i, loc) in glyphs.iter_mut().enumerate() {
+                if advances[i] == 0 && ls_delta != 0 {
+                    ls_delta -= letter_space;
+                }
+                loc.x = loc.x.saturating_add(ls_delta);
+                ls_delta = ls_delta.saturating_add(letter_space);
+            }
+            if ls_delta != 0 {
+                width = width.saturating_add(ls_delta - letter_space);
+            }
+        }
+
+        self.set_native_glyph_info(p, NativeGlyphInfo { glyphs });
+        self.mem[(p + 1) as usize].s1 = width;
+
+        let (height_base, depth_base) = self
+            .font_record(font)
+            .map_or((0, 0), |record| (record.height_base, record.depth_base));
+        if !use_glyph_metrics || self.native_glyph_count(p) == 0 {
+            self.mem[(p + 3) as usize].s1 = height_base;
+            self.mem[(p + 2) as usize].s1 = depth_base;
+        } else {
+            let mut y_max = f64::NEG_INFINITY;
+            let mut y_min = f64::INFINITY;
+            if let Some(info) = self.native_glyph_info.get(&p) {
+                for loc in &info.glyphs {
+                    let metric = self.native_glyph_metric(font, u32::from(loc.glyph));
+                    let y = -f64::from(loc.y) / 65_536.0;
+                    let ht = f64::from(metric.height) / 65_536.0;
+                    let dp = f64::from(metric.depth) / 65_536.0;
+                    y_max = y_max.max(y + ht);
+                    y_min = y_min.min(y - dp);
+                }
+            }
+            let (height, depth) = if y_max == f64::NEG_INFINITY {
+                (height_base, depth_base)
+            } else {
+                (tex_round(y_max * 65_536.0), tex_round(-y_min * 65_536.0))
+            };
+            self.mem[(p + 3) as usize].s1 = height;
+            self.mem[(p + 2) as usize].s1 = depth;
+        }
+        Ok(())
+    }
+
+    /// Re-justifies a merged/space-adjusted native-word node
+    /// (`store_justified_native_glyphs`): re-measures, then redistributes
+    /// the width difference across space glyphs — or evenly across all
+    /// glyphs when there are none — restoring the requested width.
+    pub fn set_justified_native_glyphs(&mut self, p: i32) -> Result<(), TeXMemoryError> {
+        let saved_width = self.mem[(p + 1) as usize].s1;
+        self.measure_native_node(p, false)?;
+
+        if self.mem[(p + 1) as usize].s1 != saved_width {
+            let font = i32::from(self.word_at(p, 4)?.b16_s2());
+            let just_amount = f64::from(saved_width - self.mem[(p + 1) as usize].s1) / 65_536.0;
+            let space_glyph = self.map_char_to_glyph(font, u32::from(b' ')).max(0) as u16;
+            if let Some(info) = self.native_glyph_info.get_mut(&p) {
+                let space_count = info
+                    .glyphs
+                    .iter()
+                    .filter(|loc| loc.glyph == space_glyph)
+                    .count();
+                if space_count > 0 {
+                    let mut adjustment = 0.0f64;
+                    let mut space_index = 0usize;
+                    for loc in &mut info.glyphs {
+                        loc.x = tex_round((f64::from(loc.x) / 65_536.0 + adjustment) * 65_536.0);
+                        if loc.glyph == space_glyph {
+                            space_index += 1;
+                            adjustment = just_amount * space_index as f64 / space_count as f64;
+                        }
+                    }
+                } else if info.glyphs.len() > 1 {
+                    let count = info.glyphs.len() as f64;
+                    for (i, loc) in info.glyphs.iter_mut().enumerate().skip(1) {
+                        loc.x = tex_round(
+                            (f64::from(loc.x) / 65_536.0 + just_amount * i as f64 / (count - 1.0))
+                                * 65_536.0,
+                        );
+                    }
+                }
+            }
+            self.mem[(p + 1) as usize].s1 = saved_width;
+        }
+        Ok(())
+    }
+
+    /// Validates and locks `\mag` (`prepare_mag`): reverts an incompatible
+    /// change, clamps an illegal value to 1000, then records `mag_set`.
+    pub fn prepare_mag(&mut self) -> Result<(), TeXMemoryError> {
+        let mag = self.int_par(INT_PAR_MAG)?;
+        if self.mag_set > 0 && mag != self.mag_set {
+            self.transcript.push(format!(
+                "! Incompatible magnification ({mag}); the previous value will be retained ({})",
+                self.mag_set
+            ));
+            self.error_count += 1;
+            let mag_set = self.mag_set;
+            self.set_int_par(INT_PAR_MAG, mag_set)?;
+        }
+        let mag = self.int_par(INT_PAR_MAG)?;
+        if !(1..=32768).contains(&mag) {
+            self.transcript.push(format!(
+                "! Illegal magnification has been changed to 1000 ({mag})"
+            ));
+            self.error_count += 1;
+            self.set_int_par(INT_PAR_MAG, 1000)?;
+        }
+        self.mag_set = self.int_par(INT_PAR_MAG)?;
+        Ok(())
+    }
+
+    /// Opens the XDV output stream for this job: the per-engine equivalent
+    /// of `pack_job_name(output_file_extension); ttstub_output_open`.
+    /// Output accumulates in [`Self::dvi_bytes`] until a driver flushes
+    /// it to a real sink.
+    pub fn ensure_output_open(&mut self) {
+        if self.output_file_opened {
+            return;
+        }
+        let extension = if self.semantic_pagination_enabled {
+            ".spx"
+        } else {
+            ".xdv"
+        };
+        let base = self
+            .job_name
+            .clone()
+            .unwrap_or_else(|| "texput".to_string());
+        let base = base.rsplit('.').next().map_or(base.as_str(), |_| {
+            base.rsplit_once('.')
+                .map_or(base.as_str(), |(stem, _)| stem)
+        });
+        self.output_file_name = format!("{base}{extension}");
+        self.output_file_opened = true;
+    }
+
+    /// SyncTeX recorders: faithful no-ops while `synctex_enabled` is
+    /// false, matching the early returns in `xetex-synctex.c`.
+    pub fn synctex_sheet(&self, _mag: i32) {}
+    /// SyncTeX `synctex_teehs` (end of sheet).
+    pub fn synctex_teehs(&self) {}
+    /// SyncTeX `synctex_hlist` (entering an hlist).
+    pub fn synctex_hlist(&self, _p: i32) {}
+    /// SyncTeX `synctex_tsilh` (leaving an hlist).
+    pub fn synctex_tsilh(&self, _p: i32) {}
+    /// SyncTeX `synctex_vlist` (entering a vlist).
+    pub fn synctex_vlist(&self, _p: i32) {}
+    /// SyncTeX `synctex_tsilv` (leaving a vlist).
+    pub fn synctex_tsilv(&self, _p: i32) {}
+    /// SyncTeX `synctex_void_vlist` (empty vlist).
+    pub fn synctex_void_vlist(&self, _p: i32, _this_box: i32) {}
+    /// SyncTeX `synctex_void_hlist` (empty hlist).
+    pub fn synctex_void_hlist(&self, _p: i32, _this_box: i32) {}
+    /// SyncTeX `synctex_math` (math node).
+    pub fn synctex_math(&self, _p: i32, _this_box: i32) {}
+    /// SyncTeX `synctex_kern` (kern node).
+    pub fn synctex_kern(&self, _p: i32, _this_box: i32) {}
+    /// SyncTeX `synctex_horizontal_rule_or_glue`.
+    pub fn synctex_horizontal_rule_or_glue(&self, _p: i32, _this_box: i32) {}
+    /// SyncTeX `synctex_current` (end of a character run).
+    pub fn synctex_current(&self) {}
 
     /// Returns the Unicode scalar at UTF-16 index `i` of a native-word
     /// node, combining surrogate pairs (`get_native_usv`).
