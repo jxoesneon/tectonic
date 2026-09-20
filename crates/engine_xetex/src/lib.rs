@@ -22,9 +22,20 @@ use std::{ffi::CString, time::SystemTime};
 use tectonic_bridge_core::{CoreBridgeLauncher, EngineAbortedError};
 use tectonic_errors::prelude::*;
 
+pub mod commands;
+pub mod expand;
+pub mod primitives;
+pub mod scan;
+pub mod scanner;
 pub mod state;
 pub mod unicode;
 
+pub use primitives::{primitive_defs, PrimitiveDef, PrimitiveExtraInit, PrimitiveRegistryError};
+pub use scanner::{
+    ControlSequence, ControlSequenceTable, InputState, TeXMouthError, CS_TOKEN_FLAG,
+    END_MATCH_TOKEN, LEFT_BRACE_LIMIT, LEFT_BRACE_TOKEN, MATCH_TOKEN, MAX_CHAR_VAL,
+    OUT_PARAM_TOKEN, PROTECTED_TOKEN, RIGHT_BRACE_LIMIT, RIGHT_BRACE_TOKEN, SPACE_TOKEN,
+};
 pub use state::{
     badness, half, tex_round, CommandCode, MemoryWord, TeXEngineState, TeXMemoryError, TeXMode,
     TwoHalves,
@@ -264,8 +275,6 @@ mod linkage {
 
     #[allow(unused_imports)]
     use tectonic_xetex_layout as clipyrenamehack2;
-
-
 }
 
 /// Does our resulting executable link correctly?

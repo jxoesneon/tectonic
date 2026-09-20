@@ -6,11 +6,11 @@
 //! Replaces external ICU C dependencies with pure-Rust `icu_segmenter`, `unicode-bidi`,
 //! and `encoding_rs`.
 
-use std::ffi::CStr;
-use std::sync::Mutex;
 use encoding_rs::Encoding;
 use icu_segmenter::options::LineBreakOptions;
 use icu_segmenter::LineSegmenter;
+use std::ffi::CStr;
+use std::sync::Mutex;
 use unicode_bidi::{BidiInfo, Level};
 
 // ---------------------------------------------------------------------------
@@ -27,6 +27,13 @@ static CURRENT_LINEBREAK: Mutex<Option<LineBreakState>> = Mutex::new(None);
 /// Initializes line break opportunities for a UTF-16 text slice.
 ///
 /// Returns 0 on success, or negative on error.
+///
+/// # Safety
+///
+/// `text` must be null or point to `text_len` contiguous UTF-16 code units.
+/// `_locale` must be null or point to a valid NUL-terminated C string. Only one
+/// line-break iterator is active at a time; callers must initialize it before
+/// requesting boundaries and close it before starting another iterator.
 #[no_mangle]
 pub unsafe extern "C" fn tt_linebreak_start(
     text: *const u16,
@@ -58,6 +65,11 @@ pub unsafe extern "C" fn tt_linebreak_start(
 
 /// Returns the next UTF-16 code unit offset where a line break is permitted,
 /// or -1 (`UBRK_DONE`) when there are no further line break opportunities.
+///
+/// # Safety
+///
+/// The caller must have initialized the shared line-break iterator with
+/// [`tt_linebreak_start`]. Only one iterator may be active at a time.
 #[no_mangle]
 pub unsafe extern "C" fn tt_linebreak_next() -> i32 {
     let mut state = CURRENT_LINEBREAK.lock().unwrap();
@@ -75,10 +87,31 @@ pub unsafe extern "C" fn tt_linebreak_next() -> i32 {
 }
 
 /// Closes and cleans up the current line break iterator.
+///
+/// # Safety
+///
+/// The caller must not use the shared iterator after this call except by
+/// initializing it again with [`tt_linebreak_start`].
 #[no_mangle]
 pub unsafe extern "C" fn tt_linebreak_close() {
     let mut state = CURRENT_LINEBREAK.lock().unwrap();
     *state = None;
+}
+
+/// Returns every UTF-16 code-unit offset `> 0` at which a line break is
+/// permitted in `text`, folded into a single state-local call
+/// (`tt_linebreak_start` + repeated `tt_linebreak_next` without the
+/// shared iterator).
+pub fn linebreak_offsets(text: &[u16]) -> Vec<i32> {
+    if text.is_empty() {
+        return Vec::new();
+    }
+    let segmenter = LineSegmenter::new_auto(LineBreakOptions::default());
+    segmenter
+        .segment_utf16(text)
+        .filter(|&b| b > 0)
+        .map(|b| b as i32)
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +137,12 @@ pub struct TtBiDiContext {
 }
 
 /// Creates and resolves bidirectional runs for a UTF-16 text slice.
+///
+/// # Safety
+///
+/// `text` must be null or point to `text_len` contiguous UTF-16 code units.
+/// The returned pointer is owned by the caller and must be released with
+/// [`tt_bidi_destroy`].
 #[no_mangle]
 pub unsafe extern "C" fn tt_bidi_create(
     text: *const u16,
@@ -166,6 +205,10 @@ pub unsafe extern "C" fn tt_bidi_create(
 }
 
 /// Returns the overall direction of the paragraph (0: LTR, 1: RTL, 2: MIXED).
+///
+/// # Safety
+///
+/// `ctx` must be null or a live pointer returned by [`tt_bidi_create`].
 #[no_mangle]
 pub unsafe extern "C" fn tt_bidi_get_direction(ctx: *mut TtBiDiContext) -> i32 {
     if ctx.is_null() {
@@ -175,6 +218,10 @@ pub unsafe extern "C" fn tt_bidi_get_direction(ctx: *mut TtBiDiContext) -> i32 {
 }
 
 /// Returns the number of visual runs.
+///
+/// # Safety
+///
+/// `ctx` must be null or a live pointer returned by [`tt_bidi_create`].
 #[no_mangle]
 pub unsafe extern "C" fn tt_bidi_count_runs(ctx: *mut TtBiDiContext) -> i32 {
     if ctx.is_null() {
@@ -186,6 +233,12 @@ pub unsafe extern "C" fn tt_bidi_count_runs(ctx: *mut TtBiDiContext) -> i32 {
 /// Retrieves the visual run at `run_index`.
 ///
 /// Returns 1 for RTL, 0 for LTR, or -1 if index is invalid.
+///
+/// # Safety
+///
+/// `ctx` must be null or a live pointer returned by [`tt_bidi_create`].
+/// `logical_start` and `length` must be null or point to writable `i32`
+/// storage.
 #[no_mangle]
 pub unsafe extern "C" fn tt_bidi_get_visual_run(
     ctx: *mut TtBiDiContext,
@@ -216,6 +269,11 @@ pub unsafe extern "C" fn tt_bidi_get_visual_run(
 }
 
 /// Destroys a bidirectional context.
+///
+/// # Safety
+///
+/// `ctx` must be null or a pointer previously returned by [`tt_bidi_create`].
+/// The pointer must not be used after this call.
 #[no_mangle]
 pub unsafe extern "C" fn tt_bidi_destroy(ctx: *mut TtBiDiContext) {
     if !ctx.is_null() {
@@ -233,6 +291,10 @@ pub struct TtEncodingHandle {
 }
 
 /// Checks if an encoding label is supported by `encoding_rs`.
+///
+/// # Safety
+///
+/// `name` must be null or point to a valid NUL-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn tt_encoding_is_supported(name: *const libc::c_char) -> bool {
     if name.is_null() {
@@ -246,6 +308,12 @@ pub unsafe extern "C" fn tt_encoding_is_supported(name: *const libc::c_char) -> 
 }
 
 /// Opens an encoding converter for the specified encoding label.
+///
+/// # Safety
+///
+/// `name` must be null or point to a valid NUL-terminated C string. The
+/// returned pointer is owned by the caller and must be released with
+/// [`tt_encoding_close`].
 #[no_mangle]
 pub unsafe extern "C" fn tt_encoding_open(name: *const libc::c_char) -> *mut TtEncodingHandle {
     if name.is_null() {
@@ -262,6 +330,13 @@ pub unsafe extern "C" fn tt_encoding_open(name: *const libc::c_char) -> *mut TtE
 /// Converts an input byte buffer into UTF-32 native endian codepoints.
 ///
 /// Returns 0 on success, or -1 on error.
+///
+/// # Safety
+///
+/// `handle` must be null or a live pointer returned by [`tt_encoding_open`].
+/// `in_bytes` must point to `in_len` readable bytes, `out_utf32` must point to
+/// `out_max_len` writable `u32` values, and `out_written` must be null or point
+/// to writable `usize` storage.
 #[no_mangle]
 pub unsafe extern "C" fn tt_encoding_to_utf32(
     handle: *mut TtEncodingHandle,
@@ -297,6 +372,11 @@ pub unsafe extern "C" fn tt_encoding_to_utf32(
 }
 
 /// Closes an encoding converter handle.
+///
+/// # Safety
+///
+/// `handle` must be null or a pointer previously returned by
+/// [`tt_encoding_open`]. The pointer must not be used after this call.
 #[no_mangle]
 pub unsafe extern "C" fn tt_encoding_close(handle: *mut TtEncodingHandle) {
     if !handle.is_null() {
@@ -316,8 +396,12 @@ mod tests {
     fn test_linebreak_simple_english() {
         // "Hello world test" in UTF-16
         let text: Vec<u16> = "Hello world test".encode_utf16().collect();
+        // SAFETY: `text` is a live UTF-16 slice for the duration of the calls.
         unsafe {
-            assert_eq!(tt_linebreak_start(text.as_ptr(), text.len() as i32, std::ptr::null()), 0);
+            assert_eq!(
+                tt_linebreak_start(text.as_ptr(), text.len() as i32, std::ptr::null()),
+                0
+            );
             let mut breaks = Vec::new();
             loop {
                 let b = tt_linebreak_next();
@@ -336,6 +420,7 @@ mod tests {
 
     #[test]
     fn test_linebreak_null_or_empty() {
+        // SAFETY: all pointers are either null or point to valid test storage.
         unsafe {
             assert_eq!(tt_linebreak_start(std::ptr::null(), 0, std::ptr::null()), 0);
             assert_eq!(tt_linebreak_next(), -1);
@@ -351,6 +436,7 @@ mod tests {
     #[test]
     fn test_bidi_simple() {
         let text: Vec<u16> = "Hello World".encode_utf16().collect();
+        // SAFETY: `text` remains live while `ctx` is used and `ctx` is destroyed once.
         unsafe {
             let ctx = tt_bidi_create(text.as_ptr(), text.len() as i32, false);
             assert!(!ctx.is_null());
@@ -375,6 +461,7 @@ mod tests {
     fn test_bidi_rtl_and_mixed() {
         // Mixed text: "Hello שלום" (English + Hebrew)
         let text: Vec<u16> = "Hello שלום".encode_utf16().collect();
+        // SAFETY: all input slices and output pointers are valid for the calls.
         unsafe {
             let ctx = tt_bidi_create(text.as_ptr(), text.len() as i32, false);
             assert!(!ctx.is_null());
@@ -398,10 +485,19 @@ mod tests {
 
     #[test]
     fn test_bidi_null_and_empty() {
+        // SAFETY: null pointers exercise documented error paths; `ctx` is destroyed once.
         unsafe {
             assert_eq!(tt_bidi_get_direction(std::ptr::null_mut()), 0);
             assert_eq!(tt_bidi_count_runs(std::ptr::null_mut()), 0);
-            assert_eq!(tt_bidi_get_visual_run(std::ptr::null_mut(), 0, std::ptr::null_mut(), std::ptr::null_mut()), -1);
+            assert_eq!(
+                tt_bidi_get_visual_run(
+                    std::ptr::null_mut(),
+                    0,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut()
+                ),
+                -1
+            );
             tt_bidi_destroy(std::ptr::null_mut());
 
             let ctx = tt_bidi_create(std::ptr::null(), 0, false);
@@ -415,6 +511,7 @@ mod tests {
     fn test_encoding_latin1() {
         use std::ffi::CString;
         let cname = CString::new("iso-8859-1").unwrap();
+        // SAFETY: `cname`, `input`, `output`, and `handle` are valid for these calls.
         unsafe {
             assert!(tt_encoding_is_supported(cname.as_ptr()));
             let handle = tt_encoding_open(cname.as_ptr());
@@ -450,6 +547,7 @@ mod tests {
     #[test]
     fn test_encoding_null_and_unknown() {
         use std::ffi::CString;
+        // SAFETY: null pointers exercise documented error paths; valid handles are closed once.
         unsafe {
             assert!(!tt_encoding_is_supported(std::ptr::null()));
             assert!(tt_encoding_open(std::ptr::null()).is_null());

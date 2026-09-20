@@ -76,7 +76,6 @@ fn main() {
         cxx_cfg.include(item);
     }
 
-
     if let Ok(fc_includes) = fontconfig_include_path {
         for item in fc_includes.split(';') {
             c_cfg.include(item);
