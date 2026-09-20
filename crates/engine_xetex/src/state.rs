@@ -3287,8 +3287,6 @@ pub struct TeXEngineState {
     /// SyncTeX `insert_src_special_every_math` flag (source-info insertion
     /// itself is not yet ported; the flags preserve the C guard shape).
     pub insert_src_special_every_math: bool,
-    /// SyncTeX `insert_src_special_every_display` flag.
-    pub insert_src_special_every_display: bool,
     /// SyncTeX `insert_src_special_every_vbox` flag.
     pub insert_src_special_every_vbox: bool,
     /// SyncTeX `insert_src_special_every_par` flag (`new_graf`).
@@ -3757,7 +3755,6 @@ impl TeXEngineState {
             math_cur_i: LigKernInsn::default(),
             cur_dir: LEFT_TO_RIGHT,
             insert_src_special_every_math: false,
-            insert_src_special_every_display: false,
             insert_src_special_every_vbox: false,
             insert_src_special_every_par: false,
             insert_src_special_auto: false,

@@ -6787,8 +6787,8 @@ impl TeXEngineState {
             self.eq_word_define(INT_PAR_BASE + INT_PAR_PRE_DISPLAY_DIRECTION, x)?;
             self.eq_word_define(DIMEN_PAR_BASE + DIMEN_PAR_DISPLAY_WIDTH, l)?;
             self.eq_word_define(DIMEN_PAR_BASE + DIMEN_PAR_DISPLAY_INDENT, s)?;
-            if self.insert_src_special_every_display {
-                self.insert_src_special()?;
+            if self.semantic_pagination_enabled {
+                self.tt_insert_special("tdux:cs dmath")?;
             }
             let every_display = self.local(LOCAL_EVERY_DISPLAY)?;
             if every_display != TEX_NULL {
@@ -6803,6 +6803,9 @@ impl TeXEngineState {
             self.eq_word_define(INT_PAR_BASE + INT_PAR_CUR_FAM, -1)?;
             if self.insert_src_special_every_math {
                 self.insert_src_special()?;
+            }
+            if self.semantic_pagination_enabled {
+                self.tt_insert_special("tdux:cs math")?;
             }
             let every_math = self.local(LOCAL_EVERY_MATH)?;
             if every_math != TEX_NULL {
@@ -7051,6 +7054,9 @@ impl TeXEngineState {
             self.mem[self.tail as usize].s1 = after;
             self.tail = after;
             self.aux.s0 = 1000;
+            if self.semantic_pagination_enabled {
+                self.tt_insert_special("tdux:ce math")?;
+            }
             self.unsave()?;
         } else {
             if a == TEX_NULL {
@@ -7177,6 +7183,9 @@ impl TeXEngineState {
                 self.tail = skip;
             }
             self.flush_node_list(j)?;
+            if self.semantic_pagination_enabled {
+                self.tt_insert_special("tdux:ce dmath")?;
+            }
             self.resume_after_display()?;
         }
         Ok(())

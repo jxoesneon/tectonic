@@ -58,9 +58,9 @@
 //! - `scan_expr`'s parenthesized-subexpression stack is a local Rust `Vec`
 //!   of frames rather than the `expr_node`s that C allocates in dynamic
 //!   memory; no engine state escapes the routine.
-//! - `true` units are consumed but not scaled: `\mag`/`prepare_mag` have no
-//!   representation yet, so the port behaves as the C code does when
-//!   `mag == 1000`.
+//! - `true` units cancel magnification exactly as C §476: `prepare_mag`
+//!   locks `\mag`, then the scanned value and its fraction are scaled by
+//!   `1000/mag` so `1 true in` is a physical inch at any `\magnification`.
 //! - `scan_something_internal` covers registers, box dimensions, character
 //!   code tables, mode/page/shape quantities, and the implemented e-TeX
 //!   `LastItem` codes. The integer,
@@ -74,11 +74,11 @@ use crate::scanner::{
 };
 use crate::state::{
     CommandCode, TeXEngineState, TeXMode, CAT_CODE_BASE, CHAR_CLASS_LIMIT, CUR_FONT_LOC,
-    DEL_CODE_BASE, FAMILY_BASE, FIL, FILLL, HYPHEN_CHAR_CODE, LC_CODE_BASE, LOCAL_BASE,
-    LOCAL_PAR_SHAPE, LOCAL_XETEX_INTER_CHAR_TOKS, LP_CODE_BASE, MATH_CODE_BASE, MATH_FONT_BASE_C,
-    MAX_HALFWORD, MU_GLUE, NORMAL, PAGE_EMPTY, PAGE_SO_FAR_COUNT, QUAD_CODE, SA_BOX_VAL,
-    SA_INTER_CHAR_VAL, SA_TOK_VAL, SF_CODE_BASE, SKEW_CHAR_CODE, SPACE_CODE, SPACE_SHRINK_CODE,
-    TEX_NULL, UC_CODE_BASE, X_HEIGHT_CODE,
+    DEL_CODE_BASE, FAMILY_BASE, FIL, FILLL, HYPHEN_CHAR_CODE, INT_PAR_MAG, LC_CODE_BASE,
+    LOCAL_BASE, LOCAL_PAR_SHAPE, LOCAL_XETEX_INTER_CHAR_TOKS, LP_CODE_BASE, MATH_CODE_BASE,
+    MATH_FONT_BASE_C, MAX_HALFWORD, MU_GLUE, NORMAL, PAGE_EMPTY, PAGE_SO_FAR_COUNT, QUAD_CODE,
+    SA_BOX_VAL, SA_INTER_CHAR_VAL, SA_TOK_VAL, SF_CODE_BASE, SKEW_CHAR_CODE, SPACE_CODE,
+    SPACE_SHRINK_CODE, TEX_NULL, UC_CODE_BASE, X_HEIGHT_CODE,
 };
 
 /// Base token of the catcode-11 (letter) command block (`LETTER_TOKEN`).
@@ -1925,8 +1925,16 @@ impl TeXEngineState {
         }
 
         if self.scan_keyword("true")? {
-            // Divergence: \mag/prepare_mag are not yet represented, so a
-            // `true` prefix is consumed without magnification scaling.
+            // C §476: `true` locks \mag and cancels the magnification, so
+            // `1 true in` is a physical inch regardless of \magnification.
+            self.prepare_mag()?;
+            let mag = self.int_par(INT_PAR_MAG)?;
+            if mag != 1000 {
+                self.cur_val = self.xn_over_d(self.cur_val, 1000, mag);
+                *f = (1000 * *f + 65536 * self.tex_remainder) / mag;
+                self.cur_val += *f / 65536;
+                *f %= 65536;
+            }
         }
 
         if self.scan_keyword("pt")? {
@@ -3226,9 +3234,22 @@ mod tests {
     }
 
     #[test]
-    fn true_unit_is_consumed_without_scaling() {
-        // Deliberate divergence: \mag is not represented, so `true` behaves
-        // as mag == 1000 does in C.
+    fn true_unit_cancels_magnification() {
+        // C §476: `true` locks \mag and scales the dimension by 1000/mag,
+        // so `2truept` at \mag=2000 is one physical point.
+        let mut a = state();
+        a.set_source_text("2truept");
+        a.eqtb[crate::state::INT_PAR_BASE + INT_PAR_MAG].s1 = 2000;
+        assert_eq!(a.scan_dimen(false, false, false).unwrap(), 65536);
+        assert_eq!(a.mag_set, 2000);
+
+        // Fractions scale too: `1truept` at \mag=2000 is exactly 0.5pt.
+        let mut b = state();
+        b.set_source_text("1truept");
+        b.eqtb[crate::state::INT_PAR_BASE + INT_PAR_MAG].s1 = 2000;
+        assert_eq!(b.scan_dimen(false, false, false).unwrap(), 32768);
+
+        // mag == 1000 leaves the value untouched.
         assert_eq!(scanned_dimen("1truept"), 65536);
         assert_eq!(scanned_dimen("2.5truein"), scanned_dimen("2.5in"));
     }

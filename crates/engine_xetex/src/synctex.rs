@@ -579,6 +579,20 @@ impl TeXEngineState {
             .collect()
     }
 
+    /// `tt_insert_special`: splices a frozen `\special{<text>}` token list
+    /// into the input. Tectonic's driver uses this for the semantic-
+    /// pagination `tdux:` markers around math lists.
+    pub fn tt_insert_special(&mut self, text: &str) -> Result<(), TeXMouthError> {
+        let mut tokens = Vec::with_capacity(text.len() + 3);
+        tokens.push(CS_TOKEN_FLAG + C_FROZEN_SPECIAL);
+        tokens.push(LEFT_BRACE_TOKEN + i32::from(b'{'));
+        tokens.extend(Self::src_special_chars(text));
+        tokens.push(RIGHT_BRACE_TOKEN + i32::from(b'}'));
+        let toklist = self.store_token_list(&tokens)?;
+        self.begin_token_list(toklist, INSERTED)?;
+        Ok(())
+    }
+
     /// `insert_src_special`: splices `\special{src:<line> <file>}` into the
     /// input stream as an inserted token list when the source position is new.
     pub fn insert_src_special(&mut self) -> Result<(), TeXMouthError> {
@@ -1281,5 +1295,36 @@ mod tests {
         assert_eq!(text, "src:12 dir/doc.tex");
         assert_eq!(state.src_last_name, "dir/doc.tex");
         assert_eq!(state.src_last_lineno, 12);
+    }
+
+    #[test]
+    fn tt_insert_special_pushes_frozen_special_token_list() {
+        let mut state = with_open_source("doc.tex");
+        state.tt_insert_special("tdux:cs math").unwrap();
+        // C builds [FROZEN_SPECIAL, '{', chars..., '}'] and pushes it as
+        // an INSERTED token list.
+        assert_eq!(state.cur_input.state, TOKEN_LIST);
+        let head = state.cur_input.loc;
+        assert_eq!(
+            state.mem[head as usize].s0,
+            CS_TOKEN_FLAG + C_FROZEN_SPECIAL
+        );
+        let brace = state.mem[head as usize].s1;
+        assert_eq!(
+            state.mem[brace as usize].s0,
+            LEFT_BRACE_TOKEN + i32::from(b'{')
+        );
+        // Walk the char tokens: "tdux:cs math" then '}'.
+        let mut text = String::new();
+        let mut p = state.mem[brace as usize].s1;
+        while p != TEX_NULL {
+            let tok = state.mem[p as usize].s0;
+            if tok == RIGHT_BRACE_TOKEN + i32::from(b'}') {
+                break;
+            }
+            text.push(char::from_u32((tok % MAX_CHAR_VAL) as u32).unwrap());
+            p = state.mem[p as usize].s1;
+        }
+        assert_eq!(text, "tdux:cs math");
     }
 }
