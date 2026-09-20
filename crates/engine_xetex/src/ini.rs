@@ -1450,20 +1450,8 @@ impl TeXEngineState {
     /// Prints the `\if…` primitive name for an incomplete conditional
     /// (`print_cmd_chr(IF_TEST, cur_if)`).
     fn print_if_test_name(&mut self, if_code: i32) -> Result<(), TeXMouthError> {
-        const IF_NAMES: &[&str] = &[
-            "if", "ifcat", "ifnum", "ifdim", "ifodd", "ifvmode", "ifhmode", "ifmmode", "ifinner",
-            "ifvoid", "ifhbox", "ifvbox", "ifx", "ifeof", "iftrue", "iffalse", "ifcase",
-        ];
-        let name = match if_code {
-            17 => "ifdefined",
-            18 => "ifcsname",
-            19 => "iffontchar",
-            20 => "ifincsname",
-            21 => "ifprimitive",
-            c if (0..17).contains(&c) => IF_NAMES[c as usize],
-            _ => "if",
-        };
-        self.print_esc_cstr(name)
+        let name = self.if_test_text(if_code)?;
+        self.print_cstr(&name)
     }
 }
 

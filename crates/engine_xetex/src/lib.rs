@@ -23,6 +23,7 @@ use tectonic_bridge_core::{CoreBridgeLauncher, EngineAbortedError};
 use tectonic_errors::prelude::*;
 
 pub mod commands;
+pub mod diag;
 pub mod expand;
 pub mod fmtio;
 pub mod fonts;

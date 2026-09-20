@@ -26,11 +26,11 @@ use crate::state::{
     SA_BOX_VAL, SA_MARK_VAL, TEX_NULL,
 };
 
-const IF_CODE: u8 = 1;
-const FI_CODE: i32 = 2;
-const ELSE_CODE: i32 = 3;
-const OR_CODE: i32 = 4;
-const UNLESS_CODE: i32 = 32;
+pub(crate) const IF_CODE: u8 = 1;
+pub(crate) const FI_CODE: i32 = 2;
+pub(crate) const ELSE_CODE: i32 = 3;
+pub(crate) const OR_CODE: i32 = 4;
+pub(crate) const UNLESS_CODE: i32 = 32;
 const IF_CASE_CODE: i32 = 16;
 const IF_NODE_SIZE: i32 = 2;
 
@@ -172,6 +172,11 @@ impl TeXEngineState {
     fn expand_once(&mut self) -> Result<(), TeXMouthError> {
         loop {
             if self.cur_cmd < CommandCode::Call as u8 {
+                // C `expand` reswitch: `\tracingcommands > 1` reports every
+                // expandable command the expander processes.
+                if self.int_par(crate::state::INT_PAR_TRACING_COMMANDS)? > 1 {
+                    self.show_cur_cmd_chr()?;
+                }
                 match self.cur_cmd {
                     x if x == CommandCode::TopBotMark as u8 => {
                         self.expand_top_bot_mark()?;
@@ -621,6 +626,13 @@ impl TeXEngineState {
     }
 
     fn conditional(&mut self) -> Result<(), TeXMouthError> {
+        // C `conditional` entry: `\tracingifs` reports the `\if` when
+        // `\tracingcommands` hasn't already.
+        if self.int_par(crate::state::INT_PAR_TRACING_IFS)? > 0
+            && self.int_par(crate::state::INT_PAR_TRACING_COMMANDS)? <= 1
+        {
+            self.show_cur_cmd_chr()?;
+        }
         self.push_if_node()?;
         let save_cond_ptr = self.cond_ptr;
         let is_unless = self.cur_chr >= UNLESS_CODE;
@@ -695,6 +707,9 @@ impl TeXEngineState {
         if is_unless {
             condition = !condition;
         }
+
+        // C emits `{true}`/`{false}` when `\tracingcommands > 1`.
+        self.trace_conditional_result(condition)?;
 
         if condition {
             self.change_if_limit(ELSE_CODE as u8, save_cond_ptr)?;
@@ -944,10 +959,22 @@ impl TeXEngineState {
         };
 
         self.scanner_status = save_scanner_status;
+        // C `pass_text`'s `done:` label traces the terminating delimiter when
+        // `\tracingifs` is enabled.
+        if result.is_ok() && self.int_par(crate::state::INT_PAR_TRACING_IFS)? > 0 {
+            self.show_cur_cmd_chr()?;
+        }
         result
     }
 
     fn expand_fi_or_else(&mut self) -> Result<(), TeXMouthError> {
+        // C's `FI_OR_ELSE` expander arm: `\tracingifs` reports the delimiter
+        // when `\tracingcommands` hasn't already.
+        if self.int_par(crate::state::INT_PAR_TRACING_IFS)? > 0
+            && self.int_par(crate::state::INT_PAR_TRACING_COMMANDS)? <= 1
+        {
+            self.show_cur_cmd_chr()?;
+        }
         if self.cur_chr > i32::from(self.if_limit) {
             if self.if_limit == IF_CODE {
                 self.insert_relax()?;
@@ -983,6 +1010,13 @@ impl TeXEngineState {
     fn pop_if_node(&mut self) -> Result<(), TeXMouthError> {
         if self.cond_ptr == TEX_NULL {
             return Err(TeXMouthError::MalformedMacroParameters);
+        }
+        // C checks `if_stack[in_open] == cond_ptr` at every conditional pop
+        // (`common_ending`, the expander's `FI_OR_ELSE` arm, and the
+        // conditional's own `\fi` handling) and warns about a conditional
+        // that began in a different file.
+        if self.if_stack.get(self.in_open).copied() == Some(self.cond_ptr) {
+            self.if_warning()?;
         }
         let p = self.cond_ptr;
         let p_index = self.checked_engine_mem_index(p)?;

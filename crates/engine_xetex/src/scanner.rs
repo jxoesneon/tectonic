@@ -1609,6 +1609,11 @@ impl TeXEngineState {
             self.save_ptr -= 1;
             match self.save_stack[self.save_ptr] {
                 SaveStackEntry::Boundary { group, boundary } => {
+                    // C `unsave`'s `done:` warns when the group being closed
+                    // was opened in a different file than the one active now.
+                    if self.grp_stack.get(self.in_open).copied() == Some(self.cur_boundary) {
+                        self.group_warning(boundary)?;
+                    }
                     self.cur_group = group;
                     self.cur_boundary = boundary;
                     self.save_ptr -= 1;
@@ -2533,6 +2538,16 @@ impl TeXEngineState {
                             }
 
                             if self.force_eof {
+                                // C warns about groups/conditionals still
+                                // open at end-of-file when `\tracingnesting`.
+                                if self.int_par(crate::state::INT_PAR_TRACING_NESTING)? > 0
+                                    && (self.grp_stack.get(self.in_open).copied()
+                                        != Some(self.cur_boundary)
+                                        || self.if_stack.get(self.in_open).copied()
+                                            != Some(self.cond_ptr))
+                                {
+                                    self.file_warning()?;
+                                }
                                 self.line += 1;
                                 self.force_eof = false;
                                 self.end_file_reading()?;

@@ -1296,6 +1296,12 @@ pub const INT_PAR_TRACING_STATS: usize = 31;
 pub const FONT_BASE: i32 = 0;
 /// Integer parameter offset for `\tracinglostchars`.
 pub const INT_PAR_TRACING_LOST_CHARS: usize = 35;
+/// Integer parameter offset for `\tracingcommands`.
+pub const INT_PAR_TRACING_COMMANDS: usize = 36;
+/// Integer parameter offset for `\tracingifs`.
+pub const INT_PAR_TRACING_IFS: usize = 58;
+/// Integer parameter offset for `\tracingnesting`.
+pub const INT_PAR_TRACING_NESTING: usize = 60;
 /// Integer parameter offset for `\suppressfontnotfounderror`.
 pub const INT_PAR_SUPPRESS_FONTNOTFOUND_ERROR: usize = 65;
 
@@ -2524,6 +2530,9 @@ pub struct TeXEngineState {
     pub open_parens: i32,
     /// Mode shown by `\showlists`/`trapnl` diagnostics (`shown_mode`).
     pub shown_mode: i32,
+    /// Font last emitted by `short_display` inside `\showlists` ligature
+    /// diagnostics (`font_in_short_display`).
+    pub font_in_short_display: i32,
     /// First character of the editable portion of `name_of_file`
     /// (`edit_name_start`).
     pub edit_name_start: i32,
@@ -3401,6 +3410,7 @@ impl TeXEngineState {
             ins_disc: false,
             open_parens: 0,
             shown_mode: 0,
+            font_in_short_display: FONT_BASE,
             edit_name_start: 0,
             cur_f: 0,
             ligature_present: false,

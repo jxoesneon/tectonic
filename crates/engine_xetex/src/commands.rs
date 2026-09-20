@@ -212,6 +212,51 @@ fn rule_dimen_text(value: i32) -> String {
     }
 }
 
+/// Formats a read/write stream number for whatsit diagnostics
+/// (`print_write_whatsit`): `<16` prints the number, `16` prints `*`, higher
+/// prints `-`.
+fn stream_text(stream: i32) -> String {
+    if stream < 16 {
+        stream.to_string()
+    } else if stream == 16 {
+        "*".to_string()
+    } else {
+        "-".to_string()
+    }
+}
+
+/// Returns the `' in <mode>` suffix for `you_cant` diagnostics
+/// (`print_in_mode`).
+fn in_mode_text(m: i16) -> &'static str {
+    if m > 0 {
+        match i32::from(m) / 103 {
+            0 => "' in vertical mode",
+            1 => "' in horizontal mode",
+            _ => "' in display math mode",
+        }
+    } else if m == 0 {
+        "' in no mode"
+    } else {
+        match i32::from(-m) / 103 {
+            0 => "' in internal vertical mode",
+            1 => "' in restricted horizontal mode",
+            _ => "' in math mode",
+        }
+    }
+}
+
+/// Returns the `\...style` diagnostic name for a math style code
+/// (`print_style`).
+fn style_text(c: i32) -> &'static str {
+    match c / 2 {
+        0 => "\\displaystyle",
+        1 => "\\textstyle",
+        2 => "\\scriptstyle",
+        3 => "\\scriptscriptstyle",
+        _ => "Unknown style!",
+    }
+}
+
 /// `SHORTHAND_DEF` subcommand codes (`xetex_format.h`).
 const CHAR_DEF_CODE: i32 = 0;
 const MATH_CHAR_DEF_CODE: i32 = 1;
@@ -351,6 +396,11 @@ impl TeXEngineState {
     /// Dispatches the currently scanned command for the implemented
     /// mode-independent stomach cases.
     pub fn dispatch_current_command(&mut self) -> Result<(), TeXMouthError> {
+        // C `main_control` reswitch: `\tracingcommands` reports every command
+        // that reaches the stomach, including recursive re-dispatches.
+        if self.int_par(crate::state::INT_PAR_TRACING_COMMANDS)? > 0 {
+            self.show_cur_cmd_chr()?;
+        }
         let command = CommandCode::from_u8(self.cur_cmd);
 
         // C's first `switch (abs(mode) + cur_cmd)` cases (C ~16953):
@@ -911,6 +961,10 @@ impl TeXEngineState {
                 // back_error; the token is left in the input for recovery.
                 self.back_input()?;
                 return Ok(());
+            }
+
+            if self.int_par(crate::state::INT_PAR_TRACING_COMMANDS)? > 2 {
+                self.show_cur_cmd_chr()?;
             }
         }
 
@@ -2889,136 +2943,29 @@ impl TeXEngineState {
     }
 
     /// Formats the meaning of the current token or control sequence
-    /// (`print_meaning`).
+    /// (`print_meaning`): `print_cmd_chr` followed by `:` and the replacement
+    /// token list for macros and mark registers.
     pub(crate) fn meaning_of_current(&self) -> Result<String, TeXMouthError> {
-        let command = CommandCode::from_u8(self.cur_cmd)
-            .ok_or(TeXMouthError::UnsupportedPrimitive("meaning command"))?;
-        match command {
-            CommandCode::UndefinedCs => return Ok("undefined".to_string()),
-            CommandCode::LeftBrace => {
-                return Ok(format!(
-                    "begin-group character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::RightBrace => {
-                return Ok(format!(
-                    "end-group character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::MathShift => {
-                return Ok(format!(
-                    "math shift character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::TabMark => {
-                return Ok(format!(
-                    "alignment tab character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::MacParam => {
-                return Ok(format!(
-                    "macro parameter character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::SupMark => {
-                return Ok(format!(
-                    "superscript character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::SubMark => {
-                return Ok(format!(
-                    "subscript character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::Spacer => return Ok("blank space".to_string()),
-            CommandCode::Letter => {
-                return Ok(format!(
-                    "the letter {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::OtherChar => {
-                return Ok(format!(
-                    "the character {}",
-                    self.display_character(self.cur_chr)
-                ))
-            }
-            CommandCode::Call
-            | CommandCode::LongCall
-            | CommandCode::OuterCall
-            | CommandCode::LongOuterCall => {
-                let reference = self.cur_chr;
-                let start = self.stored_token_list_start(reference)?;
-                let mut n = i32::from(command as u8 - CommandCode::Call as u8);
-                let mut tokens = start;
-                if start != TEX_NULL {
-                    let idx = self.checked_engine_mem_index(start)?;
-                    if self.mem[idx].s0 == PROTECTED_TOKEN {
-                        n += 4;
-                        tokens = self.mem[idx].s1;
-                    }
-                }
-                let mut meaning = String::new();
-                if n & 4 != 0 {
-                    meaning.push_str("\\protected ");
-                }
-                if n & 1 != 0 {
-                    meaning.push_str("\\long ");
-                }
-                if n & 2 != 0 {
-                    meaning.push_str("\\outer ");
-                }
-                meaning.push_str("macro:");
-                meaning.push_str(&self.token_list_to_string(tokens)?);
-                return Ok(meaning);
-            }
-            CommandCode::EndTemplate => return Ok("\\outer endtemplate".to_string()),
-            CommandCode::CharGiven => return Ok(format!("\\char\"{:X}", self.cur_chr.max(0))),
-            CommandCode::MathGiven => return Ok(format!("\\mathchar\"{:X}", self.cur_chr.max(0))),
-            CommandCode::XetexMathGiven => {
-                return Ok(format!("\\Umathchar\"{:X}", self.cur_chr.max(0)))
-            }
-            CommandCode::AssignInt => {
-                if (COUNT_BASE as i32..(COUNT_BASE + 256) as i32).contains(&self.cur_chr) {
-                    return Ok(format!("\\count{}", self.cur_chr - COUNT_BASE as i32));
+        let mut text = self.cmd_chr_text(self.cur_cmd, self.cur_chr)?;
+        if self.cur_cmd >= CommandCode::Call as u8 {
+            let start = self.stored_token_list_start(self.cur_chr)?;
+            let mut tokens = start;
+            if start != TEX_NULL {
+                let idx = self.checked_engine_mem_index(start)?;
+                if self.mem[idx].s0 == PROTECTED_TOKEN {
+                    tokens = self.mem[idx].s1;
                 }
             }
-            CommandCode::AssignDimen => {
-                if (DIMEN_BASE as i32..(DIMEN_BASE + 256) as i32).contains(&self.cur_chr) {
-                    return Ok(format!("\\dimen{}", self.cur_chr - DIMEN_BASE as i32));
-                }
+            text.push(':');
+            text.push_str(&self.token_list_to_string(tokens)?);
+        } else if self.cur_cmd == CommandCode::TopBotMark as u8 && self.cur_chr < 5 {
+            text.push(':');
+            if let Some(&head) = self.cur_mark.get(self.cur_chr as usize) {
+                let start = self.stored_token_list_start(head)?;
+                text.push_str(&self.token_list_to_string(start)?);
             }
-            CommandCode::AssignGlue => {
-                if (SKIP_BASE as i32..(SKIP_BASE + 256) as i32).contains(&self.cur_chr) {
-                    return Ok(format!("\\skip{}", self.cur_chr - SKIP_BASE as i32));
-                }
-            }
-            CommandCode::AssignMuGlue => {
-                if (MU_SKIP_BASE as i32..(MU_SKIP_BASE + 256) as i32).contains(&self.cur_chr) {
-                    return Ok(format!("\\muskip{}", self.cur_chr - MU_SKIP_BASE as i32));
-                }
-            }
-            CommandCode::AssignToks => {
-                if (TOKS_BASE as i32..(TOKS_BASE + 256) as i32).contains(&self.cur_chr) {
-                    return Ok(format!("\\toks{}", self.cur_chr - TOKS_BASE as i32));
-                }
-            }
-            CommandCode::SetFont => return Ok(format!("select font {}", self.cur_chr)),
-            _ => {}
         }
-
-        if let Some(name) = primitive_name_for(command, self.cur_chr) {
-            Ok(format!("\\{name}"))
-        } else {
-            Ok(format!("\\unknown{}", self.cur_chr.max(0)))
-        }
+        Ok(text)
     }
 
     /// Emits the semantic-list nest (`show_activities`).
@@ -3072,13 +3019,11 @@ impl TeXEngineState {
                     let first = self.link(page_head)?;
                     self.show_box(first)?;
                     if self.page_contents > PAGE_EMPTY {
-                        self.transcript.push(format!(
-                            "total height {}",
-                            scaled_text(self.page_so_far[1], "pt")
-                        ));
+                        self.transcript
+                            .push(format!("total height {}", self.page_totals_text()));
                         self.transcript.push(format!(
                             " goal height {}",
-                            scaled_text(self.page_so_far[0], "pt")
+                            scaled_number(self.page_so_far[0])
                         ));
                     }
                 }
@@ -3399,21 +3344,20 @@ impl TeXEngineState {
             breadth = 5;
         }
         let depth = self.int_par(INT_PAR_SHOW_BOX_DEPTH)?;
-        self.show_node_list(p, 0, depth, breadth)
+        self.show_node_list(p, "", depth, breadth)
     }
 
     /// Recursively formats one semantic node list (`show_node_list`).
     fn show_node_list(
         &mut self,
         mut p: i32,
-        depth: i32,
+        indent: &str,
         depth_threshold: i32,
         breadth_max: i32,
     ) -> Result<(), TeXMouthError> {
-        if depth > depth_threshold {
+        if indent.len() as i32 > depth_threshold {
             if p != TEX_NULL {
-                self.transcript
-                    .push(format!("{} []", ".".repeat(depth as usize)));
+                self.transcript.push(format!("{indent} []"));
             }
             return Ok(());
         }
@@ -3421,29 +3365,27 @@ impl TeXEngineState {
         let mut count = 0;
         while p != TEX_NULL {
             if count >= breadth_max {
-                self.transcript
-                    .push(format!("{}etc.", ".".repeat(depth as usize)));
+                self.transcript.push(format!("{indent}etc."));
                 return Ok(());
             }
             count += 1;
-            let line = self.node_line(p, depth)?;
+            let line = self.node_line(p, indent, depth_threshold)?;
             self.transcript.push(line);
-            self.show_node_children(p, depth, depth_threshold, breadth_max)?;
+            self.show_node_children(p, indent, depth_threshold, breadth_max)?;
             p = self.link(p)?;
         }
         Ok(())
     }
 
     /// Formats one node's diagnostic text without its children.
-    fn node_line(&mut self, p: i32, depth: i32) -> Result<String, TeXMouthError> {
-        let indent = ".".repeat(depth.max(0) as usize);
+    fn node_line(
+        &mut self,
+        p: i32,
+        indent: &str,
+        depth_threshold: i32,
+    ) -> Result<String, TeXMouthError> {
         if self.is_char_node(p) {
-            let word = self.word_at(p, 0)?;
-            let character = u32::from(word.b16_s0());
-            let text = char::from_u32(character)
-                .map(|c| c.to_string())
-                .unwrap_or_else(|| format!("\"{character:X}"));
-            return Ok(format!("{indent}{text}"));
+            return Ok(format!("{indent}{}", self.font_and_char_text(p)?));
         }
 
         let node_type = self.node_type(p)?;
@@ -3525,14 +3467,22 @@ impl TeXEngineState {
             WHATSIT_NODE => match subtype {
                 OPEN_NODE => format!(
                     "\\openout{}={}",
-                    self.word_at(p, 1)?.s0,
-                    self.word_at(p, 1)?.s1
+                    stream_text(self.word_at(p, 1)?.s0),
+                    self.file_name_text(
+                        self.word_at(p, 1)?.s1,
+                        self.word_at(p, 2)?.s0,
+                        self.word_at(p, 2)?.s1
+                    )
                 ),
                 WRITE_NODE => {
                     let mark = self.word_at(p, 1)?.s1;
-                    format!("\\write{}{}", self.word_at(p, 1)?.s0, self.mark_text(mark)?)
+                    format!(
+                        "\\write{}{}",
+                        stream_text(self.word_at(p, 1)?.s0),
+                        self.mark_text(mark)?
+                    )
                 }
-                CLOSE_NODE => format!("\\closeout{}", self.word_at(p, 1)?.s0),
+                CLOSE_NODE => format!("\\closeout{}", stream_text(self.word_at(p, 1)?.s0)),
                 SPECIAL_NODE => {
                     let mark = self.word_at(p, 1)?.s1;
                     format!("\\special{}", self.mark_text(mark)?)
@@ -3544,10 +3494,41 @@ impl TeXEngineState {
                     self.word_at(p, 1)?.b16_s0()
                 ),
                 PDF_SAVE_POS_NODE => "\\pdfsavepos".to_string(),
-                NATIVE_WORD_NODE | NATIVE_WORD_NODE_AT => "native word".to_string(),
-                GLYPH_NODE => format!("glyph#{}", self.word_at(p, 4)?.b16_s1()),
-                PIC_NODE => "\\XeTeXpicfile".to_string(),
-                PDF_NODE => "\\XeTeXpdffile".to_string(),
+                NATIVE_WORD_NODE | NATIVE_WORD_NODE_AT => {
+                    let font = self.native_node_font(p)?;
+                    let cs = self.font_ident_cs(font);
+                    let mut text = format!("\\{} ", self.cs_name_text(cs));
+                    for unit in self.native_word_text(p)? {
+                        text.push_str(&self.display_character(i32::from(unit)));
+                    }
+                    text
+                }
+                GLYPH_NODE => {
+                    let font = self.native_node_font(p)?;
+                    let cs = self.font_ident_cs(font);
+                    format!(
+                        "\\{} glyph#{}",
+                        self.cs_name_text(cs),
+                        self.word_at(p, 4)?.b16_s1()
+                    )
+                }
+                PIC_NODE | PDF_NODE => {
+                    let name = if subtype == PIC_NODE {
+                        "XeTeXpicfile"
+                    } else {
+                        "XeTeXpdffile"
+                    };
+                    let path_len = i32::from(self.word_at(p, 4)?.b16_s1());
+                    let mut text = format!("\\{name}( ");
+                    for i in 0..path_len {
+                        let word = self.word_at(p + PIC_NODE_SIZE + i / 8, 0)?;
+                        let half = if i % 8 < 4 { word.s0 } else { word.s1 };
+                        let byte = (half >> ((i % 4) * 8)) & 0xFF;
+                        text.push(char::from_u32(byte as u32).unwrap_or('\u{FFFD}'));
+                    }
+                    text.push('"');
+                    text
+                }
                 _ => "whatsit?".to_string(),
             },
             GLUE_NODE => {
@@ -3641,6 +3622,92 @@ impl TeXEngineState {
                 )
             }
             ADJUST_NODE => format!("\\vadjust{}", if subtype != 0 { " pre" } else { "" }),
+            LIGATURE_NODE => {
+                let mut text = format!("{} (ligature ", self.font_and_char_text(p + 1)?);
+                if subtype > 1 {
+                    text.push('|');
+                }
+                self.font_in_short_display = i32::from(self.word_at(p + 1, 0)?.b16_s1());
+                text.push_str(&self.short_display_text(self.word_at(p + 1, 0)?.s1)?);
+                if subtype % 2 == 1 {
+                    text.push('|');
+                }
+                text.push(')');
+                text
+            }
+            STYLE_NODE => style_text(i32::from(subtype)).to_string(),
+            CHOICE_NODE => "\\mathchoice".to_string(),
+            FRACTION_NOAD => {
+                let thickness = self.word_at(p + 1, 0)?.s1;
+                let mut text = format!(
+                    "\\fraction, thickness {}",
+                    if thickness == DEFAULT_CODE {
+                        "= default".to_string()
+                    } else {
+                        scaled_text(thickness, "pt")
+                    }
+                );
+                if self.delimiter_nonzero(p + 4)? {
+                    text.push_str(&format!(", left-delimiter {}", self.delimiter_text(p + 4)?));
+                }
+                if self.delimiter_nonzero(p + 5)? {
+                    text.push_str(&format!(
+                        ", right-delimiter {}",
+                        self.delimiter_text(p + 5)?
+                    ));
+                }
+                if indent.len() as i32 >= depth_threshold {
+                    text.push_str(self.subsidiary_overflow_suffix(p + 2)?);
+                    text.push_str(self.subsidiary_overflow_suffix(p + 3)?);
+                }
+                text
+            }
+            ORD_NOAD | OP_NOAD | BIN_NOAD | REL_NOAD | OPEN_NOAD | CLOSE_NOAD | PUNCT_NOAD
+            | INNER_NOAD | RADICAL_NOAD | OVER_NOAD | UNDER_NOAD | VCENTER_NOAD | ACCENT_NOAD
+            | LEFT_NOAD | RIGHT_NOAD => {
+                let mut text = match node_type {
+                    ORD_NOAD => "\\mathord".to_string(),
+                    OP_NOAD => "\\mathop".to_string(),
+                    BIN_NOAD => "\\mathbin".to_string(),
+                    REL_NOAD => "\\mathrel".to_string(),
+                    OPEN_NOAD => "\\mathopen".to_string(),
+                    CLOSE_NOAD => "\\mathclose".to_string(),
+                    PUNCT_NOAD => "\\mathpunct".to_string(),
+                    INNER_NOAD => "\\mathinner".to_string(),
+                    OVER_NOAD => "\\overline".to_string(),
+                    UNDER_NOAD => "\\underline".to_string(),
+                    VCENTER_NOAD => "\\vcenter".to_string(),
+                    RADICAL_NOAD => {
+                        format!("\\radical{}", self.delimiter_text(p + 4)?)
+                    }
+                    ACCENT_NOAD => {
+                        format!("\\accent{}", self.fam_and_char_text(p + 4)?)
+                    }
+                    LEFT_NOAD => format!("\\left{}", self.delimiter_text(p + 1)?),
+                    _ => format!(
+                        "\\{}{}",
+                        if subtype == NORMAL { "right" } else { "middle" },
+                        self.delimiter_text(p + 1)?
+                    ),
+                };
+                if node_type < LEFT_NOAD {
+                    if subtype != NORMAL {
+                        text.push_str(if subtype == LIMITS {
+                            "\\limits"
+                        } else {
+                            "\\nolimits"
+                        });
+                    }
+                    if indent.len() as i32 >= depth_threshold {
+                        text.push_str(self.subsidiary_overflow_suffix(p + 1)?);
+                    }
+                }
+                if indent.len() as i32 >= depth_threshold {
+                    text.push_str(self.subsidiary_overflow_suffix(p + 2)?);
+                    text.push_str(self.subsidiary_overflow_suffix(p + 3)?);
+                }
+                text
+            }
             _ => "Unknown node type!".to_string(),
         };
         Ok(format!("{indent}{text}"))
@@ -3650,62 +3717,347 @@ impl TeXEngineState {
     fn show_node_children(
         &mut self,
         p: i32,
-        depth: i32,
+        indent: &str,
         depth_threshold: i32,
         breadth_max: i32,
     ) -> Result<(), TeXMouthError> {
         if self.is_char_node(p) {
             return Ok(());
         }
+        let child_indent = format!("{indent}.");
         match self.node_type(p)? {
             HLIST_NODE | VLIST_NODE | UNSET_NODE => self.show_node_list(
                 self.word_at(p, 5)?.s1,
-                depth + 1,
+                &child_indent,
                 depth_threshold,
                 breadth_max,
             ),
             INS_NODE => self.show_node_list(
                 self.word_at(p, 4)?.s0,
-                depth + 1,
+                &child_indent,
                 depth_threshold,
                 breadth_max,
             ),
             GLUE_NODE if i32::from(self.node_subtype(p)?) >= A_LEADERS => self.show_node_list(
                 self.word_at(p, 1)?.s1,
-                depth + 1,
+                &child_indent,
                 depth_threshold,
                 breadth_max,
             ),
             DISC_NODE => {
                 self.show_node_list(
                     self.word_at(p, 1)?.s0,
-                    depth + 1,
+                    &child_indent,
                     depth_threshold,
                     breadth_max,
                 )?;
-                self.transcript
-                    .push(format!("{}|", ".".repeat((depth + 1).max(0) as usize)));
                 self.show_node_list(
                     self.word_at(p, 1)?.s1,
-                    depth + 1,
+                    &format!("{indent}|"),
                     depth_threshold,
                     breadth_max,
                 )
             }
             ADJUST_NODE => self.show_node_list(
                 self.word_at(p, 1)?.s1,
-                depth + 1,
+                &child_indent,
                 depth_threshold,
                 breadth_max,
             ),
+            CHOICE_NODE => {
+                self.show_node_list(
+                    self.word_at(p + 1, 0)?.s0,
+                    &format!("{indent}D"),
+                    depth_threshold,
+                    breadth_max,
+                )?;
+                self.show_node_list(
+                    self.word_at(p + 1, 0)?.s1,
+                    &format!("{indent}T"),
+                    depth_threshold,
+                    breadth_max,
+                )?;
+                self.show_node_list(
+                    self.word_at(p + 2, 0)?.s0,
+                    &format!("{indent}S"),
+                    depth_threshold,
+                    breadth_max,
+                )?;
+                self.show_node_list(
+                    self.word_at(p + 2, 0)?.s1,
+                    &format!("{indent}s"),
+                    depth_threshold,
+                    breadth_max,
+                )
+            }
+            ORD_NOAD | OP_NOAD | BIN_NOAD | REL_NOAD | OPEN_NOAD | CLOSE_NOAD | PUNCT_NOAD
+            | INNER_NOAD | RADICAL_NOAD | OVER_NOAD | UNDER_NOAD | VCENTER_NOAD | ACCENT_NOAD
+            | LEFT_NOAD | RIGHT_NOAD => {
+                if indent.len() as i32 >= depth_threshold {
+                    return Ok(());
+                }
+                let node_type = self.node_type(p)?;
+                if node_type < LEFT_NOAD {
+                    self.show_subsidiary_field(p + 1, '.', indent, depth_threshold, breadth_max)?;
+                }
+                self.show_subsidiary_field(p + 2, '^', indent, depth_threshold, breadth_max)?;
+                self.show_subsidiary_field(p + 3, '_', indent, depth_threshold, breadth_max)
+            }
+            FRACTION_NOAD => {
+                if indent.len() as i32 >= depth_threshold {
+                    return Ok(());
+                }
+                self.show_subsidiary_field(p + 2, '\\', indent, depth_threshold, breadth_max)?;
+                self.show_subsidiary_field(p + 3, '/', indent, depth_threshold, breadth_max)
+            }
             _ => Ok(()),
         }
+    }
+
+    /// Displays one subsidiary math field at `q` (`print_subsidiary_data` +
+    /// `show_info` for the non-overflow case).
+    fn show_subsidiary_field(
+        &mut self,
+        q: i32,
+        marker: char,
+        indent: &str,
+        depth_threshold: i32,
+        breadth_max: i32,
+    ) -> Result<(), TeXMouthError> {
+        let field_indent = format!("{indent}{marker}");
+        match self.word_at(q, 0)?.s1 {
+            MATH_CHAR => self
+                .transcript
+                .push(format!("{field_indent}{}", self.fam_and_char_text(q)?)),
+            SUB_BOX => {
+                self.show_node_list(
+                    self.word_at(q, 0)?.s0,
+                    &field_indent,
+                    depth_threshold,
+                    breadth_max,
+                )?;
+            }
+            SUB_MLIST => {
+                let head = self.word_at(q, 0)?.s0;
+                if head == TEX_NULL {
+                    self.transcript.push(format!("{field_indent}{{}}"));
+                } else {
+                    self.show_node_list(head, &field_indent, depth_threshold, breadth_max)?;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Returns `" []"` when the subsidiary field at `q` is non-empty
+    /// (`print_subsidiary_data`'s over-threshold branch).
+    fn subsidiary_overflow_suffix(&self, q: i32) -> Result<&'static str, TeXMouthError> {
+        Ok(if self.word_at(q, 0)?.s1 != MATH_FIELD_EMPTY {
+            " []"
+        } else {
+            ""
+        })
+    }
+
+    /// Formats `\fam<n> <char>` for a `MATH_CHAR`/`MATH_TEXT_CHAR` field
+    /// (`print_fam_and_char`).
+    fn fam_and_char_text(&self, q: i32) -> Result<String, TeXMouthError> {
+        let word = self.word_at(q, 0)?;
+        let family = i32::from(word.b16_s1() % 256) % 256;
+        let c = i32::from(word.b16_s0()) + (i32::from(word.b16_s1()) / 256) * 65536;
+        Ok(format!("\\fam{family} {}", self.display_character(c)))
+    }
+
+    /// Formats `\<font-cs> <char>` for a ligature char node (`print_font_and_char`).
+    fn font_and_char_text(&mut self, q: i32) -> Result<String, TeXMouthError> {
+        if q > self.mem_top() {
+            return Ok("\\CLOBBERED.".to_string());
+        }
+        let word = self.word_at(q, 0)?;
+        let font = i32::from(word.b16_s1());
+        let name = if font > self.font_ptr() {
+            "*".to_string()
+        } else {
+            let cs = self.font_ident_cs(font);
+            format!("\\{}", self.cs_name_text(cs))
+        };
+        Ok(format!(
+            "{name} {}",
+            self.display_character(i32::from(word.b16_s0()))
+        ))
+    }
+
+    /// Whether any component of the delimiter word at `q` is nonzero.
+    fn delimiter_nonzero(&self, q: i32) -> Result<bool, TeXMouthError> {
+        let word = self.word_at(q, 0)?;
+        Ok(word.b16_s0() != 0 || word.b16_s1() != 0 || word.b16_s2() != 0 || word.b16_s3() != 0)
+    }
+
+    /// Packs and renders a delimiter word (`print_delimiter`): a signed
+    /// integer when negative, hex otherwise.
+    fn delimiter_text(&self, q: i32) -> Result<String, TeXMouthError> {
+        let word = self.word_at(q, 0)?;
+        let s0 = i32::from(word.b16_s0());
+        let s1 = i32::from(word.b16_s1());
+        let s2 = i32::from(word.b16_s2());
+        let s3 = i32::from(word.b16_s3());
+        let small_char = s2 + (s3 / 256) * 65536;
+        let large_char = s0 + (s1 / 256) * 65536;
+        let a = ((s3 % 256) * 256 + small_char)
+            .wrapping_mul(4096)
+            .wrapping_add((s1 % 256) * 256 + large_char);
+        Ok(if a < 0 {
+            a.to_string()
+        } else {
+            format!("{a:X}")
+        })
+    }
+
+    /// Renders a node list inline for ligature diagnostics (`short_display`).
+    fn short_display_text(&mut self, mut p: i32) -> Result<String, TeXMouthError> {
+        let mut text = String::new();
+        while p > 0 {
+            if self.is_char_node(p) {
+                if p <= self.mem_top() {
+                    let word = self.word_at(p, 0)?;
+                    let font = i32::from(word.b16_s1());
+                    if font != self.font_in_short_display {
+                        if font > self.font_ptr() {
+                            text.push('*');
+                        } else {
+                            let cs = self.font_ident_cs(font);
+                            text.push('\\');
+                            text.push_str(&self.cs_name_text(cs));
+                        }
+                        text.push(' ');
+                        self.font_in_short_display = font;
+                    }
+                    text.push_str(&self.display_character(i32::from(word.b16_s0())));
+                }
+            } else {
+                match self.node_type(p)? {
+                    HLIST_NODE | VLIST_NODE | INS_NODE | MARK_NODE | ADJUST_NODE | UNSET_NODE => {
+                        text.push_str("[]")
+                    }
+                    WHATSIT_NODE => {
+                        if self.is_native_word_node(p)? {
+                            let font = self.native_node_font(p)?;
+                            if font != self.font_in_short_display {
+                                let cs = self.font_ident_cs(font);
+                                text.push('\\');
+                                text.push_str(&self.cs_name_text(cs));
+                                text.push(' ');
+                                self.font_in_short_display = font;
+                            }
+                            for unit in self.native_word_text(p)? {
+                                text.push_str(&self.display_character(i32::from(unit)));
+                            }
+                        } else {
+                            text.push_str("[]");
+                        }
+                    }
+                    RULE_NODE => text.push('|'),
+                    GLUE_NODE => {
+                        if self.word_at(p + 1, 0)?.s0 != 0 {
+                            text.push(' ');
+                        }
+                    }
+                    MATH_NODE => {
+                        if i32::from(self.node_subtype(p)?) >= L_CODE {
+                            text.push_str("[]");
+                        } else {
+                            text.push('$');
+                        }
+                    }
+                    LIGATURE_NODE => {
+                        text.push_str(&self.short_display_text(self.word_at(p + 1, 0)?.s1)?);
+                    }
+                    DISC_NODE => {
+                        text.push_str(&self.short_display_text(self.word_at(p + 1, 0)?.s0)?);
+                        text.push_str(&self.short_display_text(self.word_at(p + 1, 0)?.s1)?);
+                        let mut n = i32::from(self.node_subtype(p)?);
+                        while n > 0 {
+                            if self.word_at(p, 0)?.s1 != TEX_NULL {
+                                p = self.link(p)?;
+                            }
+                            n -= 1;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            p = self.link(p)?;
+        }
+        Ok(text)
+    }
+
+    /// Renders a file-name triple to a string, mirroring `print_file_name`'s
+    /// quoting of names containing spaces or quotes.
+    fn file_name_text(&self, n: i32, a: i32, e: i32) -> String {
+        let part = |s: i32| -> String {
+            if s == 0 {
+                return String::new();
+            }
+            self.string_text(s).unwrap_or_default()
+        };
+        let (name, area, ext) = (part(n), part(a), part(e));
+        let joined = format!("{area}{name}{ext}");
+        let mut quote = 0i32;
+        let mut must_quote = false;
+        for ch in joined.chars() {
+            if ch == ' ' {
+                must_quote = true;
+            } else if ch == '"' || ch == '\'' {
+                must_quote = true;
+                if quote == 0 {
+                    quote = 73 - ch as i32;
+                }
+            }
+        }
+        if must_quote {
+            if quote == 0 {
+                quote = i32::from(b'"');
+            }
+            let q = char::from_u32(quote as u32).unwrap_or('"');
+            format!("{q}{joined}{q}")
+        } else {
+            joined
+        }
+    }
+
+    /// Renders the current page's total plus stretch/shrink components
+    /// (`print_totals`).
+    fn page_totals_text(&self) -> String {
+        let mut text = scaled_number(self.page_so_far[1]);
+        if self.page_so_far[2] != 0 {
+            text.push_str(&format!(" plus {}", scaled_number(self.page_so_far[2])));
+        }
+        if self.page_so_far[3] != 0 {
+            text.push_str(&format!(" plus {}fil", scaled_number(self.page_so_far[3])));
+        }
+        if self.page_so_far[4] != 0 {
+            text.push_str(&format!(" plus {}fill", scaled_number(self.page_so_far[4])));
+        }
+        if self.page_so_far[5] != 0 {
+            text.push_str(&format!(
+                " plus {}filll",
+                scaled_number(self.page_so_far[5])
+            ));
+        }
+        if self.page_so_far[6] != 0 {
+            text.push_str(&format!(" minus {}", scaled_number(self.page_so_far[6])));
+        }
+        text
     }
 
     /// Formats a mark or write token-list reference.
     fn mark_text(&self, reference: i32) -> Result<String, TeXMouthError> {
         if reference == TEX_NULL {
             return Ok(String::new());
+        }
+        if reference < self.hi_mem_min || reference > self.mem_top() {
+            return Ok("{\\CLOBBERED.}".to_string());
         }
         let start = self.stored_token_list_start(reference)?;
         Ok(format!("{{{}}}", self.token_list_to_string(start)?))
@@ -3766,10 +4118,19 @@ impl TeXEngineState {
     }
 
     /// Formats a token character for `\show` meanings.
-    fn display_character(&self, character: i32) -> String {
+    pub(crate) fn display_character(&self, character: i32) -> String {
         char::from_u32(character.max(0) as u32)
             .map(|c| c.to_string())
             .unwrap_or_else(|| format!("\"{character:X}"))
+    }
+
+    /// Renders a control sequence's name characters for diagnostics.
+    pub(crate) fn cs_name_text(&self, cs: i32) -> String {
+        self.cs_table
+            .name(cs)
+            .iter()
+            .filter_map(|&unit| char::from_u32(unit.max(0) as u32))
+            .collect()
     }
 
     /// Assigns a token-list value to a dense `eqtb` target or a sparse `sa`
@@ -5333,8 +5694,11 @@ impl TeXEngineState {
     /// Reports that the current command is illegal in the current mode
     /// (`you_cant`/`report_illegal_case`).
     fn report_illegal_case(&mut self) {
+        let cmd = self
+            .cmd_chr_text(self.cur_cmd, self.cur_chr)
+            .unwrap_or_default();
         self.report_error(
-            "You can't use a command in an inner mode",
+            &format!("You can't use `{cmd}'{}", in_mode_text(self.mode)),
             &[
                 "Sorry, but I'm not programmed to handle this case;",
                 "I'll just pretend that you didn't ask for it.",
@@ -17221,6 +17585,157 @@ mod tests {
             state.error_count > 0 || state.transcript.iter().any(|l| l.contains("Missing")),
             "\\over in vmode must report the missing math shift: {:?}",
             state.transcript
+        );
+    }
+
+    #[test]
+    fn show_node_list_displays_math_noad_and_subsidiaries() {
+        let mut state = engine();
+        let p = state.new_noad().unwrap();
+        state.set_node_type(p, OP_NOAD).unwrap();
+        state.set_node_subtype(p, LIMITS).unwrap();
+        let nucleus = (p + 1) as usize;
+        state.mem[nucleus].s1 = MATH_CHAR;
+        state.mem[nucleus].set_b16_s0(u16::from(b'x'));
+        state.mem[nucleus].set_b16_s1(0);
+        let sup = (p + 2) as usize;
+        state.mem[sup].s1 = SUB_MLIST;
+        state.mem[sup].s0 = crate::state::TEX_NULL;
+
+        state.show_node_list(p, "", 3, 10).unwrap();
+
+        assert_eq!(
+            state.transcript,
+            vec![
+                "\\mathop\\limits".to_string(),
+                ".\\fam0 x".to_string(),
+                "^{}".to_string(),
+            ],
+            "transcript: {:?}",
+            state.transcript
+        );
+    }
+
+    #[test]
+    fn show_node_list_displays_fraction_and_delimiters() {
+        let mut state = engine();
+        let p = state.get_node(crate::state::FRACTION_NOAD_SIZE).unwrap();
+        state.set_node_type(p, FRACTION_NOAD).unwrap();
+        state.mem[(p + 1) as usize].s1 = DEFAULT_CODE;
+        let num = (p + 2) as usize;
+        state.mem[num].s1 = MATH_CHAR;
+        state.mem[num].set_b16_s0(u16::from(b'a'));
+        let den = (p + 3) as usize;
+        state.mem[den].s1 = MATH_FIELD_EMPTY;
+        let delim = (p + 4) as usize;
+        state.mem[delim].set_b16_s0(0x41);
+        state.mem[delim].set_b16_s1(0);
+        state.mem[delim].set_b16_s2(0);
+        state.mem[delim].set_b16_s3(0);
+
+        state.show_node_list(p, "", 3, 10).unwrap();
+
+        assert_eq!(
+            state.transcript,
+            vec![
+                "\\fraction, thickness = default, left-delimiter 41".to_string(),
+                "\\\\fam0 a".to_string(),
+            ],
+            "transcript: {:?}",
+            state.transcript
+        );
+    }
+
+    #[test]
+    fn show_node_list_displays_style_and_choice() {
+        let mut state = engine();
+        let style = state.new_style(DISPLAY_STYLE).unwrap();
+        let choice = state.new_choice().unwrap();
+        state.mem[style as usize].s1 = choice;
+
+        state.show_node_list(style, "", 3, 10).unwrap();
+
+        assert_eq!(
+            state.transcript,
+            vec!["\\displaystyle".to_string(), "\\mathchoice".to_string()],
+            "transcript: {:?}",
+            state.transcript
+        );
+    }
+
+    #[test]
+    fn show_node_list_displays_choice_branches_with_markers() {
+        let mut state = engine();
+        let choice = state.new_choice().unwrap();
+        let noad = state.new_noad().unwrap();
+        state.mem[(choice + 1) as usize].s0 = noad;
+
+        state.show_node_list(choice, "", 3, 10).unwrap();
+
+        assert_eq!(
+            state.transcript,
+            vec!["\\mathchoice".to_string(), "D\\mathord".to_string()],
+            "transcript: {:?}",
+            state.transcript
+        );
+    }
+
+    #[test]
+    fn node_line_displays_ligature_with_short_display() {
+        let mut state = engine();
+        let inner = state.get_avail().unwrap();
+        state.mem[inner as usize].set_b16_s0(u16::from(b'i'));
+        state.mem[inner as usize].set_b16_s1(99);
+        state.mem[inner as usize].s1 = crate::state::TEX_NULL;
+        let lig = state.new_ligature(5, i32::from(b'f'), inner).unwrap();
+        state.set_node_subtype(lig, 3).unwrap();
+
+        let line = state.node_line(lig, "", 3).unwrap();
+
+        assert_eq!(line, "* f (ligature |* i|)");
+    }
+
+    #[test]
+    fn char_node_line_shows_font_and_char() {
+        let mut state = engine();
+        let p = state.get_avail().unwrap();
+        state.mem[p as usize].set_b16_s0(u16::from(b'x'));
+        state.mem[p as usize].set_b16_s1(7);
+        state.mem[p as usize].s1 = crate::state::TEX_NULL;
+
+        let line = state.node_line(p, ".", 3).unwrap();
+
+        assert_eq!(line, ".* x");
+    }
+
+    #[test]
+    fn subsidiary_overflow_marks_nonempty_fields_inline() {
+        let mut state = engine();
+        let p = state.new_noad().unwrap();
+        let nucleus = (p + 1) as usize;
+        state.mem[nucleus].s1 = MATH_CHAR;
+        state.mem[nucleus].set_b16_s0(u16::from(b'y'));
+        let sub = (p + 3) as usize;
+        state.mem[sub].s1 = SUB_MLIST;
+        state.mem[sub].s0 = crate::state::TEX_NULL;
+
+        let line = state.node_line(p, "", 0).unwrap();
+
+        assert_eq!(line, "\\mathord [] []");
+    }
+
+    #[test]
+    fn page_totals_text_includes_glue_components() {
+        let mut state = engine();
+        state.page_so_far[1] = 10 * 65536;
+        state.page_so_far[2] = 2 * 65536;
+        state.page_so_far[3] = 65536;
+        state.page_so_far[4] = 3 * 65536;
+        state.page_so_far[6] = 65536;
+
+        assert_eq!(
+            state.page_totals_text(),
+            "10.0 plus 2.0 plus 1.0fil plus 3.0fill minus 1.0"
         );
     }
 }
