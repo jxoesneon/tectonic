@@ -3146,6 +3146,13 @@ pub struct TeXEngineState {
     /// Registered raw file bytes available to `\input`/`\openin`
     /// (`ttstub_input_open`'s virtualized backing store).
     pub input_byte_sources: HashMap<String, Vec<u8>>,
+    /// Registered modification times (seconds since the Unix epoch) backing
+    /// `ttstub_input_get_mtime` for `\pdffilemoddate`; absent entries read
+    /// as the epoch.
+    pub input_file_mtimes: HashMap<String, i64>,
+    /// PDF-style creation-date string captured at job start
+    /// (`init_start_time`'s `start_time_str`, UTC `makepdftime`).
+    pub start_time_str: String,
     /// C `input_file[in_open]` byte streams for real input files.
     pub input_file: Vec<Option<crate::input::UFile>>,
     /// C `read_file[0..=16]` byte streams for `\read` streams.
@@ -3663,6 +3670,8 @@ impl TeXEngineState {
             read_open: vec![ReadOpen::Closed; 17],
             read_sources: vec![None; 17],
             input_byte_sources: HashMap::new(),
+            input_file_mtimes: HashMap::new(),
+            start_time_str: String::new(),
             input_file: Vec::new(),
             read_file: vec![None; 17],
             name_of_file: Vec::new(),

@@ -1397,6 +1397,7 @@ impl TeXEngineState {
         }
 
         let (secs, micros) = epoch_secs_micros(build_date);
+        self.init_start_time(secs);
         if self.in_initex_mode {
             // INITEX zeroes the date for format-file reproducibility.
             self.set_int_par(INT_PAR_TIME, 0)?;

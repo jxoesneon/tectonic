@@ -36,6 +36,7 @@ pub mod shipout;
 pub mod state;
 pub mod strpool;
 pub mod teckit;
+pub mod texmfmp;
 pub mod unicode;
 
 pub use primitives::{primitive_defs, PrimitiveDef, PrimitiveExtraInit, PrimitiveRegistryError};

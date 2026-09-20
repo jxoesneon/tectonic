@@ -1029,6 +1029,11 @@ impl TeXEngineState {
             6 => self.expand_expanded(),
             16 | 17 => self.expand_margin_kern(self.cur_chr == 17),
             18 => self.expand_strcmp(),
+            22 => {
+                let text = self.creation_date_text();
+                self.insert_character_tokens(text.chars())
+            }
+            23..=26 => self.expand_file_convert(self.cur_chr),
             29 => {
                 let bound = self.scan_int()?;
                 let value = self.rand.unif_rand(bound);
@@ -1224,6 +1229,71 @@ impl TeXEngineState {
             std::cmp::Ordering::Greater => 1,
         };
         self.insert_character_tokens(value.to_string().chars())
+    }
+
+    /// Expands `\filemoddate`, `\filesize`, `\mdfivesum`, and `\filedump`
+    /// (C `conv_toks` `PDF_FILE_*` codes ~9406-9578): the keyword options
+    /// are scanned first, then the file name is materialized from
+    /// `scan_pdf_ext_toks` + `tokens_to_string` and the texmfmp utility
+    /// produces the inserted text. Negative offsets/lengths record C's
+    /// error and clamp to zero.
+    fn expand_file_convert(&mut self, code: i32) -> Result<(), TeXMouthError> {
+        const PDF_FILE_MOD_DATE_CODE: i32 = 23;
+        const PDF_FILE_SIZE_CODE: i32 = 24;
+        const PDF_MDFIVE_SUM_CODE: i32 = 25;
+        const PDF_FILE_DUMP_CODE: i32 = 26;
+
+        let mut offset = 0;
+        let mut length = 0;
+        if code == PDF_FILE_DUMP_CODE {
+            if self.scan_keyword("offset")? {
+                self.scan_int()?;
+                if self.cur_val < 0 {
+                    self.report_error(
+                        &format!("Bad file offset ({})", self.cur_val),
+                        &[
+                            "A file offset must be between 0 and 2^_31_-1,",
+                            "I changed this one to zero.",
+                        ],
+                    );
+                    self.cur_val = 0;
+                }
+            }
+            offset = self.cur_val;
+            self.cur_val = 0;
+            if self.scan_keyword("length")? {
+                self.scan_int()?;
+                if self.cur_val < 0 {
+                    self.report_error(
+                        &format!("Bad dump length ({})", self.cur_val),
+                        &[
+                            "A dump length must be between 0 and 2^_31_-1,",
+                            "I changed this one to zero.",
+                        ],
+                    );
+                    self.cur_val = 0;
+                }
+            }
+            length = self.cur_val;
+        }
+
+        let is_file = code == PDF_MDFIVE_SUM_CODE && self.scan_keyword("file")?;
+
+        // `scan_pdf_ext_toks` + `tokens_to_string(def_ref)`: the scanned
+        // token list is rendered to the file-name text (C's `gettexstring`
+        // yields UTF-8; `token_list_display_string` yields the same text).
+        self.scan_toks(false, true)?;
+        let name_ref = self.def_ref;
+        let name = self.token_list_display_string(name_ref)?;
+        self.delete_token_ref(name_ref)?;
+
+        let text = match code {
+            PDF_FILE_MOD_DATE_CODE => self.file_mod_date_text(&name),
+            PDF_FILE_SIZE_CODE => self.file_size_text(&name),
+            PDF_MDFIVE_SUM_CODE => self.md5_sum_text(&name, is_file),
+            _ => self.file_dump_text(&name, offset, length),
+        };
+        self.insert_character_tokens(text.chars())
     }
 
     fn token_list_display_string(&self, reference: i32) -> Result<String, TeXMouthError> {
@@ -2542,6 +2612,98 @@ mod conditional_and_conversion_tests {
         assert_eq!(token(&mut state), other(b'0'));
         assert_eq!(token(&mut state), SPACE_TOKEN);
         assert_eq!(token(&mut state), 0);
+    }
+
+    /// Collects inserted convert text until end of input.
+    fn collect_text(state: &mut TeXEngineState) -> String {
+        let mut text = String::new();
+        loop {
+            let t = token(state);
+            if t == 0 {
+                break;
+            }
+            if t == crate::scanner::SPACE_TOKEN {
+                text.push(' ');
+            } else if let Some(ch) = char::from_u32((t % MAX_CHAR_VAL).max(0) as u32) {
+                text.push(ch);
+            }
+        }
+        text
+    }
+
+    #[test]
+    fn filesize_reports_registered_byte_count() {
+        let mut state = state();
+        state.register_input_byte_source("data.bin", b"hello world!".to_vec());
+        state.set_source_text("\\filesize{data.bin}");
+        assert_eq!(collect_text(&mut state).trim(), "12");
+
+        // Unresolvable names evaluate to the empty string, as in C.
+        state.set_source_text("\\filesize{missing.bin}");
+        assert_eq!(collect_text(&mut state).trim(), "");
+    }
+
+    #[test]
+    fn filedump_hex_dumps_bytes_from_offset() {
+        let mut state = state();
+        state.register_input_byte_source("data.bin", b"\x01\xAB\xFF\x00xyz".to_vec());
+        state.set_source_text("\\filedump offset 1 length 3{data.bin}");
+        assert_eq!(collect_text(&mut state).trim(), "ABFF00");
+
+        // A missing `length` keyword leaves C's zero default → empty dump.
+        state.set_source_text("\\filedump{data.bin}");
+        assert_eq!(collect_text(&mut state).trim(), "");
+    }
+
+    #[test]
+    fn filedump_negative_offset_reports_error_and_clamps() {
+        let mut state = state();
+        state.register_input_byte_source("data.bin", b"abc".to_vec());
+        state.set_source_text("\\filedump offset -5{data.bin}");
+
+        let text = collect_text(&mut state);
+        assert_eq!(state.error_count, 1);
+        assert!(state
+            .transcript
+            .iter()
+            .any(|l| l.starts_with("! Bad file offset")));
+        // The clamped offset is zero, but no `length` keyword was given.
+        assert_eq!(text.trim(), "");
+    }
+
+    #[test]
+    fn filemoddate_formats_registered_mtime() {
+        let mut state = state();
+        state.register_input_byte_source("f.tex", b"x".to_vec());
+        state.register_input_mtime("f.tex", 1_700_000_000);
+        state.set_source_text("\\filemoddate{f.tex}");
+        // 1700000000 = 2023-11-14 22:13:20 UTC.
+        assert_eq!(collect_text(&mut state).trim(), "D:20231114221320Z");
+    }
+
+    #[test]
+    fn mdfivesum_hashes_text_and_file_bytes() {
+        let mut state = state();
+        state.set_source_text("\\mdfivesum{abc}");
+        assert_eq!(
+            collect_text(&mut state).trim(),
+            "900150983CD24FB0D6963F7D28E17F72"
+        );
+
+        state.register_input_byte_source("f.bin", b"abc".to_vec());
+        state.set_source_text("\\mdfivesum file{f.bin}");
+        assert_eq!(
+            collect_text(&mut state).trim(),
+            "900150983CD24FB0D6963F7D28E17F72"
+        );
+    }
+
+    #[test]
+    fn creationdate_inserts_the_job_start_time() {
+        let mut state = state();
+        state.init_start_time(1_700_000_000);
+        state.set_source_text("\\creationdate");
+        assert_eq!(collect_text(&mut state).trim(), "D:20231114221320Z");
     }
 
     #[test]

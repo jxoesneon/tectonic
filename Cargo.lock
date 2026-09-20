@@ -3534,6 +3534,7 @@ dependencies = [
  "encoding_rs",
  "icu_segmenter",
  "libc",
+ "md-5",
  "tectonic_bridge_core",
  "tectonic_bridge_flate",
  "tectonic_bridge_graphite2",
