@@ -149,8 +149,12 @@ impl XdvOpcodeEvent {
             | XdvOpcodeEvent::PutGlyph { coord, .. }
             | XdvOpcodeEvent::SetRule { coord, .. }
             | XdvOpcodeEvent::PutRule { coord, .. }
-            | XdvOpcodeEvent::MoveRight { new_coord: coord, .. }
-            | XdvOpcodeEvent::MoveDown { new_coord: coord, .. }
+            | XdvOpcodeEvent::MoveRight {
+                new_coord: coord, ..
+            }
+            | XdvOpcodeEvent::MoveDown {
+                new_coord: coord, ..
+            }
             | XdvOpcodeEvent::Push { coord, .. }
             | XdvOpcodeEvent::Pop { coord, .. }
             | XdvOpcodeEvent::Special { coord, .. } => *coord,
@@ -225,7 +229,10 @@ impl Display for DivergenceKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             DivergenceKind::OpcodeMismatch { expected, actual } => {
-                write!(f, "Opcode mismatch: expected `{expected}`, found `{actual}`")
+                write!(
+                    f,
+                    "Opcode mismatch: expected `{expected}`, found `{actual}`"
+                )
             }
             DivergenceKind::GlyphPlacementMismatch {
                 glyph_id,
@@ -380,22 +387,22 @@ impl BitwiseDivergence {
             "  Expected [{:#06x}..{:#06x}]:\n    ",
             start, end_exp
         ));
-        for i in start..end_exp {
+        for (i, &b) in expected.iter().enumerate().take(end_exp).skip(start) {
             if i == offset {
-                hex_diff.push_str(&format!("[{:02X}] ", expected[i]));
+                hex_diff.push_str(&format!("[{b:02X}] "));
             } else {
-                hex_diff.push_str(&format!("{:02X} ", expected[i]));
+                hex_diff.push_str(&format!("{b:02X} "));
             }
         }
         hex_diff.push_str(&format!(
             "\n  Actual   [{:#06x}..{:#06x}]:\n    ",
             start, end_act
         ));
-        for i in start..end_act {
+        for (i, &b) in actual.iter().enumerate().take(end_act).skip(start) {
             if i == offset {
-                hex_diff.push_str(&format!("[{:02X}] ", actual[i]));
+                hex_diff.push_str(&format!("[{b:02X}] "));
             } else {
-                hex_diff.push_str(&format!("{:02X} ", actual[i]));
+                hex_diff.push_str(&format!("{b:02X} "));
             }
         }
 
@@ -414,7 +421,7 @@ impl Display for BitwiseDivergence {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Bitwise divergence at byte offset {:#08X} (decimal {}):\n  Expected: {:#02X} ({:?})\n  Actual:   {:#02X} ({:?})\n  Lengths:  expected={} B, actual={} B\n{}",
+            "Bitwise divergence at byte offset {:#08X} (decimal {}):\n  Expected: {:#04X} ({:?})\n  Actual:   {:#04X} ({:?})\n  Lengths:  expected={} B, actual={} B\n{}",
             self.byte_offset,
             self.byte_offset,
             self.expected_byte,
@@ -516,7 +523,11 @@ impl XdvEvents for XdvEventCollector {
         Ok(())
     }
 
-    fn handle_begin_page(&mut self, counters: &[i32], previous_bop: i32) -> Result<(), Self::Error> {
+    fn handle_begin_page(
+        &mut self,
+        counters: &[i32],
+        previous_bop: i32,
+    ) -> Result<(), Self::Error> {
         self.pages.push((counters.to_vec(), previous_bop));
         Ok(())
     }
@@ -656,8 +667,14 @@ impl XdvDiffEngine {
 
             match (exp, act) {
                 (
-                    XdvOpcodeEvent::Preamble { file_type: e_ft, comment: e_c },
-                    XdvOpcodeEvent::Preamble { file_type: a_ft, comment: a_c },
+                    XdvOpcodeEvent::Preamble {
+                        file_type: e_ft,
+                        comment: e_c,
+                    },
+                    XdvOpcodeEvent::Preamble {
+                        file_type: a_ft,
+                        comment: a_c,
+                    },
                 ) => {
                     if e_ft != a_ft || e_c != a_c {
                         return Err(XdvDivergence {
@@ -958,8 +975,14 @@ impl XdvDiffEngine {
                     }
                 }
                 (
-                    XdvOpcodeEvent::BeginPage { page_num: e_pn, counters: e_cnt },
-                    XdvOpcodeEvent::BeginPage { page_num: a_pn, counters: a_cnt },
+                    XdvOpcodeEvent::BeginPage {
+                        page_num: e_pn,
+                        counters: e_cnt,
+                    },
+                    XdvOpcodeEvent::BeginPage {
+                        page_num: a_pn,
+                        counters: a_cnt,
+                    },
                 ) => {
                     if e_pn != a_pn || e_cnt != a_cnt {
                         return Err(XdvDivergence {
@@ -1125,25 +1148,29 @@ impl XdvDiffEngine {
         let mut exp_buf = Vec::new();
         let mut act_buf = Vec::new();
 
-        expected.read_to_end(&mut exp_buf).map_err(|e| XdvDivergence {
-            opcode_index: 0,
-            page_number: 0,
-            coordinate: Coordinate::default(),
-            kind: DivergenceKind::OpcodeMismatch {
-                expected: "Readable stream".into(),
-                actual: format!("I/O read error on expected: {e}"),
-            },
-        })?;
+        expected
+            .read_to_end(&mut exp_buf)
+            .map_err(|e| XdvDivergence {
+                opcode_index: 0,
+                page_number: 0,
+                coordinate: Coordinate::default(),
+                kind: DivergenceKind::OpcodeMismatch {
+                    expected: "Readable stream".into(),
+                    actual: format!("I/O read error on expected: {e}"),
+                },
+            })?;
 
-        actual.read_to_end(&mut act_buf).map_err(|e| XdvDivergence {
-            opcode_index: 0,
-            page_number: 0,
-            coordinate: Coordinate::default(),
-            kind: DivergenceKind::OpcodeMismatch {
-                expected: "Readable stream".into(),
-                actual: format!("I/O read error on actual: {e}"),
-            },
-        })?;
+        actual
+            .read_to_end(&mut act_buf)
+            .map_err(|e| XdvDivergence {
+                opcode_index: 0,
+                page_number: 0,
+                coordinate: Coordinate::default(),
+                kind: DivergenceKind::OpcodeMismatch {
+                    expected: "Readable stream".into(),
+                    actual: format!("I/O read error on actual: {e}"),
+                },
+            })?;
 
         Self::compare_bytes(&exp_buf, &act_buf)
     }
@@ -2189,7 +2216,9 @@ mod tests {
             .expect_err("Special mismatch must fail");
 
         match err.kind {
-            DivergenceKind::SpecialMismatch { expected, actual, .. } => {
+            DivergenceKind::SpecialMismatch {
+                expected, actual, ..
+            } => {
                 assert_eq!(expected, "color push rgb 1 0 0");
                 assert_eq!(actual, "color push rgb 0 1 0");
             }
@@ -2296,29 +2325,90 @@ mod tests {
         let coord = Coordinate::new(100, 200);
 
         let events = vec![
-            XdvOpcodeEvent::Preamble { file_type: "xdv".into(), comment: b"comment".to_vec() },
-            XdvOpcodeEvent::DefineFont { font_num: 1, name: "cmr10".into(), scale_factor: 10, design_size: 10, checksum: 0 },
-            XdvOpcodeEvent::DefineNativeFont { font_num: 2, name: "Arial".into(), size: 10, face_index: 0, color_rgba: None, extend: None, slant: None, embolden: None },
-            XdvOpcodeEvent::BeginPage { page_num: 1, counters: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+            XdvOpcodeEvent::Preamble {
+                file_type: "xdv".into(),
+                comment: b"comment".to_vec(),
+            },
+            XdvOpcodeEvent::DefineFont {
+                font_num: 1,
+                name: "cmr10".into(),
+                scale_factor: 10,
+                design_size: 10,
+                checksum: 0,
+            },
+            XdvOpcodeEvent::DefineNativeFont {
+                font_num: 2,
+                name: "Arial".into(),
+                size: 10,
+                face_index: 0,
+                color_rgba: None,
+                extend: None,
+                slant: None,
+                embolden: None,
+            },
+            XdvOpcodeEvent::BeginPage {
+                page_num: 1,
+                counters: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            },
             XdvOpcodeEvent::EndPage { page_num: 1 },
             XdvOpcodeEvent::SetFont { font_num: 1 },
-            XdvOpcodeEvent::SetChar { char_code: 65, font_num: 1, coord },
-            XdvOpcodeEvent::PutGlyph { glyph_id: 65, font_num: 1, coord, width: 50 },
-            XdvOpcodeEvent::SetRule { height: 10, width: 20, coord },
-            XdvOpcodeEvent::PutRule { height: 10, width: 20, coord },
-            XdvOpcodeEvent::MoveRight { delta: 5, new_coord: coord },
-            XdvOpcodeEvent::MoveDown { delta: 10, new_coord: coord },
+            XdvOpcodeEvent::SetChar {
+                char_code: 65,
+                font_num: 1,
+                coord,
+            },
+            XdvOpcodeEvent::PutGlyph {
+                glyph_id: 65,
+                font_num: 1,
+                coord,
+                width: 50,
+            },
+            XdvOpcodeEvent::SetRule {
+                height: 10,
+                width: 20,
+                coord,
+            },
+            XdvOpcodeEvent::PutRule {
+                height: 10,
+                width: 20,
+                coord,
+            },
+            XdvOpcodeEvent::MoveRight {
+                delta: 5,
+                new_coord: coord,
+            },
+            XdvOpcodeEvent::MoveDown {
+                delta: 10,
+                new_coord: coord,
+            },
             XdvOpcodeEvent::Push { depth: 1, coord },
             XdvOpcodeEvent::Pop { depth: 0, coord },
-            XdvOpcodeEvent::Special { contents: b"spec".to_vec(), coord },
+            XdvOpcodeEvent::Special {
+                contents: b"spec".to_vec(),
+                coord,
+            },
             XdvOpcodeEvent::Postamble,
             XdvOpcodeEvent::DoublePostamble,
         ];
 
         let expected_names = [
-            "preamble", "define_font", "define_native_font", "begin_page", "end_page",
-            "set_font", "set_char", "put_glyph", "set_rule", "put_rule",
-            "move_right", "move_down", "push", "pop", "special", "postamble", "double_postamble"
+            "preamble",
+            "define_font",
+            "define_native_font",
+            "begin_page",
+            "end_page",
+            "set_font",
+            "set_char",
+            "put_glyph",
+            "set_rule",
+            "put_rule",
+            "move_right",
+            "move_down",
+            "push",
+            "pop",
+            "special",
+            "postamble",
+            "double_postamble",
         ];
 
         for (ev, &name) in events.iter().zip(expected_names.iter()) {
@@ -2343,7 +2433,10 @@ mod tests {
         let coord = Coordinate::new(10, 20);
 
         let kinds = vec![
-            DivergenceKind::OpcodeMismatch { expected: "push".into(), actual: "pop".into() },
+            DivergenceKind::OpcodeMismatch {
+                expected: "push".into(),
+                actual: "pop".into(),
+            },
             DivergenceKind::GlyphPlacementMismatch {
                 glyph_id: 42,
                 font_num: 1,
@@ -2377,7 +2470,10 @@ mod tests {
                 actual: "color push rgb 0 1 0".into(),
                 coord,
             },
-            DivergenceKind::StackDepthMismatch { expected_depth: 2, actual_depth: 1 },
+            DivergenceKind::StackDepthMismatch {
+                expected_depth: 2,
+                actual_depth: 1,
+            },
             DivergenceKind::MovementMismatch {
                 direction: "right",
                 expected_delta: 10,
@@ -2385,8 +2481,14 @@ mod tests {
                 expected_coord: coord,
                 actual_coord: Coordinate::new(20, 20),
             },
-            DivergenceKind::UnexpectedEndOfStream { expected_remaining: 3, next_expected: "end_page".into() },
-            DivergenceKind::TrailingOpcodes { actual_remaining: 2, next_actual: "special".into() },
+            DivergenceKind::UnexpectedEndOfStream {
+                expected_remaining: 3,
+                next_expected: "end_page".into(),
+            },
+            DivergenceKind::TrailingOpcodes {
+                actual_remaining: 2,
+                next_actual: "special".into(),
+            },
         ];
 
         for kind in kinds {
@@ -2398,7 +2500,10 @@ mod tests {
             opcode_index: 7,
             page_number: 1,
             coordinate: coord,
-            kind: DivergenceKind::OpcodeMismatch { expected: "A".into(), actual: "B".into() },
+            kind: DivergenceKind::OpcodeMismatch {
+                expected: "A".into(),
+                actual: "B".into(),
+            },
         };
         assert!(format!("{div}").contains("Opcode #7 on Page 1"));
     }
@@ -2431,7 +2536,10 @@ mod tests {
 
         // 1. Preamble mismatch
         let mut trace_bad_preamble = trace1.clone();
-        trace_bad_preamble[0] = XdvOpcodeEvent::Preamble { file_type: "dvi".into(), comment: b"other".to_vec() };
+        trace_bad_preamble[0] = XdvOpcodeEvent::Preamble {
+            file_type: "dvi".into(),
+            comment: b"other".to_vec(),
+        };
         let err = XdvDiffEngine::compare_opcode_traces(&trace1, &trace_bad_preamble).unwrap_err();
         assert!(matches!(err.kind, DivergenceKind::OpcodeMismatch { .. }));
 
@@ -2448,7 +2556,10 @@ mod tests {
             embolden: None,
         };
         let err = XdvDiffEngine::compare_opcode_traces(&trace1, &trace_bad_native).unwrap_err();
-        assert!(matches!(err.kind, DivergenceKind::FontDefinitionMismatch { .. }));
+        assert!(matches!(
+            err.kind,
+            DivergenceKind::FontDefinitionMismatch { .. }
+        ));
 
         // 3. Trailing opcodes
         let trace_short = trace1[..3].to_vec();
@@ -2457,7 +2568,10 @@ mod tests {
 
         // 4. Unexpected end of stream
         let err = XdvDiffEngine::compare_opcode_traces(&trace1, &trace_short).unwrap_err();
-        assert!(matches!(err.kind, DivergenceKind::UnexpectedEndOfStream { .. }));
+        assert!(matches!(
+            err.kind,
+            DivergenceKind::UnexpectedEndOfStream { .. }
+        ));
     }
 
     #[test]
@@ -2503,7 +2617,7 @@ mod tests {
         assert_eq!(collector.char_runs.len(), 1);
         assert_eq!(collector.char_runs[0].1, vec![65, 66, 67]);
 
-        let err = CollectorError::Io(std::io::Error::new(std::io::ErrorKind::Other, "test failure"));
+        let err = CollectorError::Io(std::io::Error::other("test failure"));
         assert!(format!("{err}").contains("test failure"));
     }
 
@@ -2513,29 +2627,62 @@ mod tests {
 
         // 1. DefineFont parameter divergence
         let f1 = vec![XdvOpcodeEvent::DefineFont {
-            font_num: 1, name: "cmr10".into(), scale_factor: 655360, design_size: 655360, checksum: 100
+            font_num: 1,
+            name: "cmr10".into(),
+            scale_factor: 655360,
+            design_size: 655360,
+            checksum: 100,
         }];
         let f2 = vec![XdvOpcodeEvent::DefineFont {
-            font_num: 1, name: "cmr10".into(), scale_factor: 700000, design_size: 655360, checksum: 100
+            font_num: 1,
+            name: "cmr10".into(),
+            scale_factor: 700000,
+            design_size: 655360,
+            checksum: 100,
         }];
         let err1 = XdvDiffEngine::compare_opcode_traces(&f1, &f2).unwrap_err();
-        assert!(matches!(err1.kind, DivergenceKind::FontDefinitionMismatch { .. }));
+        assert!(matches!(
+            err1.kind,
+            DivergenceKind::FontDefinitionMismatch { .. }
+        ));
 
         // 2. SetChar parameter divergence
-        let c1 = vec![XdvOpcodeEvent::SetChar { char_code: 65, font_num: 1, coord }];
-        let c2 = vec![XdvOpcodeEvent::SetChar { char_code: 66, font_num: 1, coord }];
+        let c1 = vec![XdvOpcodeEvent::SetChar {
+            char_code: 65,
+            font_num: 1,
+            coord,
+        }];
+        let c2 = vec![XdvOpcodeEvent::SetChar {
+            char_code: 66,
+            font_num: 1,
+            coord,
+        }];
         let err2 = XdvDiffEngine::compare_opcode_traces(&c1, &c2).unwrap_err();
         assert!(matches!(err2.kind, DivergenceKind::CharMismatch { .. }));
 
         // 3. PutRule / SetRule divergence
-        let r1 = vec![XdvOpcodeEvent::PutRule { height: 10, width: 20, coord }];
-        let r2 = vec![XdvOpcodeEvent::PutRule { height: 10, width: 25, coord }];
+        let r1 = vec![XdvOpcodeEvent::PutRule {
+            height: 10,
+            width: 20,
+            coord,
+        }];
+        let r2 = vec![XdvOpcodeEvent::PutRule {
+            height: 10,
+            width: 25,
+            coord,
+        }];
         let err3 = XdvDiffEngine::compare_opcode_traces(&r1, &r2).unwrap_err();
         assert!(matches!(err3.kind, DivergenceKind::RuleMismatch { .. }));
 
         // 4. MoveDown divergence
-        let m1 = vec![XdvOpcodeEvent::MoveDown { delta: 10, new_coord: coord }];
-        let m2 = vec![XdvOpcodeEvent::MoveDown { delta: 20, new_coord: Coordinate::new(10, 30) }];
+        let m1 = vec![XdvOpcodeEvent::MoveDown {
+            delta: 10,
+            new_coord: coord,
+        }];
+        let m2 = vec![XdvOpcodeEvent::MoveDown {
+            delta: 20,
+            new_coord: Coordinate::new(10, 30),
+        }];
         let err4 = XdvDiffEngine::compare_opcode_traces(&m1, &m2).unwrap_err();
         assert!(matches!(err4.kind, DivergenceKind::MovementMismatch { .. }));
 
@@ -2543,11 +2690,20 @@ mod tests {
         let s1 = vec![XdvOpcodeEvent::Push { depth: 1, coord }];
         let s2 = vec![XdvOpcodeEvent::Push { depth: 2, coord }];
         let err5 = XdvDiffEngine::compare_opcode_traces(&s1, &s2).unwrap_err();
-        assert!(matches!(err5.kind, DivergenceKind::StackDepthMismatch { .. }));
+        assert!(matches!(
+            err5.kind,
+            DivergenceKind::StackDepthMismatch { .. }
+        ));
 
         // 6. BeginPage page_num divergence
-        let p1 = vec![XdvOpcodeEvent::BeginPage { page_num: 1, counters: [0; 10] }];
-        let p2 = vec![XdvOpcodeEvent::BeginPage { page_num: 2, counters: [0; 10] }];
+        let p1 = vec![XdvOpcodeEvent::BeginPage {
+            page_num: 1,
+            counters: [0; 10],
+        }];
+        let p2 = vec![XdvOpcodeEvent::BeginPage {
+            page_num: 2,
+            counters: [0; 10],
+        }];
         let err6 = XdvDiffEngine::compare_opcode_traces(&p1, &p2).unwrap_err();
         assert!(matches!(err6.kind, DivergenceKind::OpcodeMismatch { .. }));
 
@@ -2601,14 +2757,14 @@ mod tests {
 
         // 3. Begin page
         bytes.push(139); // bop
-        for i in 0..10 {
-            bytes.extend_from_slice(&(i as i32).to_be_bytes());
+        for i in 0i32..10 {
+            bytes.extend_from_slice(&i.to_be_bytes());
         }
         bytes.extend_from_slice(&(-1i32).to_be_bytes()); // prev_bop
 
         // 4. Movements: w0 (147), w1 (148), w2 (149), w3 (150), w4 (151)
         bytes.push(148); // w1
-        bytes.push(10);  // signed 8-bit
+        bytes.push(10); // signed 8-bit
         bytes.push(147); // w0 (uses st.w = 10)
         bytes.push(149); // w2
         bytes.extend_from_slice(&20i16.to_be_bytes());
@@ -2669,7 +2825,7 @@ mod tests {
 
         // 9. Font definitions: fnt_def1 (243), fnt_def2 (244)
         bytes.push(243); // fnt_def1
-        bytes.push(1);   // font_num
+        bytes.push(1); // font_num
         bytes.extend_from_slice(&123u32.to_be_bytes()); // checksum
         bytes.extend_from_slice(&655360u32.to_be_bytes()); // scale
         bytes.extend_from_slice(&655360u32.to_be_bytes()); // design

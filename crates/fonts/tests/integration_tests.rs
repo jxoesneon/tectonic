@@ -4,9 +4,7 @@
 //! Comprehensive integration tests for `tectonic_fonts` verifying against canonical TeX fonts and real OTF files.
 
 use std::path::PathBuf;
-use tectonic_fonts::{
-    FontMetricsProvider, FontRegistry, OpenTypeFont, TfmError, TfmFont,
-};
+use tectonic_fonts::{FontMetricsProvider, FontRegistry, OpenTypeFont, TfmError, TfmFont};
 
 fn get_asset_path(filename: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -119,10 +117,7 @@ fn test_canonical_cmmi10_math_italic_tfm() {
     let data = std::fs::read(&path).expect("failed to read cmmi10.tfm");
 
     let tfm = TfmFont::from_bytes(&data).expect("cmmi10.tfm should parse successfully");
-    assert_eq!(
-        tfm.header.coding_scheme.as_deref(),
-        Some("TeX math italic")
-    );
+    assert_eq!(tfm.header.coding_scheme.as_deref(), Some("TeX math italic"));
     assert_eq!(tfm.header.font_family.as_deref(), Some("CMMI"));
 }
 
@@ -144,8 +139,7 @@ fn test_canonical_cmsy10_math_symbols_tfm() {
 
 #[test]
 fn test_trip_tfm() {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../tests/trip/trip.tfm");
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/trip/trip.tfm");
     if path.exists() {
         let data = std::fs::read(&path).expect("failed to read trip.tfm");
         let tfm = TfmFont::from_bytes(&data).expect("trip.tfm should parse successfully");
@@ -252,7 +246,7 @@ fn test_tfm_error_handling() {
     bad_bounds[4] = 0;
     bad_bounds[5] = 100; // bc = 100
     bad_bounds[6] = 0;
-    bad_bounds[7] = 50;  // ec = 50
+    bad_bounds[7] = 50; // ec = 50
     assert!(matches!(
         TfmFont::from_bytes(&bad_bounds),
         Err(TfmError::InvalidCharBounds { .. })

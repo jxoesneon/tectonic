@@ -28,7 +28,9 @@ fn test_process_a4paper_xdv() {
     let mut engine = PdfBackendEngine::new();
     engine.paper_spec("a4");
 
-    let pdf_bytes = engine.process_bytes(&xdv_bytes).expect("process a4paper.xdv");
+    let pdf_bytes = engine
+        .process_bytes(&xdv_bytes)
+        .expect("process a4paper.xdv");
     assert!(pdf_bytes.starts_with(b"%PDF-"));
     let pdf_str = String::from_utf8_lossy(&pdf_bytes);
     assert!(pdf_str.contains("/Type /Catalog"));
@@ -45,7 +47,9 @@ fn test_process_md5_of_hello_xdv() {
     let xdv_bytes = fs::read(&xdv_path).expect("read xdv");
 
     let engine = PdfBackendEngine::new();
-    let pdf_bytes = engine.process_bytes(&xdv_bytes).expect("process md5_of_hello.xdv");
+    let pdf_bytes = engine
+        .process_bytes(&xdv_bytes)
+        .expect("process md5_of_hello.xdv");
     assert!(pdf_bytes.starts_with(b"%PDF-"));
     let pdf_str = String::from_utf8_lossy(&pdf_bytes);
     assert!(pdf_str.contains("/Type /Page"));
@@ -60,7 +64,9 @@ fn test_process_negative_roman_numeral_xdv() {
     let xdv_bytes = fs::read(&xdv_path).expect("read xdv");
 
     let engine = PdfBackendEngine::new();
-    let pdf_bytes = engine.process_bytes(&xdv_bytes).expect("process negative_roman_numeral.xdv");
+    let pdf_bytes = engine
+        .process_bytes(&xdv_bytes)
+        .expect("process negative_roman_numeral.xdv");
     assert!(pdf_bytes.starts_with(b"%PDF-"));
 }
 
@@ -73,7 +79,9 @@ fn test_process_issue393_ungetc_xdv() {
     let xdv_bytes = fs::read(&xdv_path).expect("read xdv");
 
     let engine = PdfBackendEngine::new();
-    let pdf_bytes = engine.process_bytes(&xdv_bytes).expect("process issue393_ungetc.xdv");
+    let pdf_bytes = engine
+        .process_bytes(&xdv_bytes)
+        .expect("process issue393_ungetc.xdv");
     assert!(pdf_bytes.starts_with(b"%PDF-"));
 }
 
@@ -101,7 +109,9 @@ fn test_process_via_launcher_vfs() {
 
     let mut engine = PdfBackendEngine::new();
     engine.paper_spec("a4");
-    engine.process(&mut launcher, in_name, out_name).expect("engine process via launcher");
+    engine
+        .process(&mut launcher, in_name, out_name)
+        .expect("engine process via launcher");
 
     let out_path = temp_dir.path().join(out_name);
     assert!(out_path.exists(), "generated PDF should exist");

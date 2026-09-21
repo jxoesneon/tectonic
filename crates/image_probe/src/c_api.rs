@@ -176,7 +176,13 @@ pub unsafe extern "C" fn tt_probe_pdf_box_data(
     x1: *mut f64,
     y1: *mut f64,
 ) -> i32 {
-    if data.is_null() || x0.is_null() || y0.is_null() || x1.is_null() || y1.is_null() || page_num <= 0 {
+    if data.is_null()
+        || x0.is_null()
+        || y0.is_null()
+        || x1.is_null()
+        || y1.is_null()
+        || page_num <= 0
+    {
         return -1;
     }
     // SAFETY: Caller guarantees data is valid for reads up to len.

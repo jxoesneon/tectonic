@@ -3,11 +3,11 @@
 
 //! Declarative PDF document writer utilizing `pdf-writer`.
 
+use crate::fonts::FontRegistry;
+use crate::units::PdfRect;
 use pdf_writer::types::{CidFontType, FontFlags, SystemInfo};
 use pdf_writer::{Finish, Name, Pdf, Rect, Ref, Str};
 use std::collections::HashMap;
-use crate::fonts::FontRegistry;
-use crate::units::PdfRect;
 
 /// Manages PDF object IDs and builds the final PDF document.
 pub struct PdfDocumentBuilder {
@@ -57,7 +57,8 @@ impl PdfDocumentBuilder {
 
         self.page_ids.push(page_id);
         self.content_ids.push(content_id);
-        self.page_boxes.push(PdfRect::new(0.0, 0.0, width_bp, height_bp));
+        self.page_boxes
+            .push(PdfRect::new(0.0, 0.0, width_bp, height_bp));
 
         (page_id, content_id)
     }
@@ -168,8 +169,8 @@ impl PdfDocumentBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pdf_writer::Content;
     use crate::units::{DEFAULT_PAGE_HEIGHT_BP, DEFAULT_PAGE_WIDTH_BP};
+    use pdf_writer::Content;
 
     #[test]
     fn test_pdf_document_builder_empty() {
@@ -183,7 +184,8 @@ mod tests {
     #[test]
     fn test_pdf_document_builder_with_page() {
         let mut builder = PdfDocumentBuilder::new();
-        let (_page_id, content_id) = builder.begin_page(DEFAULT_PAGE_WIDTH_BP, DEFAULT_PAGE_HEIGHT_BP);
+        let (_page_id, content_id) =
+            builder.begin_page(DEFAULT_PAGE_WIDTH_BP, DEFAULT_PAGE_HEIGHT_BP);
 
         let mut content = Content::new();
         content.rect(72.0, 72.0, 100.0, 200.0);

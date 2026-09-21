@@ -675,6 +675,9 @@ mod rust_backend_tests {
     use tectonic_io_base::{InputHandle, InputOrigin, IoProvider, OpenResult, OutputHandle};
     use tectonic_status_base::{MessageKind, NoopStatusBackend, StatusBackend};
 
+    type SharedByteMap = Arc<Mutex<HashMap<String, Vec<u8>>>>;
+    type SharedStrings = Arc<Mutex<Vec<String>>>;
+
     /// A byte sink collecting one output file into the shared map
     /// (`MemoryIo`-equivalent test double).
     struct Sink(std::sync::Arc<Mutex<Vec<u8>>>);
@@ -695,10 +698,10 @@ mod rust_backend_tests {
     struct TestIo {
         inputs: HashMap<String, Vec<u8>>,
         primary: Option<Vec<u8>>,
-        outputs: Arc<Mutex<HashMap<String, Vec<u8>>>>,
+        outputs: SharedByteMap,
         /// Records every input-open request name (including extension
         /// fallbacks) for resolver-path assertions.
-        opened: Arc<Mutex<Vec<String>>>,
+        opened: SharedStrings,
     }
 
     impl IoProvider for TestIo {
@@ -759,7 +762,7 @@ mod rust_backend_tests {
     struct CommitSink {
         buf: Sink,
         key: String,
-        outputs: Arc<Mutex<HashMap<String, Vec<u8>>>>,
+        outputs: SharedByteMap,
     }
 
     impl Write for CommitSink {
@@ -787,7 +790,7 @@ mod rust_backend_tests {
         }
     }
 
-    fn test_hooks(primary: &[u8]) -> (TestHooks, Arc<Mutex<HashMap<String, Vec<u8>>>>) {
+    fn test_hooks(primary: &[u8]) -> (TestHooks, SharedByteMap) {
         let outputs = Arc::new(Mutex::new(HashMap::new()));
         (
             TestHooks {
@@ -925,8 +928,8 @@ mod rust_backend_tests {
     /// C engine would deliver through `ttstub_event_*`/`ttstub_shell_escape`.
     struct RecordingHooks {
         io: TestIo,
-        expand_events: Arc<Mutex<Vec<String>>>,
-        shell_calls: Arc<Mutex<Vec<String>>>,
+        expand_events: SharedStrings,
+        shell_calls: SharedStrings,
         rich_hook: bool,
     }
 
@@ -959,12 +962,7 @@ mod rust_backend_tests {
     fn recording_hooks(
         primary: &[u8],
         rich_hook: bool,
-    ) -> (
-        RecordingHooks,
-        Arc<Mutex<Vec<String>>>,
-        Arc<Mutex<Vec<String>>>,
-        Arc<Mutex<HashMap<String, Vec<u8>>>>,
-    ) {
+    ) -> (RecordingHooks, SharedStrings, SharedStrings, SharedByteMap) {
         let expand_events = Arc::new(Mutex::new(Vec::new()));
         let shell_calls = Arc::new(Mutex::new(Vec::new()));
         let outputs = Arc::new(Mutex::new(HashMap::new()));

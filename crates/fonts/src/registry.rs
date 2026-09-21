@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use crate::error::FontError;
-use crate::metrics::{FontDimensions, FontMetricsProvider, GlyphMetrics, sp_to_bp};
+use crate::metrics::{sp_to_bp, FontDimensions, FontMetricsProvider, GlyphMetrics};
 use crate::opentype::{OpenTypeFont, ScaledOpenType};
 use crate::tfm::{ScaledTfm, TfmFont};
 
@@ -57,8 +57,12 @@ impl LoadedFont {
     /// Returns the PostScript name of the font.
     pub fn postscript_name(&self) -> &str {
         match self {
-            Self::Tfm { postscript_name, .. } => postscript_name,
-            Self::OpenType { postscript_name, .. } => postscript_name,
+            Self::Tfm {
+                postscript_name, ..
+            } => postscript_name,
+            Self::OpenType {
+                postscript_name, ..
+            } => postscript_name,
         }
     }
 
@@ -257,7 +261,9 @@ mod tests {
             .join("../../crates/bridge_harfbuzz/harfbuzz/test/api/fonts/cmunrm.otf");
         if otf_path.exists() {
             let otf_data = std::fs::read(otf_path).unwrap();
-            let otf_font = reg.register_opentype(20, "cmunrm.otf", otf_data, 0, 655360).unwrap();
+            let otf_font = reg
+                .register_opentype(20, "cmunrm.otf", otf_data, 0, 655360)
+                .unwrap();
             assert_eq!(otf_font.font_id(), 20);
             assert_eq!(otf_font.name(), "cmunrm.otf");
             assert_eq!(otf_font.postscript_name(), "CMUSerif-Roman");

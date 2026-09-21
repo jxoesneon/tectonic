@@ -129,9 +129,7 @@ pub struct FontParams {
 impl FontParams {
     /// Parses font parameters from a slice of `FixWord` values.
     pub fn from_words(words: &[FixWord]) -> Self {
-        let get = |idx: usize| -> FixWord {
-            words.get(idx).copied().unwrap_or(FixWord::ZERO)
-        };
+        let get = |idx: usize| -> FixWord { words.get(idx).copied().unwrap_or(FixWord::ZERO) };
 
         Self {
             slant: get(0),

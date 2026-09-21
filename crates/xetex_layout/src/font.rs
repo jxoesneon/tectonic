@@ -199,12 +199,7 @@ impl Font {
     /// engine path, which resolves font bytes through its own resolver
     /// seam. `filename` is the name the font was requested under; it is
     /// what native-font XDV definitions carry.
-    pub fn new_data(
-        data: Vec<u8>,
-        filename: &str,
-        index: u32,
-        point_size: f32,
-    ) -> Result<Font, ()> {
+    pub fn new_data(data: Vec<u8>, filename: &str, index: u32, point_size: f32) -> Option<Font> {
         Self::new_shared(Arc::new(data), filename, index, point_size)
     }
 
@@ -215,7 +210,7 @@ impl Font {
         filename: &str,
         index: u32,
         point_size: f32,
-    ) -> Result<Font, ()> {
+    ) -> Option<Font> {
         let mut out = Font {
             units_per_em: 0,
             point_size,
@@ -232,8 +227,8 @@ impl Font {
             gr_handle: None,
             kind: FontKind::TtfFont,
         };
-        out.initialize_data(data, filename, index as usize)?;
-        Ok(out)
+        out.initialize_data(data, filename, index as usize).ok()?;
+        Some(out)
     }
 
     fn initialize_data(
@@ -259,7 +254,10 @@ impl Font {
             .map(|xh| self.units_to_points(xh as f64) as f32)
             .unwrap_or(0.0);
 
-        let has_silf = face.raw_face().table(ttf_parser::Tag::from_bytes(b"Silf")).is_some();
+        let has_silf = face
+            .raw_face()
+            .table(ttf_parser::Tag::from_bytes(b"Silf"))
+            .is_some();
 
         self.data = Some(data);
 
@@ -272,11 +270,7 @@ impl Font {
             let handle_ptr = &*handle as *const FontDataHandle as *const libc::c_void;
             // SAFETY: handle_ptr and GRAPHITE_OPS are valid callbacks and state.
             let gr_face = unsafe {
-                gr::Face::new_with_ops(
-                    handle_ptr,
-                    &GRAPHITE_OPS,
-                    gr::sys::gr_face_preloadAll,
-                )
+                gr::Face::new_with_ops(handle_ptr, &GRAPHITE_OPS, gr::sys::gr_face_preloadAll)
             };
             self.gr_face = gr_face.map(Arc::new);
             self.gr_handle = Some(handle);
@@ -664,14 +658,19 @@ pub(crate) fn get_file_name_from_ct_font(ct_font: &CTFont, index: &mut u32) -> O
         *index = u32::MAX;
         for i in 0..num_faces {
             if let Ok(face) = ttf_parser::Face::parse(&data, i) {
-                let ps_name2 = face.names().find(|n| n.name_id == ttf_parser::name_id::POST_SCRIPT_NAME).and_then(|n| n.to_string());
+                let ps_name2 = face
+                    .names()
+                    .find(|n| n.name_id == ttf_parser::name_id::POST_SCRIPT_NAME)
+                    .and_then(|n| n.to_string());
                 match (&ps_name1, ps_name2.as_deref()) {
                     (None, None) => {
                         *index = i;
                         break;
                     }
                     (Some(name1), Some(name2))
-                        if name1.as_cstr().is_some_and(|name1| name1.to_bytes() == name2.as_bytes()) =>
+                        if name1
+                            .as_cstr()
+                            .is_some_and(|name1| name1.to_bytes() == name2.as_bytes()) =>
                     {
                         *index = i;
                         break;

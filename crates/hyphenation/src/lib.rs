@@ -98,7 +98,12 @@ impl Hyphenator {
     }
 
     /// Computes valid hyphenation break points for a word with explicit left and right margins.
-    pub fn hyphenate_with_bounds(&self, word: &str, left_min: usize, right_min: usize) -> Vec<usize> {
+    pub fn hyphenate_with_bounds(
+        &self,
+        word: &str,
+        left_min: usize,
+        right_min: usize,
+    ) -> Vec<usize> {
         let trimmed = word.trim();
         let char_count = trimmed.chars().count();
         if char_count < left_min + right_min {

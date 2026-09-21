@@ -16,4 +16,3 @@ mod c_api;
 /// Does our resulting executable link correctly?
 #[test]
 fn linkage() {}
-

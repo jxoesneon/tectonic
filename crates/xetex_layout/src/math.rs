@@ -38,9 +38,15 @@ pub struct XeTeXGlyphAssembly {
 /// `font` must be a valid pointer to a `Font` instance.
 #[no_mangle]
 pub unsafe extern "C" fn ttxl_get_ot_math_constant(font: XeTeXFont, constant: u32) -> i32 {
-    let Some(face) = (*font).ttf_face() else { return 0; };
-    let Some(math) = face.tables().math else { return 0; };
-    let Some(c) = math.constants else { return 0; };
+    let Some(face) = (*font).ttf_face() else {
+        return 0;
+    };
+    let Some(math) = face.tables().math else {
+        return 0;
+    };
+    let Some(c) = math.constants else {
+        return 0;
+    };
     match constant {
         0 => c.script_percent_scale_down() as i32,
         1 => c.script_script_percent_scale_down() as i32,
@@ -115,9 +121,15 @@ pub unsafe extern "C" fn ttxl_get_ot_math_variant(
     horiz: bool,
 ) -> u32 {
     *adv = -1;
-    let Some(face) = (*font).ttf_face() else { return glyph; };
-    let Some(math) = face.tables().math else { return glyph; };
-    let Some(variants) = math.variants else { return glyph; };
+    let Some(face) = (*font).ttf_face() else {
+        return glyph;
+    };
+    let Some(math) = face.tables().math else {
+        return glyph;
+    };
+    let Some(variants) = math.variants else {
+        return glyph;
+    };
     let constructions = if horiz {
         variants.horizontal_constructions
     } else {
@@ -142,9 +154,15 @@ pub unsafe extern "C" fn ttxl_get_ot_assembly_ptr(
     glyph: u32,
     horiz: bool,
 ) -> *mut XeTeXGlyphAssembly {
-    let Some(face) = (*font).ttf_face() else { return std::ptr::null_mut(); };
-    let Some(math) = face.tables().math else { return std::ptr::null_mut(); };
-    let Some(variants) = math.variants else { return std::ptr::null_mut(); };
+    let Some(face) = (*font).ttf_face() else {
+        return std::ptr::null_mut();
+    };
+    let Some(math) = face.tables().math else {
+        return std::ptr::null_mut();
+    };
+    let Some(variants) = math.variants else {
+        return std::ptr::null_mut();
+    };
     let constructions = if horiz {
         variants.horizontal_constructions
     } else {
@@ -188,7 +206,11 @@ pub unsafe extern "C" fn ttxl_free_ot_assembly(a: *mut XeTeXGlyphAssembly) {
     if !a.is_null() {
         let asm_val = Box::from_raw(a);
         if !asm_val.parts.is_null() && asm_val.count > 0 {
-            let _ = Vec::from_raw_parts(asm_val.parts, asm_val.count as usize, asm_val.count as usize);
+            let _ = Vec::from_raw_parts(
+                asm_val.parts,
+                asm_val.count as usize,
+                asm_val.count as usize,
+            );
         }
     }
 }
@@ -199,9 +221,15 @@ pub unsafe extern "C" fn ttxl_free_ot_assembly(a: *mut XeTeXGlyphAssembly) {
 /// `font` must be a valid pointer to a `Font` instance.
 #[no_mangle]
 pub unsafe extern "C" fn ttxl_get_ot_math_ital_corr(font: XeTeXFont, glyph: u32) -> i32 {
-    let Some(face) = (*font).ttf_face() else { return 0; };
-    let Some(math) = face.tables().math else { return 0; };
-    let Some(glyph_info) = math.glyph_info else { return 0; };
+    let Some(face) = (*font).ttf_face() else {
+        return 0;
+    };
+    let Some(math) = face.tables().math else {
+        return 0;
+    };
+    let Some(glyph_info) = math.glyph_info else {
+        return 0;
+    };
     glyph_info
         .italic_corrections
         .and_then(|ic| ic.get(GlyphId(glyph as u16)))
@@ -215,9 +243,15 @@ pub unsafe extern "C" fn ttxl_get_ot_math_ital_corr(font: XeTeXFont, glyph: u32)
 /// `font` must be a valid pointer to a `Font` instance.
 #[no_mangle]
 pub unsafe extern "C" fn ttxl_get_ot_math_accent_pos(font: XeTeXFont, glyph: u32) -> i32 {
-    let Some(face) = (*font).ttf_face() else { return 0x7fffffff; };
-    let Some(math) = face.tables().math else { return 0x7fffffff; };
-    let Some(glyph_info) = math.glyph_info else { return 0x7fffffff; };
+    let Some(face) = (*font).ttf_face() else {
+        return 0x7fffffff;
+    };
+    let Some(math) = face.tables().math else {
+        return 0x7fffffff;
+    };
+    let Some(glyph_info) = math.glyph_info else {
+        return 0x7fffffff;
+    };
     glyph_info
         .top_accent_attachments
         .and_then(|ta| ta.get(GlyphId(glyph as u16)))
@@ -231,9 +265,15 @@ pub unsafe extern "C" fn ttxl_get_ot_math_accent_pos(font: XeTeXFont, glyph: u32
 /// `font` must be a valid pointer to a `Font` instance.
 #[no_mangle]
 pub unsafe extern "C" fn ttxl_ot_min_connector_overlap(font: XeTeXFont) -> i32 {
-    let Some(face) = (*font).ttf_face() else { return 0; };
-    let Some(math) = face.tables().math else { return 0; };
-    let Some(variants) = math.variants else { return 0; };
+    let Some(face) = (*font).ttf_face() else {
+        return 0;
+    };
+    let Some(math) = face.tables().math else {
+        return 0;
+    };
+    let Some(variants) = math.variants else {
+        return 0;
+    };
     variants.min_connector_overlap as i32
 }
 
@@ -248,11 +288,21 @@ pub unsafe extern "C" fn ttxl_get_ot_math_kern(
     side: i32,
     height: i32,
 ) -> i32 {
-    let Some(face) = (*font).ttf_face() else { return 0; };
-    let Some(math) = face.tables().math else { return 0; };
-    let Some(glyph_info) = math.glyph_info else { return 0; };
-    let Some(kern_infos) = glyph_info.kern_infos else { return 0; };
-    let Some(ki) = kern_infos.get(GlyphId(glyph as u16)) else { return 0; };
+    let Some(face) = (*font).ttf_face() else {
+        return 0;
+    };
+    let Some(math) = face.tables().math else {
+        return 0;
+    };
+    let Some(glyph_info) = math.glyph_info else {
+        return 0;
+    };
+    let Some(kern_infos) = glyph_info.kern_infos else {
+        return 0;
+    };
+    let Some(ki) = kern_infos.get(GlyphId(glyph as u16)) else {
+        return 0;
+    };
     let kern_table = match side {
         0 => ki.top_right,    // HB_OT_MATH_KERN_TOP_RIGHT
         1 => ki.top_left,     // HB_OT_MATH_KERN_TOP_LEFT
@@ -260,7 +310,9 @@ pub unsafe extern "C" fn ttxl_get_ot_math_kern(
         3 => ki.bottom_left,  // HB_OT_MATH_KERN_BOTTOM_LEFT
         _ => None,
     };
-    let Some(kern) = kern_table else { return 0; };
+    let Some(kern) = kern_table else {
+        return 0;
+    };
     let count = kern.count();
     for i in 0..count {
         if let Some(h) = kern.height(i) {

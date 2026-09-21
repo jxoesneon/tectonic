@@ -61,7 +61,11 @@ impl PackedTrie {
         let mut hyf = vec![0i16; hn + 1];
 
         // Traverse trie for each starting offset j
-        let r_bound = if hn >= right_min { hn - right_min + 1 } else { 0 };
+        let r_bound = if hn >= right_min {
+            hn - right_min + 1
+        } else {
+            0
+        };
         for j in 0..=r_bound {
             let base = cur_lang + 1;
             if base >= self.trl.len() {
@@ -154,7 +158,7 @@ mod tests {
         trie.trc = vec![u16::MAX; max_idx];
         trie.op_start = vec![0; 2];
         trie.hyf_distance = vec![0, 1]; // op 1: distance 1
-        trie.hyf_num = vec![0, 3];      // op 1: weight 3 (odd)
+        trie.hyf_num = vec![0, 3]; // op 1: weight 3 (odd)
         trie.hyf_next = vec![0, 0];
 
         // Language 0 entry at index 1 (cur_lang + 1)
@@ -164,12 +168,12 @@ mod tests {
         // At starting offset j = 1, hc[1] = 'h' (104)
         // z = trl[1] + hc[1] = 10 + 104 = 114
         trie.trc[114] = 104; // matches 'h'
-        trie.trl[114] = 50;  // next base is 50
+        trie.trl[114] = 50; // next base is 50
 
         // hc[2] = 'y' (121)
         // z = trl[114] + hc[2] = 50 + 121 = 171
         trie.trc[171] = 121; // matches 'y'
-        trie.tro[171] = 1;   // triggers op 1 at l = 2 (i = 2 - 1 = 1)
+        trie.tro[171] = 1; // triggers op 1 at l = 2 (i = 2 - 1 = 1)
         trie.trl[171] = 0;
 
         // Word: "hyphen" -> [104, 121, 112, 104, 101, 110]

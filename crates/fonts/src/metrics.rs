@@ -59,7 +59,12 @@ pub struct GlyphMetrics {
 
 impl GlyphMetrics {
     /// Creates a new `GlyphMetrics` instance with the given dimensions in `sp`.
-    pub const fn new(width_sp: i32, height_sp: i32, depth_sp: i32, italic_correction_sp: i32) -> Self {
+    pub const fn new(
+        width_sp: i32,
+        height_sp: i32,
+        depth_sp: i32,
+        italic_correction_sp: i32,
+    ) -> Self {
         Self {
             width_sp,
             height_sp,

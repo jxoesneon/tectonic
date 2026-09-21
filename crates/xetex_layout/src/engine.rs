@@ -379,13 +379,8 @@ impl LayoutEngine {
             }
         }
 
-        let gr_seg = gr::Segment::new_unscaled(
-            gr_face,
-            self.script,
-            gr_feature_values.as_ref(),
-            chars,
-            rtl,
-        );
+        let gr_seg =
+            gr::Segment::new_unscaled(gr_face, self.script, gr_feature_values.as_ref(), chars, rtl);
 
         let Some(gr_seg) = gr_seg else {
             return false;
@@ -553,11 +548,7 @@ impl LayoutEngine {
 }
 
 pub(crate) fn get_graphite_feature_code(engine: &LayoutEngine, index: u32) -> Option<u32> {
-    let id = engine
-        .font()
-        .gr_face()?
-        .feature_ref(index as usize)?
-        .id();
+    let id = engine.font().gr_face()?.feature_ref(index as usize)?.id();
     Some(id)
 }
 
@@ -592,11 +583,7 @@ pub(crate) fn get_graphite_feature_default_setting(
 ) -> Option<u32> {
     let face = engine.font().gr_face()?;
     let feat = face.find_feature_ref(feature_id)?;
-    let lang = engine
-        .language
-        .as_deref()
-        .map(tag_from_str)
-        .unwrap_or(0);
+    let lang = engine.language.as_deref().map(tag_from_str).unwrap_or(0);
     let feature_values = face.feature_val_for_lang(lang);
     let out = feat.feat_value(feature_values.as_ref()) as u32;
     Some(out)

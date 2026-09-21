@@ -48,11 +48,7 @@ pub unsafe extern "C" fn getIndScript(font: XeTeXFont, index: libc::c_uint) -> u
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn getIndLanguage(
-    font: XeTeXFont,
-    script: u32,
-    index: libc::c_uint,
-) -> u32 {
+pub unsafe extern "C" fn getIndLanguage(font: XeTeXFont, script: u32, index: libc::c_uint) -> u32 {
     if let Some(face) = (*font).ttf_face() {
         if let Some(scripts) = larger_script_list(&face) {
             let tag = ttf_parser::Tag::from_bytes(&script.to_be_bytes());
@@ -80,7 +76,10 @@ pub unsafe extern "C" fn getIndFeature(
         } else {
             None
         };
-        for table in [face.tables().gsub, face.tables().gpos].into_iter().flatten() {
+        for table in [face.tables().gsub, face.tables().gpos]
+            .into_iter()
+            .flatten()
+        {
             if let Some(s) = table.scripts.find(script_tag) {
                 let feat_indices = if let Some(lang_tag) = lang_tag {
                     s.languages.find(lang_tag).map(|l| l.feature_indices)
@@ -218,7 +217,10 @@ pub unsafe extern "C" fn countFeatures(
             None
         };
         let mut count = 0;
-        for table in [face.tables().gsub, face.tables().gpos].into_iter().flatten() {
+        for table in [face.tables().gsub, face.tables().gpos]
+            .into_iter()
+            .flatten()
+        {
             if let Some(s) = table.scripts.find(script_tag) {
                 if let Some(lang_tag) = lang_tag {
                     if let Some(l) = s.languages.find(lang_tag) {

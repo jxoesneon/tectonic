@@ -59,19 +59,19 @@ impl Color {
 /// Returns the value converted to PDF points (`bp`).
 pub fn parse_dimen_to_bp(s: &str) -> Option<f64> {
     let s = s.trim();
-    if s.ends_with("in") {
-        let val: f64 = s[..s.len() - 2].trim().parse().ok()?;
+    if let Some(rest) = s.strip_suffix("in") {
+        let val: f64 = rest.trim().parse().ok()?;
         Some(val * 72.0)
-    } else if s.ends_with("bp") {
-        s[..s.len() - 2].trim().parse().ok()
-    } else if s.ends_with("pt") {
-        let val: f64 = s[..s.len() - 2].trim().parse().ok()?;
+    } else if let Some(rest) = s.strip_suffix("bp") {
+        rest.trim().parse().ok()
+    } else if let Some(rest) = s.strip_suffix("pt") {
+        let val: f64 = rest.trim().parse().ok()?;
         Some(val * 72.0 / 72.27)
-    } else if s.ends_with("mm") {
-        let val: f64 = s[..s.len() - 2].trim().parse().ok()?;
+    } else if let Some(rest) = s.strip_suffix("mm") {
+        let val: f64 = rest.trim().parse().ok()?;
         Some(val * 72.0 / 25.4)
-    } else if s.ends_with("cm") {
-        let val: f64 = s[..s.len() - 2].trim().parse().ok()?;
+    } else if let Some(rest) = s.strip_suffix("cm") {
+        let val: f64 = rest.trim().parse().ok()?;
         Some(val * 72.0 / 2.54)
     } else {
         // Fallback: try raw number as bp
@@ -210,7 +210,11 @@ mod tests {
 
         let sp_pdf = b"pdf:pagesize width 210mm height 297mm";
         let res = parse_special(sp_pdf);
-        if let ParsedSpecial::PaperSize { width_bp, height_bp } = res {
+        if let ParsedSpecial::PaperSize {
+            width_bp,
+            height_bp,
+        } = res
+        {
             assert!((width_bp - (210.0 * 72.0 / 25.4)).abs() < 1e-4);
             assert!((height_bp - (297.0 * 72.0 / 25.4)).abs() < 1e-4);
         } else {

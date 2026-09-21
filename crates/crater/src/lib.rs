@@ -153,7 +153,9 @@ impl Corpus {
                 "\\relax Hello, Crater Plain TeX!\\bye\n",
                 "plain",
             )
-            .with_description("Minimal Plain TeX document asserting baseline TeX stomach initialization")
+            .with_description(
+                "Minimal Plain TeX document asserting baseline TeX stomach initialization",
+            )
             .with_tag("smoke")
             .with_tag("plain"),
         );
@@ -244,9 +246,13 @@ impl Corpus {
         let mut corpus = Self::new();
         let root = dir.as_ref();
 
-        for entry in WalkDir::new(root).follow_links(true).into_iter().filter_map(|e| e.ok()) {
+        for entry in WalkDir::new(root)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
             let path = entry.path();
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "tex") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "tex") {
                 let name = path
                     .file_stem()
                     .and_then(|s| s.to_str())
@@ -312,12 +318,18 @@ impl Corpus {
 
     /// Filter test cases belonging to a specific category.
     pub fn filter_by_category(&self, category: &CorpusCategory) -> Vec<&TestCase> {
-        self.cases.iter().filter(|c| &c.category == category).collect()
+        self.cases
+            .iter()
+            .filter(|c| &c.category == category)
+            .collect()
     }
 
     /// Filter test cases containing a specific tag.
     pub fn filter_by_tag(&self, tag: &str) -> Vec<&TestCase> {
-        self.cases.iter().filter(|c| c.tags.iter().any(|t| t == tag)).collect()
+        self.cases
+            .iter()
+            .filter(|c| c.tags.iter().any(|t| t == tag))
+            .collect()
     }
 }
 
@@ -449,7 +461,11 @@ impl StatusBackend for MemoryStatusBackend {
         let msg = format!("{args}");
         match kind {
             MessageKind::Note => self.logs.lock().unwrap().push(msg),
-            MessageKind::Warning => self.warnings.lock().unwrap().push(format!("warning: {msg}")),
+            MessageKind::Warning => self
+                .warnings
+                .lock()
+                .unwrap()
+                .push(format!("warning: {msg}")),
             MessageKind::Error => self.errors.lock().unwrap().push(format!("error: {msg}")),
         }
     }
@@ -632,7 +648,9 @@ impl DifferentialSession {
                 Ok(b) => b,
                 Err(e) => {
                     return Ok(RunResult {
-                        status: RunStatus::DriverError(format!("Failed to load default bundle: {e}")),
+                        status: RunStatus::DriverError(format!(
+                            "Failed to load default bundle: {e}"
+                        )),
                         duration: start_time.elapsed(),
                         stdout: status.stdout_text(),
                         stderr: format!("Bundle error: {e}"),
@@ -714,7 +732,9 @@ impl DifferentialSession {
                 Ok(b) => b,
                 Err(e) => {
                     return Ok(RunResult {
-                        status: RunStatus::DriverError(format!("Failed to reload bundle for Pass 2: {e}")),
+                        status: RunStatus::DriverError(format!(
+                            "Failed to reload bundle for Pass 2: {e}"
+                        )),
                         duration: start_time.elapsed(),
                         stdout: status.stdout_text(),
                         stderr: format!("Bundle error: {e}"),
@@ -1044,7 +1064,10 @@ mod tests {
         let corpus = Corpus::standard();
 
         assert!(!corpus.is_empty());
-        assert!(corpus.len() >= 7, "standard corpus must contain >= 7 baseline tests");
+        assert!(
+            corpus.len() >= 7,
+            "standard corpus must contain >= 7 baseline tests"
+        );
 
         let plain_cases = corpus.filter_by_category(&CorpusCategory::PlainTex);
         assert!(!plain_cases.is_empty(), "must contain plain TeX cases");
@@ -1053,10 +1076,16 @@ mod tests {
         assert!(!latex_cases.is_empty(), "must contain LaTeX2e cases");
 
         let macro_cases = corpus.filter_by_category(&CorpusCategory::ComplexMacros);
-        assert!(macro_cases.len() >= 3, "must cover expl3, tikz, and hyperref");
+        assert!(
+            macro_cases.len() >= 3,
+            "must cover expl3, tikz, and hyperref"
+        );
 
         let multipage_cases = corpus.filter_by_category(&CorpusCategory::MultiPage);
-        assert!(!multipage_cases.is_empty(), "must cover multi-page documents");
+        assert!(
+            !multipage_cases.is_empty(),
+            "must cover multi-page documents"
+        );
 
         let smoke_tags = corpus.filter_by_tag("smoke");
         assert!(smoke_tags.len() >= 2);
@@ -1113,9 +1142,15 @@ mod tests {
     fn test_corpus_category_and_test_case_methods() {
         assert_eq!(format!("{}", CorpusCategory::PlainTex), "plain_tex");
         assert_eq!(format!("{}", CorpusCategory::Latex2e), "latex2e");
-        assert_eq!(format!("{}", CorpusCategory::ComplexMacros), "complex_macros");
+        assert_eq!(
+            format!("{}", CorpusCategory::ComplexMacros),
+            "complex_macros"
+        );
         assert_eq!(format!("{}", CorpusCategory::MultiPage), "multipage");
-        assert_eq!(format!("{}", CorpusCategory::Custom("benchmarks".into())), "custom(benchmarks)");
+        assert_eq!(
+            format!("{}", CorpusCategory::Custom("benchmarks".into())),
+            "custom(benchmarks)"
+        );
 
         let case = TestCase::new("test_case", CorpusCategory::PlainTex, "\\relax", "plain")
             .with_tag("fast")
@@ -1140,9 +1175,18 @@ mod tests {
     #[test]
     fn test_run_status_and_memory_status_backend() {
         assert_eq!(format!("{}", RunStatus::Success), "Success");
-        assert_eq!(format!("{}", RunStatus::EngineError("fatal error".into())), "EngineError: fatal error");
-        assert_eq!(format!("{}", RunStatus::DriverError("driver error".into())), "DriverError: driver error");
-        assert_eq!(format!("{}", RunStatus::IoError("disk full".into())), "IoError: disk full");
+        assert_eq!(
+            format!("{}", RunStatus::EngineError("fatal error".into())),
+            "EngineError: fatal error"
+        );
+        assert_eq!(
+            format!("{}", RunStatus::DriverError("driver error".into())),
+            "DriverError: driver error"
+        );
+        assert_eq!(
+            format!("{}", RunStatus::IoError("disk full".into())),
+            "IoError: disk full"
+        );
 
         let mut status = MemoryStatusBackend::new();
         use tectonic_status_base::{MessageKind, StatusBackend};
@@ -1178,9 +1222,18 @@ mod tests {
 
     #[test]
     fn test_parity_status_and_report_summary() {
-        assert_eq!(format!("{}", ParityStatus::ExactMatch), "Exact Bitwise Match");
-        assert_eq!(format!("{}", ParityStatus::NormalizedMatch), "Normalized Match (Gate 2 Passed)");
-        assert_eq!(format!("{}", ParityStatus::Diverged("glyph shift".into())), "Diverged: glyph shift");
+        assert_eq!(
+            format!("{}", ParityStatus::ExactMatch),
+            "Exact Bitwise Match"
+        );
+        assert_eq!(
+            format!("{}", ParityStatus::NormalizedMatch),
+            "Normalized Match (Gate 2 Passed)"
+        );
+        assert_eq!(
+            format!("{}", ParityStatus::Diverged("glyph shift".into())),
+            "Diverged: glyph shift"
+        );
 
         let clean_report = DifferentialReport {
             case_name: "clean_doc".into(),

@@ -177,7 +177,9 @@ mod tests {
         let mut launcher = CoreBridgeLauncher::new(&mut driver, &mut status);
 
         let mut engine = PdfBackendEngine::default();
-        let err = engine.process(&mut launcher, "nonexistent.xdv", "output.pdf").unwrap_err();
+        let err = engine
+            .process(&mut launcher, "nonexistent.xdv", "output.pdf")
+            .unwrap_err();
         assert!(err.to_string().contains("unable to open input XDV"));
     }
 }

@@ -335,21 +335,24 @@ fn probe_tiff(bytes: &[u8]) -> Result<ImageInfo, ImageProbeError> {
         let val_offset = entry_ptr + 8;
 
         match tag {
-            0x0100 => { // ImageWidth
+            0x0100 => {
+                // ImageWidth
                 width = if is_le {
                     LittleEndian::read_u32(&bytes[val_offset..val_offset + 4])
                 } else {
                     BigEndian::read_u32(&bytes[val_offset..val_offset + 4])
                 };
             }
-            0x0101 => { // ImageLength
+            0x0101 => {
+                // ImageLength
                 height = if is_le {
                     LittleEndian::read_u32(&bytes[val_offset..val_offset + 4])
                 } else {
                     BigEndian::read_u32(&bytes[val_offset..val_offset + 4])
                 };
             }
-            0x0128 => { // ResolutionUnit
+            0x0128 => {
+                // ResolutionUnit
                 res_unit = if is_le {
                     LittleEndian::read_u16(&bytes[val_offset..val_offset + 2])
                 } else {

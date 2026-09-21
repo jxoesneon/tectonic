@@ -1700,6 +1700,7 @@ mod macro_expansion_tests {
             &mut status,
             FsEmulationSettings::default(),
         );
+        // SAFETY: `enabled_state` is a live `CoreBridgeState` for the call.
         unsafe {
             assert!(ttbc_is_expansion_hook_enabled(&enabled_state));
         }
@@ -1710,6 +1711,7 @@ mod macro_expansion_tests {
             &mut status,
             FsEmulationSettings::default(),
         );
+        // SAFETY: `disabled_state` is a live `CoreBridgeState` for the call.
         unsafe {
             assert!(!ttbc_is_expansion_hook_enabled(&disabled_state));
         }
@@ -1731,6 +1733,7 @@ mod macro_expansion_tests {
         );
 
         let name = "\\newcommand";
+        // SAFETY: `state` is live; `name`/`len` describe a valid byte slice.
         unsafe {
             ttbc_event_macro_expand(&mut state, name.as_ptr(), name.len(), 3, 111, 222);
         }
@@ -1756,6 +1759,8 @@ mod macro_expansion_tests {
 
         // Invalid UTF-8 sequence (e.g. 0xFF, 0xFE)
         let invalid_bytes = [0xFF, 0xFE, b'a', b'b'];
+        // SAFETY: `state` is live; `invalid_bytes`/`len` describe a valid
+        // byte slice (the function lossy-decodes non-UTF-8 input).
         unsafe {
             ttbc_event_macro_expand(
                 &mut state,
@@ -1787,6 +1792,8 @@ mod macro_expansion_tests {
             FsEmulationSettings::default(),
         );
 
+        // SAFETY: `state` is live; a null name with zero length is part of
+        // the FFI contract and handled by the callee.
         unsafe {
             ttbc_event_macro_expand(&mut state, std::ptr::null(), 0, 0, 0, 0);
         }
@@ -1797,8 +1804,10 @@ mod macro_expansion_tests {
 
     #[test]
     fn test_ttbc_panic_safety_catch_unwind() {
-        let mut hooks = MockHooks::default();
-        hooks.panics = true;
+        let mut hooks = MockHooks {
+            panics: true,
+            ..Default::default()
+        };
         let mut status = NoopStatusBackend::default();
 
         let mut state = CoreBridgeState::new(
@@ -1810,6 +1819,7 @@ mod macro_expansion_tests {
 
         // Neither ttbc_event_macro_expand nor ttbc_event_expand_on should panic across FFI
         let name = "panicking_macro";
+        // SAFETY: `state` is live; `name`/`len` describe a valid byte slice.
         unsafe {
             ttbc_event_macro_expand(&mut state, name.as_ptr(), name.len(), 1, 0, 0);
             ttbc_event_expand_on(&mut state);
@@ -1829,6 +1839,7 @@ mod macro_expansion_tests {
             FsEmulationSettings::default(),
         );
 
+        // SAFETY: `state` is a live `CoreBridgeState` for the call.
         unsafe {
             ttbc_event_expand_on(&mut state);
         }

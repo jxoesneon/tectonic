@@ -3,8 +3,8 @@
 
 //! Trie data structure for Liang hyphenation pattern matching.
 
-use std::collections::HashMap;
 use crate::pattern::Pattern;
+use std::collections::HashMap;
 
 /// A node in the hyphenation pattern trie.
 #[derive(Default, Debug, Clone)]

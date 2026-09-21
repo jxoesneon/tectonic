@@ -17,7 +17,10 @@ fn test_image_info_default_and_error_display() {
     assert_eq!(default_info.y_dpi, 72.0);
 
     let err_unrec = ImageProbeError::UnrecognizedFormat;
-    assert_eq!(format!("{err_unrec}"), "Unrecognized or unsupported image format");
+    assert_eq!(
+        format!("{err_unrec}"),
+        "Unrecognized or unsupported image format"
+    );
 
     let err_corrupt = ImageProbeError::CorruptHeader;
     assert_eq!(format!("{err_corrupt}"), "Corrupt image header");
@@ -111,8 +114,8 @@ fn test_probe_png_exhaustive() {
     // 4. Corrupt PNGs
     // Corrupt length before IHDR
     let corrupt_len = vec![
-        0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A,
-        0xFF, 0xFF, 0xFF, 0xFF, b'I', b'H', b'D', b'R',
+        0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0xFF, 0xFF, 0xFF, 0xFF, b'I', b'H', b'D',
+        b'R',
     ];
     assert!(matches!(
         probe_image_bytes(&corrupt_len),
@@ -135,7 +138,7 @@ fn test_probe_jpeg_exhaustive() {
     // 1. APP0 with unit 1 (DPI)
     let mut jpeg_dpi = Vec::new();
     jpeg_dpi.extend_from_slice(&[0xFF, 0xD8]); // SOI
-    // JFIF APP0 (300 DPI)
+                                               // JFIF APP0 (300 DPI)
     let mut app0 = Vec::new();
     app0.extend_from_slice(b"JFIF\0");
     app0.extend_from_slice(&[1, 2]); // v1.02
@@ -482,9 +485,18 @@ trailer
     ));
 
     // Error messages display
-    assert_eq!(format!("{}", PdfProbeError::InvalidPdf), "Not a valid PDF file");
-    assert_eq!(format!("{}", PdfProbeError::PageNotFound(5)), "Page 5 not found in PDF");
-    assert_eq!(format!("{}", PdfProbeError::BoxNotFound), "Bounding box not found or invalid");
+    assert_eq!(
+        format!("{}", PdfProbeError::InvalidPdf),
+        "Not a valid PDF file"
+    );
+    assert_eq!(
+        format!("{}", PdfProbeError::PageNotFound(5)),
+        "Page 5 not found in PDF"
+    );
+    assert_eq!(
+        format!("{}", PdfProbeError::BoxNotFound),
+        "Bounding box not found or invalid"
+    );
     let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
     assert!(format!("{}", PdfProbeError::Io(io_err)).contains("file not found"));
 }
@@ -507,7 +519,8 @@ fn test_c_api_exhaustive() {
     let c_img_path = std::ffi::CString::new(img_path).unwrap();
 
     unsafe {
-        // tt_probe_image_bbox
+        // SAFETY: `c_img_path` is a live NUL-terminated string; the four
+        // out-pointers reference live `f32` locals for the call duration.
         let mut w = 0.0;
         let mut h = 0.0;
         let mut x_res = 0.0;
@@ -521,15 +534,57 @@ fn test_c_api_exhaustive() {
         assert_eq!(x_res, 72.0);
 
         // Null pointer guards
-        assert_eq!(tt_probe_image_bbox(std::ptr::null(), &mut w, &mut h, &mut x_res, &mut y_res), -1);
-        assert_eq!(tt_probe_image_bbox(c_img_path.as_ptr(), std::ptr::null_mut(), &mut h, &mut x_res, &mut y_res), -1);
-        assert_eq!(tt_probe_image_bbox(c_img_path.as_ptr(), &mut w, std::ptr::null_mut(), &mut x_res, &mut y_res), -1);
-        assert_eq!(tt_probe_image_bbox(c_img_path.as_ptr(), &mut w, &mut h, std::ptr::null_mut(), &mut y_res), -1);
-        assert_eq!(tt_probe_image_bbox(c_img_path.as_ptr(), &mut w, &mut h, &mut x_res, std::ptr::null_mut()), -1);
+        assert_eq!(
+            tt_probe_image_bbox(std::ptr::null(), &mut w, &mut h, &mut x_res, &mut y_res),
+            -1
+        );
+        assert_eq!(
+            tt_probe_image_bbox(
+                c_img_path.as_ptr(),
+                std::ptr::null_mut(),
+                &mut h,
+                &mut x_res,
+                &mut y_res
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_image_bbox(
+                c_img_path.as_ptr(),
+                &mut w,
+                std::ptr::null_mut(),
+                &mut x_res,
+                &mut y_res
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_image_bbox(
+                c_img_path.as_ptr(),
+                &mut w,
+                &mut h,
+                std::ptr::null_mut(),
+                &mut y_res
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_image_bbox(
+                c_img_path.as_ptr(),
+                &mut w,
+                &mut h,
+                &mut x_res,
+                std::ptr::null_mut()
+            ),
+            -1
+        );
 
         // Non-existent path
         let non_exist = std::ffi::CString::new("/no/such/file").unwrap();
-        assert_eq!(tt_probe_image_bbox(non_exist.as_ptr(), &mut w, &mut h, &mut x_res, &mut y_res), -1);
+        assert_eq!(
+            tt_probe_image_bbox(non_exist.as_ptr(), &mut w, &mut h, &mut x_res, &mut y_res),
+            -1
+        );
 
         // tt_probe_pdf_page_count
         assert_eq!(tt_probe_pdf_page_count(c_path.as_ptr()), 1);
@@ -547,48 +602,174 @@ fn test_c_api_exhaustive() {
         assert_eq!((x0, y0, x1, y1), (0.0, 0.0, 500.0, 800.0));
 
         // Null pointer guards
-        assert_eq!(tt_probe_pdf_box(std::ptr::null(), 1, 2, &mut x0, &mut y0, &mut x1, &mut y1), -1);
-        assert_eq!(tt_probe_pdf_box(c_path.as_ptr(), 1, 2, std::ptr::null_mut(), &mut y0, &mut x1, &mut y1), -1);
-        assert_eq!(tt_probe_pdf_box(c_path.as_ptr(), 1, 2, &mut x0, std::ptr::null_mut(), &mut x1, &mut y1), -1);
-        assert_eq!(tt_probe_pdf_box(c_path.as_ptr(), 1, 2, &mut x0, &mut y0, std::ptr::null_mut(), &mut y1), -1);
-        assert_eq!(tt_probe_pdf_box(c_path.as_ptr(), 1, 2, &mut x0, &mut y0, &mut x1, std::ptr::null_mut()), -1);
+        assert_eq!(
+            tt_probe_pdf_box(std::ptr::null(), 1, 2, &mut x0, &mut y0, &mut x1, &mut y1),
+            -1
+        );
+        assert_eq!(
+            tt_probe_pdf_box(
+                c_path.as_ptr(),
+                1,
+                2,
+                std::ptr::null_mut(),
+                &mut y0,
+                &mut x1,
+                &mut y1
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_pdf_box(
+                c_path.as_ptr(),
+                1,
+                2,
+                &mut x0,
+                std::ptr::null_mut(),
+                &mut x1,
+                &mut y1
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_pdf_box(
+                c_path.as_ptr(),
+                1,
+                2,
+                &mut x0,
+                &mut y0,
+                std::ptr::null_mut(),
+                &mut y1
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_pdf_box(
+                c_path.as_ptr(),
+                1,
+                2,
+                &mut x0,
+                &mut y0,
+                &mut x1,
+                std::ptr::null_mut()
+            ),
+            -1
+        );
 
         // Invalid UTF-8 path
         let invalid_utf8 = b"\xFF\xFE\0";
-        assert_eq!(tt_probe_image_bbox(invalid_utf8.as_ptr() as *const libc::c_char, &mut w, &mut h, &mut x_res, &mut y_res), -1);
-        assert_eq!(tt_probe_pdf_page_count(invalid_utf8.as_ptr() as *const libc::c_char), 0);
-        assert_eq!(tt_probe_pdf_box(invalid_utf8.as_ptr() as *const libc::c_char, 1, 2, &mut x0, &mut y0, &mut x1, &mut y1), -1);
+        assert_eq!(
+            tt_probe_image_bbox(
+                invalid_utf8.as_ptr() as *const libc::c_char,
+                &mut w,
+                &mut h,
+                &mut x_res,
+                &mut y_res
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_pdf_page_count(invalid_utf8.as_ptr() as *const libc::c_char),
+            0
+        );
+        assert_eq!(
+            tt_probe_pdf_box(
+                invalid_utf8.as_ptr() as *const libc::c_char,
+                1,
+                2,
+                &mut x0,
+                &mut y0,
+                &mut x1,
+                &mut y1
+            ),
+            -1
+        );
 
         // Data buffer C-API tests
         let mut w_d = 0.0;
         let mut h_d = 0.0;
         let mut x_d = 0.0;
         let mut y_d = 0.0;
-        let res_d = tt_probe_image_bbox_data(gif.as_ptr(), gif.len(), &mut w_d, &mut h_d, &mut x_d, &mut y_d);
+        let res_d = tt_probe_image_bbox_data(
+            gif.as_ptr(),
+            gif.len(),
+            &mut w_d,
+            &mut h_d,
+            &mut x_d,
+            &mut y_d,
+        );
         assert_eq!(res_d, 0);
         assert_eq!(w_d, 320.0);
         assert_eq!(h_d, 240.0);
         assert_eq!(x_d, 72.0);
 
         // Null pointer and corrupt data guards
-        assert_eq!(tt_probe_image_bbox_data(std::ptr::null(), gif.len(), &mut w_d, &mut h_d, &mut x_d, &mut y_d), -1);
-        assert_eq!(tt_probe_image_bbox_data(gif.as_ptr(), 2, &mut w_d, &mut h_d, &mut x_d, &mut y_d), -1);
+        assert_eq!(
+            tt_probe_image_bbox_data(
+                std::ptr::null(),
+                gif.len(),
+                &mut w_d,
+                &mut h_d,
+                &mut x_d,
+                &mut y_d
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_image_bbox_data(gif.as_ptr(), 2, &mut w_d, &mut h_d, &mut x_d, &mut y_d),
+            -1
+        );
 
         // PDF data buffer tests
         let pdf_slice = pdf_content;
-        assert_eq!(tt_probe_pdf_page_count_data(pdf_slice.as_ptr(), pdf_slice.len()), 1);
+        assert_eq!(
+            tt_probe_pdf_page_count_data(pdf_slice.as_ptr(), pdf_slice.len()),
+            1
+        );
         assert_eq!(tt_probe_pdf_page_count_data(std::ptr::null(), 0), 0);
 
         let mut bx0 = 0.0;
         let mut by0 = 0.0;
         let mut bx1 = 0.0;
         let mut by1 = 0.0;
-        let res_box_d = tt_probe_pdf_box_data(pdf_slice.as_ptr(), pdf_slice.len(), 1, 2, &mut bx0, &mut by0, &mut bx1, &mut by1);
+        let res_box_d = tt_probe_pdf_box_data(
+            pdf_slice.as_ptr(),
+            pdf_slice.len(),
+            1,
+            2,
+            &mut bx0,
+            &mut by0,
+            &mut bx1,
+            &mut by1,
+        );
         assert_eq!(res_box_d, 0);
         assert_eq!((bx0, by0, bx1, by1), (0.0, 0.0, 500.0, 800.0));
 
-        assert_eq!(tt_probe_pdf_box_data(std::ptr::null(), 0, 1, 2, &mut bx0, &mut by0, &mut bx1, &mut by1), -1);
-        assert_eq!(tt_probe_pdf_box_data(pdf_slice.as_ptr(), pdf_slice.len(), 0, 2, &mut bx0, &mut by0, &mut bx1, &mut by1), -1);
+        assert_eq!(
+            tt_probe_pdf_box_data(
+                std::ptr::null(),
+                0,
+                1,
+                2,
+                &mut bx0,
+                &mut by0,
+                &mut bx1,
+                &mut by1
+            ),
+            -1
+        );
+        assert_eq!(
+            tt_probe_pdf_box_data(
+                pdf_slice.as_ptr(),
+                pdf_slice.len(),
+                0,
+                2,
+                &mut bx0,
+                &mut by0,
+                &mut bx1,
+                &mut by1
+            ),
+            -1
+        );
     }
 }
 
@@ -604,14 +785,23 @@ fn test_image_edge_cases_and_zero_dimensions() {
     png_zero.extend_from_slice(b"IHDR");
     png_zero.extend_from_slice(&ihdr_zero);
     png_zero.extend_from_slice(&[0; 4]);
-    assert!(matches!(probe_image_bytes(&png_zero), Err(ImageProbeError::CorruptHeader)));
+    assert!(matches!(
+        probe_image_bytes(&png_zero),
+        Err(ImageProbeError::CorruptHeader)
+    ));
 
     // 2. JPEG with short length marker or truncated SOF
     let jpeg_short_len = vec![0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x01, 0x00, 0x00];
-    assert!(matches!(probe_image_bytes(&jpeg_short_len), Err(ImageProbeError::CorruptHeader)));
+    assert!(matches!(
+        probe_image_bytes(&jpeg_short_len),
+        Err(ImageProbeError::CorruptHeader)
+    ));
 
     let jpeg_sof_short = vec![0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x04, 0x01, 0x02];
-    assert!(matches!(probe_image_bytes(&jpeg_sof_short), Err(ImageProbeError::CorruptHeader)));
+    assert!(matches!(
+        probe_image_bytes(&jpeg_sof_short),
+        Err(ImageProbeError::CorruptHeader)
+    ));
 
     // 3. BMP with 0 width or height
     let mut bmp_zero = Vec::new();
@@ -625,14 +815,20 @@ fn test_image_edge_cases_and_zero_dimensions() {
     bmp_zero.extend_from_slice(&1u16.to_le_bytes());
     bmp_zero.extend_from_slice(&24u16.to_le_bytes());
     bmp_zero.extend_from_slice(&[0; 16]);
-    assert!(matches!(probe_image_bytes(&bmp_zero), Err(ImageProbeError::CorruptHeader)));
+    assert!(matches!(
+        probe_image_bytes(&bmp_zero),
+        Err(ImageProbeError::CorruptHeader)
+    ));
 
     // 4. GIF with 0 width or height
     let mut gif_zero = Vec::new();
     gif_zero.extend_from_slice(b"GIF89a");
     gif_zero.extend_from_slice(&0u16.to_le_bytes()); // width = 0
     gif_zero.extend_from_slice(&100u16.to_le_bytes());
-    assert!(matches!(probe_image_bytes(&gif_zero), Err(ImageProbeError::CorruptHeader)));
+    assert!(matches!(
+        probe_image_bytes(&gif_zero),
+        Err(ImageProbeError::CorruptHeader)
+    ));
 
     // 5. TIFF with truncated IFD entries or zero width
     let mut tiff_short = Vec::new();
@@ -640,7 +836,10 @@ fn test_image_edge_cases_and_zero_dimensions() {
     tiff_short.extend_from_slice(&8u32.to_le_bytes());
     tiff_short.extend_from_slice(&1u16.to_le_bytes()); // 1 entry, but only 4 bytes follow
     tiff_short.extend_from_slice(&[0; 4]);
-    assert!(matches!(probe_image_bytes(&tiff_short), Err(ImageProbeError::CorruptHeader)));
+    assert!(matches!(
+        probe_image_bytes(&tiff_short),
+        Err(ImageProbeError::CorruptHeader)
+    ));
 
     // 6. Multi-chunk large file reading in probe_image_path
     let mut large_file = NamedTempFile::new().unwrap();

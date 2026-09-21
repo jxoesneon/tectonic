@@ -150,7 +150,8 @@ impl StringPool {
     /// Finalizes the string currently in the accumulator, resets the accumulator,
     /// and returns the assigned [`StrNumber`].
     pub fn make_string(&mut self) -> Result<StrNumber, StringError> {
-        let decoded = String::from_utf16(&self.accumulator).map_err(|_| StringError::InvalidUtf16)?;
+        let decoded =
+            String::from_utf16(&self.accumulator).map_err(|_| StringError::InvalidUtf16)?;
         self.accumulator.clear();
         Ok(self.intern(&decoded))
     }
@@ -248,8 +249,8 @@ impl StringPool {
                 )));
             }
 
-            let s = String::from_utf16(&str_pool[idx0..idx1])
-                .map_err(|_| StringError::InvalidUtf16)?;
+            let s =
+                String::from_utf16(&str_pool[idx0..idx1]).map_err(|_| StringError::InvalidUtf16)?;
             pool.intern(&s);
         }
 
@@ -331,8 +332,14 @@ mod tests {
             .expect("roundtrip raw tables");
         assert_eq!(restored.len(), 3);
         assert_eq!(restored.get_pooled(StrNumber(TOO_BIG_CHAR)), Some("alpha"));
-        assert_eq!(restored.get_pooled(StrNumber(TOO_BIG_CHAR + 1)), Some("beta"));
-        assert_eq!(restored.get_pooled(StrNumber(TOO_BIG_CHAR + 2)), Some("gamma"));
+        assert_eq!(
+            restored.get_pooled(StrNumber(TOO_BIG_CHAR + 1)),
+            Some("beta")
+        );
+        assert_eq!(
+            restored.get_pooled(StrNumber(TOO_BIG_CHAR + 2)),
+            Some("gamma")
+        );
     }
 
     #[test]
@@ -343,7 +350,7 @@ mod tests {
 
         // Character code lengths
         assert_eq!(pool.utf16_length(StrNumber(65)), 1); // ASCII 'A'
-        assert_eq!(pool.utf16_length(StrNumber(10)), 3);  // control char
+        assert_eq!(pool.utf16_length(StrNumber(10)), 3); // control char
         assert_eq!(pool.utf16_length(StrNumber(200)), 4); // 8-bit char
         assert_eq!(pool.utf16_length(StrNumber(1000)), 8); // > 256
 
@@ -377,7 +384,8 @@ mod tests {
         assert_eq!(pool.make_string().unwrap_err(), StringError::InvalidUtf16);
 
         // Test from_raw_tables errors
-        let err1 = StringPool::from_raw_tables(10, TOO_BIG_CHAR + 5, &[0, 2], &[0; 10]).unwrap_err();
+        let err1 =
+            StringPool::from_raw_tables(10, TOO_BIG_CHAR + 5, &[0, 2], &[0; 10]).unwrap_err();
         assert!(matches!(err1, StringError::InvalidIndices(_)));
 
         let err2 = StringPool::from_raw_tables(10, TOO_BIG_CHAR, &[20], &[0; 10]).unwrap_err();

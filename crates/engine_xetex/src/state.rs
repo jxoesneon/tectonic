@@ -6868,8 +6868,7 @@ impl TeXEngineState {
             &record.layout_filename,
             record.layout_face_index,
             fix2d(record.layout_point_size) as f32,
-        )
-        .ok()?;
+        )?;
         if spec.flags & FONT_FLAGS_VERTICAL != 0 {
             layout_font.set_layout_dir_vertical(true);
         }

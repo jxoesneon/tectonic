@@ -623,13 +623,12 @@ fn valid_usvs() -> impl Iterator<Item = Usv> {
 }
 
 fn opentype_checksum(data: &[u8]) -> u32 {
-    let mut iter = data.chunks_exact(4);
-    let cs: Wrapping<u32> = iter
-        .by_ref()
+    let (chunks, rem) = data.as_chunks::<4>();
+    let cs: Wrapping<u32> = chunks
+        .iter()
         .map(|c| Wrapping(BigEndian::read_u32(c)))
         .sum();
 
-    let rem = iter.remainder();
     let mut padded = [0u8; 4];
     padded[..rem.len()].copy_from_slice(rem);
     (cs + Wrapping(BigEndian::read_u32(&padded[..]))).0

@@ -54,6 +54,9 @@ use tectonic_io_base::{
 };
 use which::which;
 
+/// Boxed observer callback for macro expansion events.
+type ExpansionHookFn = Box<dyn FnMut(&MacroExpansionContext<'_>) + Send>;
+
 /// Different patterns with which files may have been accessed by the
 /// underlying engines. Once a file is marked as ReadThenWritten or
 /// WrittenThenRead, its pattern does not evolve further.
@@ -258,7 +261,7 @@ struct BridgeState {
     events: HashMap<String, FileSummary>,
 
     /// Observer hook for macro expansion events.
-    expansion_hook: Option<Box<dyn FnMut(&MacroExpansionContext<'_>) + Send>>,
+    expansion_hook: Option<ExpansionHookFn>,
 }
 
 impl BridgeState {
@@ -839,7 +842,7 @@ pub struct ProcessingSessionBuilder {
     html_precomputed_assets: Option<AssetSpecification>,
     html_do_not_emit_files: bool,
     html_do_not_emit_assets: bool,
-    expansion_hook: Option<Box<dyn FnMut(&MacroExpansionContext<'_>) + Send>>,
+    expansion_hook: Option<ExpansionHookFn>,
 }
 
 impl ProcessingSessionBuilder {

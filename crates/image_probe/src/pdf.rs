@@ -100,9 +100,18 @@ pub fn probe_pdf_box_bytes(
     let raw_box = match box_type {
         PdfBoxType::Media => page_info.media_box,
         PdfBoxType::Crop => page_info.crop_box.or(page_info.media_box),
-        PdfBoxType::Bleed => page_info.bleed_box.or(page_info.crop_box).or(page_info.media_box),
-        PdfBoxType::Trim => page_info.trim_box.or(page_info.crop_box).or(page_info.media_box),
-        PdfBoxType::Art => page_info.art_box.or(page_info.crop_box).or(page_info.media_box),
+        PdfBoxType::Bleed => page_info
+            .bleed_box
+            .or(page_info.crop_box)
+            .or(page_info.media_box),
+        PdfBoxType::Trim => page_info
+            .trim_box
+            .or(page_info.crop_box)
+            .or(page_info.media_box),
+        PdfBoxType::Art => page_info
+            .art_box
+            .or(page_info.crop_box)
+            .or(page_info.media_box),
     }
     .ok_or(PdfProbeError::BoxNotFound)?;
 
@@ -189,7 +198,9 @@ impl PdfDocIndex {
 
         if root_pages_id.is_none() {
             for (&id, &body) in &objects {
-                if (body.contains("/Type /Pages") || body.contains("/Type/Pages")) && body.contains("/Kids") {
+                if (body.contains("/Type /Pages") || body.contains("/Type/Pages"))
+                    && body.contains("/Kids")
+                {
                     root_pages_id = Some(id);
                     break;
                 }
@@ -198,28 +209,31 @@ impl PdfDocIndex {
 
         let mut collected_pages = Vec::new();
         if let Some(pages_id) = root_pages_id {
-            let mut inherited = PageAttrs::default();
-            collect_pages_tree(pages_id, &objects, &mut inherited, &mut collected_pages, 0);
+            let inherited = PageAttrs::default();
+            collect_pages_tree(pages_id, &objects, &inherited, &mut collected_pages, 0);
         }
 
         if collected_pages.is_empty() {
             // Fallback: scan all /Type /Page objects directly, sorted deterministically by ID
             let mut page_objs: Vec<(u32, &str)> = objects
                 .iter()
-                .filter(|(_, body)| (body.contains("/Type /Page") || body.contains("/Type/Page")) && !body.contains("/Pages"))
+                .filter(|(_, body)| {
+                    (body.contains("/Type /Page") || body.contains("/Type/Page"))
+                        && !body.contains("/Pages")
+                })
                 .map(|(&id, &body)| (id, body))
                 .collect();
             page_objs.sort_by_key(|(id, _)| *id);
 
             for (_id, body) in page_objs {
-                let mut attrs = PageAttrs::default();
-                attrs.media_box = extract_box(body, "/MediaBox");
-                attrs.crop_box = extract_box(body, "/CropBox");
-                attrs.bleed_box = extract_box(body, "/BleedBox");
-                attrs.trim_box = extract_box(body, "/TrimBox");
-                attrs.art_box = extract_box(body, "/ArtBox");
-                attrs.rotate = extract_int(body, "/Rotate").unwrap_or(0);
-                collected_pages.push(attrs);
+                collected_pages.push(PageAttrs {
+                    media_box: extract_box(body, "/MediaBox"),
+                    crop_box: extract_box(body, "/CropBox"),
+                    bleed_box: extract_box(body, "/BleedBox"),
+                    trim_box: extract_box(body, "/TrimBox"),
+                    art_box: extract_box(body, "/ArtBox"),
+                    rotate: extract_int(body, "/Rotate").unwrap_or(0),
+                });
             }
         }
 
@@ -290,12 +304,7 @@ fn collect_pages_tree(
             let tokens: Vec<&str> = kids_str.split_whitespace().collect();
             let mut i = 0;
             while i + 2 <= tokens.len() {
-                if tokens[i + 1] == "0" && (tokens[i + 2] == "R" || tokens[i + 2] == "R,") {
-                    if let Ok(kid_id) = tokens[i].parse::<u32>() {
-                        collect_pages_tree(kid_id, objects, &cur_attrs, out_pages, depth + 1);
-                    }
-                    i += 3;
-                } else if tokens[i + 2] == "R" {
+                if tokens[i + 2] == "R" || (tokens[i + 1] == "0" && tokens[i + 2] == "R,") {
                     if let Ok(kid_id) = tokens[i].parse::<u32>() {
                         collect_pages_tree(kid_id, objects, &cur_attrs, out_pages, depth + 1);
                     }
@@ -342,5 +351,8 @@ fn extract_int(text: &str, key: &str) -> Option<i32> {
     let pos = text.find(key)?;
     let slice = &text[pos + key.len()..];
     let token = slice.split_whitespace().next()?;
-    token.trim_matches(|c: char| !c.is_ascii_digit() && c != '-').parse::<i32>().ok()
+    token
+        .trim_matches(|c: char| !c.is_ascii_digit() && c != '-')
+        .parse::<i32>()
+        .ok()
 }

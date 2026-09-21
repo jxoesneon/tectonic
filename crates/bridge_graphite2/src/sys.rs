@@ -120,10 +120,7 @@ pub struct gr_face_ops {
         len: *mut libc::size_t,
     ) -> *const libc::c_void,
     pub release_table: Option<
-        unsafe extern "C" fn(
-            appFaceHandle: *const libc::c_void,
-            table_buffer: *const libc::c_void,
-        ),
+        unsafe extern "C" fn(appFaceHandle: *const libc::c_void, table_buffer: *const libc::c_void),
     >,
 }
 

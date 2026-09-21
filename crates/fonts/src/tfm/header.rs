@@ -51,7 +51,9 @@ impl TfmHeader {
             let bcpl_slice = &header_bytes[8..48];
             let len = bcpl_slice[0] as usize;
             if len > 0 && len < 40 {
-                let s = String::from_utf8_lossy(&bcpl_slice[1..=len]).trim().to_string();
+                let s = String::from_utf8_lossy(&bcpl_slice[1..=len])
+                    .trim()
+                    .to_string();
                 if !s.is_empty() {
                     coding_scheme = Some(s);
                 }
@@ -64,7 +66,9 @@ impl TfmHeader {
             let bcpl_slice = &header_bytes[48..68];
             let len = bcpl_slice[0] as usize;
             if len > 0 && len < 20 {
-                let s = String::from_utf8_lossy(&bcpl_slice[1..=len]).trim().to_string();
+                let s = String::from_utf8_lossy(&bcpl_slice[1..=len])
+                    .trim()
+                    .to_string();
                 if !s.is_empty() {
                     font_family = Some(s);
                 }

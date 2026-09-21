@@ -1052,8 +1052,7 @@ impl TeXEngineState {
     /// font at 10pt and returns `D2Fix(dsize)`. `None` when the bytes do
     /// not parse as an SFNT face.
     fn native_design_size(data: &[u8], index: u32) -> Option<i32> {
-        let font =
-            tectonic_xetex_layout::font::Font::new_data(data.to_vec(), "", index, 10.0).ok()?;
+        let font = tectonic_xetex_layout::font::Font::new_data(data.to_vec(), "", index, 10.0)?;
         Some(d2fix(font.design_size()))
     }
 
@@ -1073,8 +1072,7 @@ impl TeXEngineState {
     ) -> Option<FontRecord> {
         let point_size = fix2d(scaled_size.max(1)) as f32;
         let mut font =
-            tectonic_xetex_layout::font::Font::new_data(data.to_vec(), name, index, point_size)
-                .ok()?;
+            tectonic_xetex_layout::font::Font::new_data(data.to_vec(), name, index, point_size)?;
 
         let mut record = FontRecord {
             dsize: d2fix(font.design_size()),

@@ -76,14 +76,25 @@ pub struct PdfRect {
 impl PdfRect {
     /// Creates a new rectangle in PDF points.
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     /// Converts a TeX DVI rule to PDF rectangle coordinates.
     ///
     /// In DVI, a rule at `(x, y)` with dimensions `(w, h)` is positioned such that
     /// `y` is the bottom of the rule and it extends upwards by `h`.
-    pub fn from_dvi_rule(dvi_x_sp: i32, dvi_y_sp: i32, width_sp: i32, height_sp: i32, page_height_bp: f64) -> Self {
+    pub fn from_dvi_rule(
+        dvi_x_sp: i32,
+        dvi_y_sp: i32,
+        width_sp: i32,
+        height_sp: i32,
+        page_height_bp: f64,
+    ) -> Self {
         let (pdf_x, pdf_y) = dvi_to_pdf_coords(dvi_x_sp, dvi_y_sp, page_height_bp);
         let width_bp = sp_to_bp(width_sp);
         let height_bp = sp_to_bp(height_sp);
@@ -119,7 +130,7 @@ mod tests {
     #[test]
     fn test_dvi_to_pdf_coords() {
         let page_height = 792.0; // 11 inches
-        // (0, 0) in DVI should map to (72, 792 - 72) = (72, 720) in PDF
+                                 // (0, 0) in DVI should map to (72, 792 - 72) = (72, 720) in PDF
         let (x, y) = dvi_to_pdf_coords(0, 0, page_height);
         assert_eq!(x, 72.0);
         assert_eq!(y, 720.0);

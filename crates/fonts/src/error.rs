@@ -48,7 +48,9 @@ pub enum TfmError {
     },
 
     /// The character range [bc, ec] is invalid according to TeX rules.
-    #[error("invalid character code range: bc={bc}, ec={ec} (must satisfy bc <= ec + 1 and ec <= 255)")]
+    #[error(
+        "invalid character code range: bc={bc}, ec={ec} (must satisfy bc <= ec + 1 and ec <= 255)"
+    )]
     InvalidCharBounds {
         /// First character code in font.
         bc: u16,

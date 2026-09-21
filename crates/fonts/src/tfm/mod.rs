@@ -14,12 +14,12 @@ use std::collections::HashSet;
 
 use byteorder::{BigEndian, ByteOrder};
 
-use crate::error::TfmError;
-use crate::metrics::{FontDimensions, FontMetricsProvider, GlyphMetrics};
 use self::char_info::{CharInfo, CharTag};
 use self::header::TfmHeader;
 use self::scaler::TfmScaler;
 use self::tables::{ExtensibleRecipe, FixWord, FontParams, LigKernStep};
+use crate::error::TfmError;
+use crate::metrics::{FontDimensions, FontMetricsProvider, GlyphMetrics};
 
 /// A fully parsed in-memory TeX Font Metric (TFM) structure.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,11 +83,7 @@ impl TfmFont {
             (bc as u8, ec as u8)
         };
 
-        let num_chars = if bc <= ec {
-            (ec - bc + 1) as usize
-        } else {
-            0
-        };
+        let num_chars = if bc <= ec { (ec - bc + 1) as usize } else { 0 };
 
         let expected_words = 6 + lh + num_chars + nw + nh + nd + ni + nl + nk + ne + np;
         if lf != expected_words {
@@ -119,7 +115,9 @@ impl TfmFont {
         let char_info_end = char_info_start + num_chars * 4;
         let mut char_infos = Vec::with_capacity(num_chars);
         for chunk in data[char_info_start..char_info_end].chunks_exact(4) {
-            char_infos.push(CharInfo::from_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+            char_infos.push(CharInfo::from_bytes([
+                chunk[0], chunk[1], chunk[2], chunk[3],
+            ]));
         }
 
         // Validate char info indices
@@ -232,7 +230,9 @@ impl TfmFont {
         // Lig/Kern table
         let mut lig_kern = Vec::with_capacity(nl);
         for chunk in data[offset..offset + nl * 4].chunks_exact(4) {
-            lig_kern.push(LigKernStep::from_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+            lig_kern.push(LigKernStep::from_bytes([
+                chunk[0], chunk[1], chunk[2], chunk[3],
+            ]));
         }
         offset += nl * 4;
 
@@ -243,7 +243,9 @@ impl TfmFont {
         // Extensible table
         let mut extensibles = Vec::with_capacity(ne);
         for chunk in data[offset..offset + ne * 4].chunks_exact(4) {
-            extensibles.push(ExtensibleRecipe::from_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+            extensibles.push(ExtensibleRecipe::from_bytes([
+                chunk[0], chunk[1], chunk[2], chunk[3],
+            ]));
         }
         offset += ne * 4;
 
@@ -278,22 +280,26 @@ impl TfmFont {
 
     /// Queries the unscaled `FixWord` advance width for character `ch`.
     pub fn char_width_fix(&self, ch: u8) -> Option<FixWord> {
-        self.char_info(ch).map(|ci| self.widths[ci.width_index as usize])
+        self.char_info(ch)
+            .map(|ci| self.widths[ci.width_index as usize])
     }
 
     /// Queries the unscaled `FixWord` height for character `ch`.
     pub fn char_height_fix(&self, ch: u8) -> Option<FixWord> {
-        self.char_info(ch).map(|ci| self.heights[ci.height_index as usize])
+        self.char_info(ch)
+            .map(|ci| self.heights[ci.height_index as usize])
     }
 
     /// Queries the unscaled `FixWord` depth for character `ch`.
     pub fn char_depth_fix(&self, ch: u8) -> Option<FixWord> {
-        self.char_info(ch).map(|ci| self.depths[ci.depth_index as usize])
+        self.char_info(ch)
+            .map(|ci| self.depths[ci.depth_index as usize])
     }
 
     /// Queries the unscaled `FixWord` italic correction for character `ch`.
     pub fn char_italic_fix(&self, ch: u8) -> Option<FixWord> {
-        self.char_info(ch).map(|ci| self.italics[ci.italic_index as usize])
+        self.char_info(ch)
+            .map(|ci| self.italics[ci.italic_index as usize])
     }
 
     /// Scales this TFM font to a target size `at_size_sp` in scaled points.
@@ -441,12 +447,18 @@ mod tests {
 
     #[test]
     fn test_tfm_truncated() {
-        assert_eq!(TfmFont::from_bytes(&[0; 10]), Err(TfmError::TruncatedHeader));
+        assert_eq!(
+            TfmFont::from_bytes(&[0; 10]),
+            Err(TfmError::TruncatedHeader)
+        );
 
         // Declares 27 words but only provides 30 bytes (< 108 bytes)
         let mut short_data = build_minimal_tfm();
         short_data.truncate(30);
-        assert_eq!(TfmFont::from_bytes(&short_data), Err(TfmError::TruncatedHeader));
+        assert_eq!(
+            TfmFont::from_bytes(&short_data),
+            Err(TfmError::TruncatedHeader)
+        );
     }
 
     #[test]
@@ -481,7 +493,8 @@ mod tests {
         BigEndian::write_u16(&mut data[4..6], 256);
         BigEndian::write_u16(&mut data[6..8], 255);
         // Recalculate lf: num_chars = 0
-        let lf = 6 + 2 + 0 + 2 + 2 + 2 + 2 + 1 + 1 + 1 + 7;
+        let num_chars = 0;
+        let lf = 6 + 2 + num_chars + 2 + 2 + 2 + 2 + 1 + 1 + 1 + 7;
         BigEndian::write_u16(&mut data[0..2], lf as u16);
 
         // Remove char_info word
@@ -497,7 +510,7 @@ mod tests {
     fn test_tfm_invalid_table_lengths() {
         let mut data = build_minimal_tfm();
         BigEndian::write_u16(&mut data[8..10], 0); // nw = 0
-        // Update lf so it passes FileLengthMismatch and reaches nw == 0 check
+                                                   // Update lf so it passes FileLengthMismatch and reaches nw == 0 check
         let lf = BigEndian::read_u16(&data[0..2]) - 2; // nw decreased by 2
         BigEndian::write_u16(&mut data[0..2], lf);
         data.truncate(lf as usize * 4);

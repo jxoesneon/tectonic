@@ -9,6 +9,7 @@ pub trait hb_set_digest_ext: Clone {
     type A;
     // Instead of `init()`
     fn new() -> Self;
+    #[allow(dead_code)]
     fn full() -> Self;
     fn add(&mut self, g: GlyphId);
     fn add_array(&mut self, array: impl IntoIterator<Item = GlyphId> + Clone);

@@ -7,11 +7,11 @@
 //! 1. Normalized AST content-stream identity.
 //! 2. 300+ DPI visual raster parity.
 
+use flate2::read::{DeflateDecoder, ZlibDecoder};
+use regex::Regex;
 use std::fmt;
 use std::io::Read;
 use std::path::Path;
-use flate2::read::{DeflateDecoder, ZlibDecoder};
-use regex::Regex;
 
 /// Error types occurring during PDF decoding, normalization, or raster comparison.
 #[derive(Debug)]
@@ -126,8 +126,12 @@ impl PdfNormalizerBuilder {
     pub fn build(self) -> PdfNormalizer {
         let def = PdfNormalizer::default();
         PdfNormalizer {
-            normalize_timestamps: self.normalize_timestamps.unwrap_or(def.normalize_timestamps),
-            normalize_font_subsets: self.normalize_font_subsets.unwrap_or(def.normalize_font_subsets),
+            normalize_timestamps: self
+                .normalize_timestamps
+                .unwrap_or(def.normalize_timestamps),
+            normalize_font_subsets: self
+                .normalize_font_subsets
+                .unwrap_or(def.normalize_font_subsets),
             normalize_producer: self.normalize_producer.unwrap_or(def.normalize_producer),
             normalize_floats: self.normalize_floats.unwrap_or(def.normalize_floats),
             float_precision: self.float_precision.unwrap_or(def.float_precision),
@@ -207,7 +211,10 @@ impl PdfNormalizer {
                 r"<(?:xmp:CreateDate|xmp:ModifyDate|xmp:MetadataDate|pdfx:CreationDate)>[^<]*</(?:xmp:CreateDate|xmp:ModifyDate|xmp:MetadataDate|pdfx:CreationDate)>",
             ).unwrap();
             result = xmp_date_re
-                .replace_all(&result, "<xmp:CreateDate>1970-01-01T00:00:00Z</xmp:CreateDate>")
+                .replace_all(
+                    &result,
+                    "<xmp:CreateDate>1970-01-01T00:00:00Z</xmp:CreateDate>",
+                )
                 .to_string();
         }
 
@@ -221,12 +228,18 @@ impl PdfNormalizer {
             // XMP Producer and CreatorTool
             let xmp_prod_re = Regex::new(r"<pdf:Producer>[^<]*</pdf:Producer>").unwrap();
             result = xmp_prod_re
-                .replace_all(&result, "<pdf:Producer>CANONICAL_TECTONIC_PRODUCER</pdf:Producer>")
+                .replace_all(
+                    &result,
+                    "<pdf:Producer>CANONICAL_TECTONIC_PRODUCER</pdf:Producer>",
+                )
                 .to_string();
 
             let xmp_creator_re = Regex::new(r"<xmp:CreatorTool>[^<]*</xmp:CreatorTool>").unwrap();
             result = xmp_creator_re
-                .replace_all(&result, "<xmp:CreatorTool>CANONICAL_TECTONIC_PRODUCER</xmp:CreatorTool>")
+                .replace_all(
+                    &result,
+                    "<xmp:CreatorTool>CANONICAL_TECTONIC_PRODUCER</xmp:CreatorTool>",
+                )
                 .to_string();
         }
 
@@ -257,6 +270,7 @@ impl PdfNormalizer {
         let len = chars.len();
         let mut i = 0;
         let mut output = String::with_capacity(len);
+        let subset_re = Regex::new(r"^/([A-Z]{6}\+)(.*)$").unwrap();
 
         while i < len {
             let ch = chars[i];
@@ -334,10 +348,7 @@ impl PdfNormalizer {
                 }
                 let name_token: String = chars[start..i].iter().collect();
                 if self.normalize_font_subsets {
-                    let normalized_name = Regex::new(r"^/([A-Z]{6}\+)(.*)$")
-                        .unwrap()
-                        .replace(&name_token, "/SUBSET+$2")
-                        .to_string();
+                    let normalized_name = subset_re.replace(&name_token, "/SUBSET+$2").to_string();
                     output.push_str(&normalized_name);
                 } else {
                     output.push_str(&name_token);
@@ -438,17 +449,22 @@ impl PdfNormalizer {
     }
 
     /// Scans a PDF byte buffer and extracts decompressed page content streams.
-    pub fn extract_page_content_streams(&self, pdf_bytes: &[u8]) -> Result<Vec<Vec<u8>>, PdfDiffError> {
+    pub fn extract_page_content_streams(
+        &self,
+        pdf_bytes: &[u8],
+    ) -> Result<Vec<Vec<u8>>, PdfDiffError> {
         let mut page_streams = Vec::new();
         let pdf_str = String::from_utf8_lossy(pdf_bytes);
 
         // Pattern matching `stream ... endstream` blocks
-        let stream_re = Regex::new(r"(?s)<<(?P<dict>[^>]*)>>\s*stream\r?\n(?P<data>.*?)\r?\nendstream").unwrap();
+        let stream_re =
+            Regex::new(r"(?s)<<(?P<dict>[^>]*)>>\s*stream\r?\n(?P<data>.*?)\r?\nendstream")
+                .unwrap();
 
         for cap in stream_re.captures_iter(&pdf_str) {
             let dict = cap.name("dict").map(|m| m.as_str()).unwrap_or("");
             let is_flate = dict.contains("/FlateDecode");
-            
+
             // Extract raw stream slice from original bytes
             let matched_data = cap.name("data").unwrap();
             let raw_bytes = &pdf_bytes[matched_data.start()..matched_data.end()];
@@ -553,11 +569,7 @@ impl VisualComparator {
     /// Calculates the pixel divergence score between two raster image buffers.
     ///
     /// Returns: (score_percentage: f64, divergent_pixel_count: usize).
-    pub fn compare_raster_buffers(
-        &self,
-        img_a: &RasterImage,
-        img_b: &RasterImage,
-    ) -> (f64, usize) {
+    pub fn compare_raster_buffers(&self, img_a: &RasterImage, img_b: &RasterImage) -> (f64, usize) {
         if img_a.width != img_b.width || img_a.height != img_b.height {
             let total = (img_a.width * img_a.height).max(img_b.width * img_b.height) as usize;
             return (100.0, total);
@@ -578,10 +590,10 @@ impl VisualComparator {
                 break;
             }
 
-            let dr = (p_a[offset] as i16 - p_b[offset] as i16).abs() as u8;
-            let dg = (p_a[offset + 1] as i16 - p_b[offset + 1] as i16).abs() as u8;
-            let db = (p_a[offset + 2] as i16 - p_b[offset + 2] as i16).abs() as u8;
-            let da = (p_a[offset + 3] as i16 - p_b[offset + 3] as i16).abs() as u8;
+            let dr = p_a[offset].abs_diff(p_b[offset]);
+            let dg = p_a[offset + 1].abs_diff(p_b[offset + 1]);
+            let db = p_a[offset + 2].abs_diff(p_b[offset + 2]);
+            let da = p_a[offset + 3].abs_diff(p_b[offset + 3]);
 
             if dr > self.channel_tolerance
                 || dg > self.channel_tolerance
@@ -759,7 +771,10 @@ mod tests {
         assert_eq!(format!("{err2}"), "Decompression failure: zlib boom");
 
         let err3 = PdfDiffError::RenderError("pdftoppm missing".into());
-        assert_eq!(format!("{err3}"), "Visual raster render failure: pdftoppm missing");
+        assert_eq!(
+            format!("{err3}"),
+            "Visual raster render failure: pdftoppm missing"
+        );
 
         let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
         let err4 = PdfDiffError::from(io_err);
@@ -776,13 +791,16 @@ mod tests {
             .float_precision(3)
             .build();
 
-        let input = "% comment\n/CreationDate (D:20260918072422) /ABCDEF+CMR10 10.12345 20.98765 cm";
+        let input =
+            "% comment\n/CreationDate (D:20260918072422) /ABCDEF+CMR10 10.12345 20.98765 cm";
         let normalized = normalizer.normalize_metadata_and_tags(input);
         // Timestamps and subsets should NOT be normalized
         assert!(normalized.contains("20260918072422"));
         assert!(normalized.contains("ABCDEF+CMR10"));
 
-        let stream_norm = normalizer.normalize_content_stream(input.as_bytes()).unwrap();
+        let stream_norm = normalizer
+            .normalize_content_stream(input.as_bytes())
+            .unwrap();
         // Comments should be stripped
         assert!(!stream_norm.contains("comment"));
         // Float rounded to 3 places
@@ -797,7 +815,9 @@ mod tests {
             .build();
 
         let input = b"% persistent comment\n<48656C6C6F> Tj\n";
-        let out = normalizer_preserve_comments.normalize_content_stream(input).unwrap();
+        let out = normalizer_preserve_comments
+            .normalize_content_stream(input)
+            .unwrap();
         assert!(out.contains("% persistent comment"));
         assert!(out.contains("<48656C6C6F>"));
     }
@@ -903,8 +923,12 @@ mod tests {
         assert!(normalized.contains("<xmp:CreateDate>1970-01-01T00:00:00Z</xmp:CreateDate>"));
         assert!(normalized.contains("/Creator (CANONICAL_TECTONIC_PRODUCER)"));
         assert!(normalized.contains("<pdf:Producer>CANONICAL_TECTONIC_PRODUCER</pdf:Producer>"));
-        assert!(normalized.contains("<xmp:CreatorTool>CANONICAL_TECTONIC_PRODUCER</xmp:CreatorTool>"));
-        assert!(normalized.contains("/ID [ <00000000000000000000000000000000> <00000000000000000000000000000000> ]"));
+        assert!(
+            normalized.contains("<xmp:CreatorTool>CANONICAL_TECTONIC_PRODUCER</xmp:CreatorTool>")
+        );
+        assert!(normalized.contains(
+            "/ID [ <00000000000000000000000000000000> <00000000000000000000000000000000> ]"
+        ));
         assert!(normalized.contains("/SUBSET+LinLibertine"));
     }
 
@@ -995,7 +1019,9 @@ mod tests {
         // Truncate diagnostic long string
         let long_stream_a = vec![b'A'; 300];
         let long_stream_b = vec![b'B'; 300];
-        let (matches_diff, _, diff_details) = norm.compare_content_streams(&long_stream_a, &long_stream_b).unwrap();
+        let (matches_diff, _, diff_details) = norm
+            .compare_content_streams(&long_stream_a, &long_stream_b)
+            .unwrap();
         assert!(!matches_diff);
         assert!(diff_details[0].contains("[truncated]"));
     }
@@ -1027,7 +1053,12 @@ mod tests {
     fn test_visual_comparator_pdftoppm_render() {
         let comp = VisualComparator::new(150);
         let sample_pdf = Path::new("tests/tex-outputs/the_letter_a.pdf");
-        if sample_pdf.exists() && std::process::Command::new("pdftoppm").arg("-v").output().is_ok() {
+        if sample_pdf.exists()
+            && std::process::Command::new("pdftoppm")
+                .arg("-v")
+                .output()
+                .is_ok()
+        {
             let img_res = comp.render_page_with_pdftoppm(sample_pdf, 1);
             assert!(img_res.is_ok());
             let img = img_res.unwrap();

@@ -3,8 +3,8 @@
 
 //! Font registration, mapping, and PDF dictionary generation.
 
-use std::collections::HashMap;
 use crate::units::sp_to_bp;
+use std::collections::HashMap;
 
 /// A font registered during XDV processing.
 #[derive(Clone, Debug)]
@@ -186,7 +186,10 @@ mod tests {
 
     #[test]
     fn test_sanitize_ps_name() {
-        assert_eq!(sanitize_ps_name("/usr/share/fonts/NimbusRom.otf"), "NimbusRom");
+        assert_eq!(
+            sanitize_ps_name("/usr/share/fonts/NimbusRom.otf"),
+            "NimbusRom"
+        );
         assert_eq!(sanitize_ps_name("cmr10"), "cmr10");
         assert_eq!(sanitize_ps_name("Font With Spaces!"), "FontWithSpaces");
         assert_eq!(sanitize_ps_name(""), "DefaultFont");

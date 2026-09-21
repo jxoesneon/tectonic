@@ -9,10 +9,7 @@ use tectonic_xdv::{FileType, XdvError, XdvEvents};
 use crate::fonts::FontRegistry;
 use crate::pdf::PdfDocumentBuilder;
 use crate::specials::{parse_special, Color, ParsedSpecial};
-use crate::units::{
-    dvi_to_pdf_coords, DEFAULT_PAGE_HEIGHT_BP, DEFAULT_PAGE_WIDTH_BP,
-    PdfRect,
-};
+use crate::units::{dvi_to_pdf_coords, PdfRect, DEFAULT_PAGE_HEIGHT_BP, DEFAULT_PAGE_WIDTH_BP};
 
 /// Pipeline errors.
 #[derive(thiserror::Error, Debug)]
@@ -125,8 +122,9 @@ impl XdvEvents for XdvToPdfPipeline {
     ) -> Result<(), Self::Error> {
         self.flush_active_page();
 
-        let (_page_id, content_id) =
-            self.builder.begin_page(self.page_width_bp, self.page_height_bp);
+        let (_page_id, content_id) = self
+            .builder
+            .begin_page(self.page_width_bp, self.page_height_bp);
         self.current_content = Some(Vec::new());
         self.current_content_id = Some(content_id);
         self.page_count += 1;
@@ -160,9 +158,11 @@ impl XdvEvents for XdvToPdfPipeline {
         }
 
         if let Some(content) = self.current_content.as_mut() {
-            let rect =
-                PdfRect::from_dvi_rule(x, y, width, height, self.page_height_bp);
-            let s = format!("{:.4} {:.4} {:.4} {:.4} re\nf\n", rect.x, rect.y, rect.width, rect.height);
+            let rect = PdfRect::from_dvi_rule(x, y, width, height, self.page_height_bp);
+            let s = format!(
+                "{:.4} {:.4} {:.4} {:.4} re\nf\n",
+                rect.x, rect.y, rect.width, rect.height
+            );
             content.extend_from_slice(s.as_bytes());
         }
 
@@ -271,7 +271,10 @@ impl XdvEvents for XdvToPdfPipeline {
 
     fn handle_special(&mut self, _x: i32, _y: i32, contents: &[u8]) -> Result<(), Self::Error> {
         match parse_special(contents) {
-            ParsedSpecial::PaperSize { width_bp, height_bp } => {
+            ParsedSpecial::PaperSize {
+                width_bp,
+                height_bp,
+            } => {
                 self.page_width_bp = width_bp;
                 self.page_height_bp = height_bp;
             }
@@ -325,19 +328,21 @@ mod tests {
     #[test]
     fn test_pipeline_basic_lifecycle() {
         let mut pipeline = XdvToPdfPipeline::new();
-        pipeline.handle_header(FileType::Xdv, b"test comment").unwrap();
+        pipeline
+            .handle_header(FileType::Xdv, b"test comment")
+            .unwrap();
         pipeline.handle_begin_page(&[1], -1).unwrap();
 
         // Add a rule
         pipeline.handle_rule(0, 0, 65536, 131072).unwrap();
 
         // Add a native font and text
-        pipeline.handle_define_native_font(
-            "Times-Roman", 1, 655360, 0, None, None, None, None,
-        ).unwrap();
-        pipeline.handle_text_and_glyphs(
-            1, "Hello FerroTeX", 655360, &[0], &[0], &[0],
-        ).unwrap();
+        pipeline
+            .handle_define_native_font("Times-Roman", 1, 655360, 0, None, None, None, None)
+            .unwrap();
+        pipeline
+            .handle_text_and_glyphs(1, "Hello FerroTeX", 655360, &[0], &[0], &[0])
+            .unwrap();
 
         let pdf_bytes = pipeline.finish().unwrap();
         assert!(pdf_bytes.starts_with(b"%PDF-"));
@@ -349,10 +354,14 @@ mod tests {
     #[test]
     fn test_pipeline_color_and_papersize_specials() {
         let mut pipeline = XdvToPdfPipeline::new();
-        pipeline.handle_special(0, 0, b"papersize=210mm,297mm").unwrap();
+        pipeline
+            .handle_special(0, 0, b"papersize=210mm,297mm")
+            .unwrap();
         pipeline.handle_begin_page(&[1], -1).unwrap();
 
-        pipeline.handle_special(0, 0, b"color push rgb 1 0 0").unwrap();
+        pipeline
+            .handle_special(0, 0, b"color push rgb 1 0 0")
+            .unwrap();
         pipeline.handle_rule(0, 0, 65536, 65536).unwrap();
         pipeline.handle_special(0, 0, b"color pop").unwrap();
 
@@ -364,8 +373,14 @@ mod tests {
 
     #[test]
     fn test_escape_pdf_string() {
-        assert_eq!(escape_pdf_string("Hello (World) \\ Test"), "Hello \\(World\\) \\\\ Test");
-        assert_eq!(escape_pdf_string("Line1\r\nLine2\tTab"), "Line1\\r\\nLine2\\tTab");
+        assert_eq!(
+            escape_pdf_string("Hello (World) \\ Test"),
+            "Hello \\(World\\) \\\\ Test"
+        );
+        assert_eq!(
+            escape_pdf_string("Line1\r\nLine2\tTab"),
+            "Line1\\r\\nLine2\\tTab"
+        );
     }
 
     #[test]
@@ -378,17 +393,21 @@ mod tests {
         pipeline.handle_rule(0, 0, 100, -50).unwrap();
 
         // 2. Empty coordinates in text and glyphs (should be no-op)
-        pipeline.handle_text_and_glyphs(1, "Text", 100, &[0], &[], &[]).unwrap();
+        pipeline
+            .handle_text_and_glyphs(1, "Text", 100, &[0], &[], &[])
+            .unwrap();
         pipeline.handle_glyph_run(1, &[0], &[], &[]).unwrap();
 
         // 3. Unknown font in text and glyphs (should be no-op)
-        pipeline.handle_text_and_glyphs(999, "Unknown", 100, &[0], &[0], &[0]).unwrap();
+        pipeline
+            .handle_text_and_glyphs(999, "Unknown", 100, &[0], &[0], &[0])
+            .unwrap();
         pipeline.handle_glyph_run(999, &[0], &[0], &[0]).unwrap();
 
         // 4. Register font and run glyph run
-        pipeline.handle_define_native_font(
-            "Courier", 2, 655360, 0, None, None, None, None,
-        ).unwrap();
+        pipeline
+            .handle_define_native_font("Courier", 2, 655360, 0, None, None, None, None)
+            .unwrap();
         pipeline.handle_glyph_run(2, &[0], &[0], &[0]).unwrap();
 
         // 5. Char run with automatic CMR10 definition
@@ -396,7 +415,9 @@ mod tests {
 
         // 6. Specials: pdf:bop, pdf:eop, pdf:content, unknown
         pipeline.handle_special(0, 0, b"pdf:bop q").unwrap();
-        pipeline.handle_special(0, 0, b"pdf:content 1 0 0 1 0 0 cm").unwrap();
+        pipeline
+            .handle_special(0, 0, b"pdf:content 1 0 0 1 0 0 cm")
+            .unwrap();
         pipeline.handle_special(0, 0, b"pdf:eop Q").unwrap();
         pipeline.handle_special(0, 0, b"unhandled_special").unwrap();
 

@@ -38,7 +38,8 @@ fn test_e2e_tier_a_xdv_parity_and_coordinate_divergence() {
     assert!(cand1_diff.is_none());
 
     // Verify bitwise comparison via diff engine directly
-    let stats = XdvDiffEngine::compare_bytes(&base_xdv, &base_xdv).expect("should match identically");
+    let stats =
+        XdvDiffEngine::compare_bytes(&base_xdv, &base_xdv).expect("should match identically");
     assert!(stats.bitwise_identical);
     assert_eq!(stats.pages_checked, 1);
     assert!(stats.total_opcodes > 0);
@@ -61,7 +62,9 @@ fn test_e2e_tier_a_xdv_parity_and_coordinate_divergence() {
     assert!(matches!(cand2_status, ParityStatus::Diverged(_)));
     let diff_msg = cand2_diff.expect("divergence details must be reported");
     assert!(
-        diff_msg.contains("Divergence") || diff_msg.contains("Movement") || diff_msg.contains("Bitwise"),
+        diff_msg.contains("Divergence")
+            || diff_msg.contains("Movement")
+            || diff_msg.contains("Bitwise"),
         "Divergence report should detail coordinate or bitwise deviation: {diff_msg}"
     );
 
@@ -124,9 +127,16 @@ trailer\n\
 %%EOF";
 
     // Compare PDFs directly -> Gate 2 MUST PASS under normalization
-    let res = compare_pdfs(pdf_ref, pdf_cand_normalized, 300).expect("PDF comparison should succeed");
-    assert!(res.passes_gate2(0.001), "Gate 2 must pass for normalized equivalent PDF outputs");
-    assert!(res.stream_matches, "Normalized content streams must match identically");
+    let res =
+        compare_pdfs(pdf_ref, pdf_cand_normalized, 300).expect("PDF comparison should succeed");
+    assert!(
+        res.passes_gate2(0.001),
+        "Gate 2 must pass for normalized equivalent PDF outputs"
+    );
+    assert!(
+        res.stream_matches,
+        "Normalized content streams must match identically"
+    );
     assert_eq!(res.divergent_pages.len(), 0);
 
     // Verify via crater public API
@@ -168,7 +178,8 @@ trailer\n\
 #[test]
 fn test_e2e_differential_report_lifecycle_and_json_schema() {
     let xdv_data = XdvBuilder::new().begin_page(1).end_page().build();
-    let pdf_data = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< >>\n%%EOF".to_vec();
+    let pdf_data =
+        b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< >>\n%%EOF".to_vec();
 
     let ref_run = RunResult {
         status: RunStatus::Success,
@@ -204,7 +215,8 @@ fn test_e2e_differential_report_lifecycle_and_json_schema() {
     assert!(report.summary().contains("PASSED"));
 
     // Verify JSON serialization and round-trip parsing
-    let serialized_json = serde_json::to_string_pretty(&report).expect("report must serialize to valid JSON");
+    let serialized_json =
+        serde_json::to_string_pretty(&report).expect("report must serialize to valid JSON");
     assert!(serialized_json.contains("\"case_name\": \"e2e_parity_doc\""));
     assert!(serialized_json.contains("\"tier_a_status\": \"ExactMatch\""));
 
@@ -219,9 +231,14 @@ fn test_e2e_differential_report_lifecycle_and_json_schema() {
 fn test_e2e_corpus_management_and_filtering() {
     let mut corpus = Corpus::new();
     corpus.add_case(
-        TestCase::new("plain_math", CorpusCategory::PlainTex, "$$E=mc^2$$\\bye", "plain")
-            .with_tag("math")
-            .with_tag("smoke"),
+        TestCase::new(
+            "plain_math",
+            CorpusCategory::PlainTex,
+            "$$E=mc^2$$\\bye",
+            "plain",
+        )
+        .with_tag("math")
+        .with_tag("smoke"),
     );
     corpus.add_case(
         TestCase::new(
