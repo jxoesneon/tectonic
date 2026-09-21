@@ -8331,6 +8331,15 @@ mod tests {
     }
 
     #[test]
+    fn test_state_is_send() {
+        // The whole engine state — including injected input resolvers and
+        // font sources — must be `Send` so independent engine instances can
+        // run on different threads without shared mutable state.
+        fn assert_send<T: Send>() {}
+        assert_send::<TeXEngineState>();
+    }
+
+    #[test]
     fn test_random_generator() {
         let mut rand = TeXRandom::new(12345);
         let r1 = rand.unif_rand(100);
