@@ -1339,6 +1339,40 @@ impl TeXEngineState {
     /// `build_date` seeds the `\time`/`\day`/`\month`/`\year` parameters and
     /// the random generator. C uses `localtime`; this port derives the
     /// broken-down date in UTC so engine behavior is platform-independent.
+    /// Driver-facing entry: resolves `<dump_name>.fmt` through the
+    /// byte-source registry / injected `input_resolver` and runs the job
+    /// (`tt_engine_xetex_main`'s Rust equivalent). XDV accumulates in
+    /// `dvi_bytes`, the transcript in `transcript`/`log_out`.
+    pub fn run(
+        &mut self,
+        dump_name: &str,
+        input_name: &str,
+        build_date: std::time::SystemTime,
+    ) -> Result<u8, TeXMouthError> {
+        let fmt_bytes = if self.in_initex_mode {
+            None
+        } else {
+            let fmt_name = format!("{dump_name}.fmt");
+            Some(
+                self.input_byte_source_bytes(&fmt_name)
+                    .ok_or(TeXMouthError::BadFormatFile)?,
+            )
+        };
+        self.run_engine(dump_name, fmt_bytes.as_deref(), input_name, build_date)
+    }
+
+    /// C `tt_run_engine` — drives a complete engine invocation on this
+    /// state: INITEX primitive setup or format load, input start, the main
+    /// control loop, and `final_cleanup`. Returns `history`.
+    ///
+    /// `dump_name` is the format-file name (`TEX_format_default`); in
+    /// non-INITEX mode `fmt_bytes` supplies the format image (the caller
+    /// resolves the file — C opens it through the I/O stack). `input_name`
+    /// is the primary input file name opened through `start_input_source`.
+    ///
+    /// `build_date` seeds the `\time`/`\day`/`\month`/`\year` parameters and
+    /// the random generator. C uses `localtime`; this port derives the
+    /// broken-down date in UTC so engine behavior is platform-independent.
     pub fn run_engine(
         &mut self,
         dump_name: &str,

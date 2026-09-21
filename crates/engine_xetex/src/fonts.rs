@@ -510,6 +510,191 @@ impl TeXEngineState {
         mapping.converter.convert_text(input)
     }
 
+    /// `read_font_info`'s TFM half: builds a `FontRecord` from parsed TFM
+    /// metrics at requested size `s` (C's `at`/`scaled` convention), and
+    /// returns the record plus the scaled per-character metrics the
+    /// caller installs into `font_char_metrics` under the new font index.
+    ///
+    /// The record's `lig_kern` table carries a sentinel at index 0 so
+    /// `NON_ADDRESS` stays unambiguous exactly as C's nonzero
+    /// `lig_kern_base` does; `LIG_TAG` remainders and `bchar_label` are
+    /// stored one-past their raw TFM index.
+    pub fn font_record_from_tfm(
+        &mut self,
+        tfm: &tectonic_fonts::TfmFont,
+        s: i32,
+    ) -> Result<(FontRecord, Vec<(u32, FontCharMetric)>), TeXMouthError> {
+        let size = if s > 0 {
+            s
+        } else {
+            self.xn_over_d(tfm.header.design_size_sp, -s, 1000)
+        };
+        let scaler = tectonic_fonts::TfmScaler::new(size);
+        let mut record = FontRecord {
+            dsize: tfm.header.design_size_sp,
+            checksum: tfm.header.checksum,
+            bc: u32::from(tfm.bc),
+            ec: u32::from(tfm.ec),
+            hyphen_char: self.int_par(INT_PAR_DEFAULT_HYPHEN_CHAR)?,
+            skew_char: self.int_par(INT_PAR_DEFAULT_SKEW_CHAR)?,
+            ..FontRecord::default()
+        };
+
+        // `font_params`: the slant ratio stays an unscaled FixWord; the
+        // dimensions scale by `z` through Knuth's byte decomposition.
+        // C pads the parameter count to at least 7 (`font_params[f]`).
+        record.params = vec![0, tfm.params.slant.0];
+        for w in [
+            tfm.params.space,
+            tfm.params.space_stretch,
+            tfm.params.space_shrink,
+            tfm.params.x_height,
+            tfm.params.quad,
+            tfm.params.extra_space,
+        ] {
+            record.params.push(w.scale(&scaler));
+        }
+        for w in &tfm.params.additional {
+            record.params.push(w.scale(&scaler));
+        }
+        while record.params.len() < 8 {
+            record.params.push(0);
+        }
+
+        // Lig/kern program behind the `lig_kern_base` sentinel: index 0
+        // is the `NON_ADDRESS` slot, so raw TFM indices shift by one.
+        record.lig_kern.push(LigKernInsn::default());
+        for step in &tfm.lig_kern {
+            record.lig_kern.push(LigKernInsn {
+                skip: step.skip_byte,
+                next_char: i32::from(step.next_char),
+                op: step.op_byte,
+                remainder: i32::from(step.remainder),
+            });
+        }
+
+        record.kerns = tfm.kerns.iter().map(|k| k.scale(&scaler)).collect();
+
+        for (i, ci) in tfm.char_info.iter().enumerate() {
+            let c = u32::from(tfm.bc) + i as u32;
+            match ci.tag {
+                tectonic_fonts::CharTag::Vanilla => {}
+                tectonic_fonts::CharTag::LigKern => {
+                    record.char_tags.insert(c, LIG_TAG);
+                    record
+                        .char_remainders
+                        .insert(c, i32::from(ci.remainder) + 1);
+                }
+                tectonic_fonts::CharTag::List => {
+                    record.char_tags.insert(c, LIST_TAG);
+                    record.char_remainders.insert(c, i32::from(ci.remainder));
+                }
+                tectonic_fonts::CharTag::Extensible => {
+                    record.char_tags.insert(c, EXT_TAG);
+                    record.char_remainders.insert(c, i32::from(ci.remainder));
+                }
+            }
+        }
+
+        for (i, recipe) in tfm.extensibles.iter().enumerate() {
+            record.exten_recipes.insert(
+                i as i32,
+                [
+                    i32::from(recipe.rep),
+                    i32::from(recipe.top),
+                    i32::from(recipe.bot),
+                    i32::from(recipe.mid),
+                ],
+            );
+        }
+
+        // Boundary program: every `skip == 255` word is a label and the
+        // last one wins (`bch_label`); a label on word 0 names `bchar`.
+        let mut bch_label = 32767;
+        let mut bchar = 256;
+        for (k, step) in tfm.lig_kern.iter().enumerate() {
+            if step.skip_byte == 255 {
+                bch_label = 256 * i32::from(step.op_byte) + i32::from(step.remainder);
+                if k == 0 {
+                    bchar = i32::from(step.next_char);
+                }
+            }
+        }
+        if (bch_label as usize) < tfm.lig_kern.len() {
+            record.bchar_label = bch_label + 1;
+        }
+        record.bchar = bchar;
+        record.false_bchar = bchar;
+        if bchar >= i32::from(tfm.bc)
+            && bchar <= i32::from(tfm.ec)
+            && tfm.char_info(bchar as u8).is_some_and(|ci| ci.exists())
+        {
+            record.false_bchar = TOO_BIG_CHAR;
+        }
+
+        let mut metrics = Vec::new();
+        if tfm.bc <= tfm.ec {
+            for code in tfm.bc..=tfm.ec {
+                if let Some(ci) = tfm.char_info(code) {
+                    if ci.exists() {
+                        metrics.push((
+                            u32::from(code),
+                            FontCharMetric {
+                                width: tfm.widths[ci.width_index as usize].scale(&scaler),
+                                height: tfm.heights[ci.height_index as usize].scale(&scaler),
+                                depth: tfm.depths[ci.depth_index as usize].scale(&scaler),
+                                italic: tfm.italics[ci.italic_index as usize].scale(&scaler),
+                            },
+                        ));
+                    }
+                }
+            }
+        }
+
+        Ok((record, metrics))
+    }
+
+    /// `open_tfm_file` + the TFM half of `read_font_info`: resolves
+    /// `<name_of_file>.tfm` through the byte-source registry and injected
+    /// input resolver, parses it, and installs the resulting font.
+    /// Returns `Some(f)` on success, `Some(0)` when bytes were found but
+    /// malformed (C's `bad_tfm` path), and `None` when no TFM bytes
+    /// exist so the caller can fall back to `load_native_font`.
+    pub fn load_tfm_font(&mut self, s: i32) -> Result<Option<i32>, TeXMouthError> {
+        let base = String::from_utf8_lossy(&self.name_of_file).into_owned();
+        let tfm_name = format!("{base}.tfm");
+        let Some(bytes) = self.input_byte_source_bytes(&tfm_name) else {
+            return Ok(None);
+        };
+        let Ok(tfm) = tectonic_fonts::TfmFont::from_bytes(&bytes) else {
+            self.transcript.push(format!(
+                "! Font ={base} not loadable: Bad Metric (TFM) file"
+            ));
+            self.error_count += 1;
+            return Ok(Some(0));
+        };
+        let (mut record, metrics) = self.font_record_from_tfm(&tfm, s)?;
+        record.name = self.cur_name.clone();
+        record.area = self.cur_area.clone();
+        record.ext = self.cur_ext.clone();
+        record.size = if s > 0 {
+            s
+        } else {
+            self.xn_over_d(record.dsize, -s, 1000)
+        };
+        let font = self.font_table.len() as i32;
+        self.font_table.push(record);
+        self.font_id_cs.push(-1);
+        for (ch, metric) in metrics {
+            self.set_font_char_metric(font, ch, metric);
+        }
+        // `font_mapping[f] = load_tfm_font_mapping()`.
+        if let Some(name) = self.load_tfm_font_mapping() {
+            self.font_table[font as usize].mapping_name = Some(name);
+        }
+        Ok(Some(font))
+    }
+
     /// `findGraphiteFeature` seam: resolves a named Graphite feature or
     /// `id=setting` pair against the registered `font_engine_values`
     /// (`findGraphiteFeature` results are registered by the embedder).
@@ -1259,5 +1444,96 @@ mod tests {
         // Missing source warns and yields no converter.
         st.saved_mapping_name = Some("missing".to_string());
         assert!(st.load_tfm_font_mapping().is_none());
+    }
+
+    fn cmr10_tfm() -> Vec<u8> {
+        std::fs::read(
+            std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tests/assets/cmr10.tfm"),
+        )
+        .unwrap()
+    }
+
+    fn tfm_state() -> TeXEngineState {
+        let mut st = state();
+        st.name_of_file = b"cmr10".to_vec();
+        st.cur_name = b"cmr10".iter().map(|&c| i32::from(c)).collect();
+        st
+    }
+
+    #[test]
+    fn load_tfm_font_installs_parsed_record() {
+        let mut st = tfm_state();
+        st.register_input_byte_source("cmr10.tfm", cmr10_tfm());
+        let font = st.load_tfm_font(-1000).unwrap().unwrap();
+        assert_eq!(font, 1);
+        let record = st.font_record(font).unwrap();
+        assert_eq!(record.dsize, 10 * 65_536);
+        assert_eq!(record.size, 10 * 65_536);
+        assert_eq!(record.checksum, 0x4BF1_6079);
+        assert_eq!(record.bc, 0);
+        assert_eq!(record.ec, 127);
+        // Sentinel convention: index 0 is the NON_ADDRESS slot, so the
+        // nl = 88 program words live at 1..=88.
+        assert_eq!(record.lig_kern.len(), 89);
+        assert_eq!(record.lig_kern[0], LigKernInsn::default());
+        assert_eq!(record.kerns.len(), 10);
+        assert_eq!(record.params.len(), 8);
+        assert_eq!(record.params[1], 0); // slant is stored unscaled
+        assert!(record.params[2] > 0); // space is scaled by the size
+                                       // 'f' has a lig/kern program at raw index 2, shifted to 3.
+        assert_eq!(
+            record.char_tags.get(&u32::from(b'f')),
+            Some(&crate::state::LIG_TAG)
+        );
+        assert_eq!(record.char_remainders.get(&u32::from(b'f')), Some(&3));
+        // cmr10 has no boundary program.
+        assert_eq!(record.bchar_label, crate::state::NON_ADDRESS);
+        assert!(st.char_exists(font, u32::from(b'f')));
+        let m = st.font_char_metric(font, u32::from(b'f'));
+        assert!(m.width > 0 && m.height > 0);
+    }
+
+    #[test]
+    fn load_tfm_font_scales_metrics_at_size() {
+        let mut st = tfm_state();
+        st.register_input_byte_source("cmr10.tfm", cmr10_tfm());
+        let font = st.load_tfm_font(-1000).unwrap().unwrap();
+        let w10 = st.font_char_metric(font, u32::from(b'f')).width;
+        st.name_of_file = b"cmr10".to_vec();
+        let big = st.load_tfm_font(20 * 65_536).unwrap().unwrap();
+        let w20 = st.font_char_metric(big, u32::from(b'f')).width;
+        assert_eq!(w20, 2 * w10);
+    }
+
+    #[test]
+    fn load_tfm_font_reports_bad_tfm() {
+        let mut st = tfm_state();
+        st.register_input_byte_source("cmr10.tfm", b"not a tfm".to_vec());
+        assert_eq!(st.load_tfm_font(-1000).unwrap(), Some(0));
+        assert_eq!(st.error_count, 1);
+        assert!(st
+            .transcript
+            .iter()
+            .any(|line| line.contains("Bad Metric (TFM) file")));
+    }
+
+    #[test]
+    fn load_tfm_font_miss_returns_none() {
+        let mut st = tfm_state();
+        assert_eq!(st.load_tfm_font(-1000).unwrap(), None);
+    }
+
+    #[test]
+    fn load_tfm_font_uses_injected_resolver_and_caches() {
+        let mut st = tfm_state();
+        let bytes = cmr10_tfm();
+        st.set_input_resolver(std::sync::Arc::new(move |name| {
+            (name == "cmr10.tfm").then(|| bytes.clone())
+        }));
+        let font = st.load_tfm_font(-1000).unwrap().unwrap();
+        assert_eq!(font, 1);
+        // The resolver hit was cached under the requested `.tfm` name.
+        assert!(st.input_byte_sources.contains_key("cmr10.tfm"));
     }
 }

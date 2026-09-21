@@ -282,6 +282,33 @@ pub struct FontCharMetric {
     pub italic: i32,
 }
 
+/// The `Arc`-shared, thread-safe name-to-bytes callback type used by
+/// [`InputResolver`].
+pub type InputResolverFn = std::sync::Arc<dyn Fn(&str) -> Option<Vec<u8>> + Send + Sync>;
+
+/// Per-engine lazy input resolver: a `ttstub_input_open`-equivalent
+/// callback consulted when the virtualized `input_byte_sources` map
+/// misses. `Arc`-shared so cloning the engine preserves the resolver
+/// without cloning resolved bytes.
+#[derive(Clone)]
+pub struct InputResolver(
+    /// The name-to-bytes resolution callback.
+    pub InputResolverFn,
+);
+
+impl InputResolver {
+    /// Resolves `name` to its raw bytes through the injected callback.
+    pub fn resolve(&self, name: &str) -> Option<Vec<u8>> {
+        (self.0)(name)
+    }
+}
+
+impl std::fmt::Debug for InputResolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("InputResolver(..)")
+    }
+}
+
 /// Deterministic pseudo-random number generator for `\random` and `\uniformdeviate`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TeXRandom {
@@ -3164,6 +3191,12 @@ pub struct TeXEngineState {
     /// Registered raw file bytes available to `\input`/`\openin`
     /// (`ttstub_input_open`'s virtualized backing store).
     pub input_byte_sources: HashMap<String, Vec<u8>>,
+    /// Lazily resolves input names to bytes when `input_byte_sources`
+    /// misses (`ttstub_input_open`'s live I/O-stack path). The resolver is
+    /// injected per engine so no process-global state is consulted; on a
+    /// hit its bytes are cached in `input_byte_sources` under the name
+    /// that was requested.
+    pub input_resolver: Option<InputResolver>,
     /// Registered modification times (seconds since the Unix epoch) backing
     /// `ttstub_input_get_mtime` for `\pdffilemoddate`; absent entries read
     /// as the epoch.
@@ -3698,6 +3731,7 @@ impl TeXEngineState {
             read_open: vec![ReadOpen::Closed; 17],
             read_sources: vec![None; 17],
             input_byte_sources: HashMap::new(),
+            input_resolver: None,
             input_file_mtimes: HashMap::new(),
             start_time_str: String::new(),
             input_file: Vec::new(),
@@ -5999,7 +6033,9 @@ impl TeXEngineState {
     }
 
     /// Lig/kern program instruction at `lig_kern_base + i`
-    /// (`font_info[k]`).
+    /// (`font_info[k]`). Out-of-bounds reads return a stop instruction
+    /// (`skip == 255`) so malformed programs terminate instead of
+    /// stepping through default instructions forever.
     pub fn lig_kern_insn(&self, f: i32, i: i32) -> LigKernInsn {
         self.font_record(f)
             .and_then(|record| {
@@ -6008,7 +6044,12 @@ impl TeXEngineState {
                     .and_then(|i| record.lig_kern.get(i))
                     .copied()
             })
-            .unwrap_or_default()
+            .unwrap_or(LigKernInsn {
+                skip: 255,
+                next_char: 0,
+                op: 0,
+                remainder: 0,
+            })
     }
 
     /// Resolved kern value `font_info[kern_base + 256 * op + rem]` where
@@ -6439,16 +6480,16 @@ impl TeXEngineState {
     /// Returns the page count for the currently scanned file name
     /// (`count_pdf_file_pages`), 0 when the file is unknown — the same
     /// recovery C uses for an unopenable file. Registered overrides win;
-    /// otherwise the file's registered bytes are probed like C's
-    /// `tt_probe_pdf_page_count_data` over the VFS handle.
-    pub fn count_pdf_file_pages(&self) -> i32 {
+    /// otherwise the file's bytes are probed like C's
+    /// `tt_probe_pdf_page_count_data` over the VFS handle, with the
+    /// injected `input_resolver` consulted on a miss.
+    pub fn count_pdf_file_pages(&mut self) -> i32 {
         let name = self.file_name_string();
         if let Some(&pages) = self.pdf_page_counts.get(&name) {
             return pages.max(0);
         }
-        self.input_byte_sources
-            .get(&name)
-            .and_then(|bytes| tectonic_image_probe::probe_pdf_page_count_bytes(bytes).ok())
+        self.input_byte_source_bytes(&name)
+            .and_then(|bytes| tectonic_image_probe::probe_pdf_page_count_bytes(&bytes).ok())
             .map(|pages| pages.min(i32::MAX as usize) as i32)
             .unwrap_or(0)
             .max(0)

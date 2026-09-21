@@ -9,8 +9,8 @@
 use encoding_rs::Encoding;
 use icu_segmenter::options::LineBreakOptions;
 use icu_segmenter::LineSegmenter;
+use std::cell::RefCell;
 use std::ffi::CStr;
-use std::sync::Mutex;
 use unicode_bidi::{BidiInfo, Level};
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,12 @@ struct LineBreakState {
     cursor: usize,
 }
 
-static CURRENT_LINEBREAK: Mutex<Option<LineBreakState>> = Mutex::new(None);
+thread_local! {
+    /// Shared-iterator slot for the C `tt_linebreak_*` ABI. The vendored C
+    /// engine is single-iterator by design, so a thread-local preserves the
+    /// ABI without introducing process-global mutable state.
+    static CURRENT_LINEBREAK: RefCell<Option<LineBreakState>> = const { RefCell::new(None) };
+}
 
 /// Initializes line break opportunities for a UTF-16 text slice.
 ///
@@ -41,8 +46,7 @@ pub unsafe extern "C" fn tt_linebreak_start(
     _locale: *const libc::c_char,
 ) -> i32 {
     if text.is_null() || text_len <= 0 {
-        let mut state = CURRENT_LINEBREAK.lock().unwrap();
-        *state = None;
+        CURRENT_LINEBREAK.with(|state| *state.borrow_mut() = None);
         return 0;
     }
 
@@ -58,8 +62,8 @@ pub unsafe extern "C" fn tt_linebreak_start(
         .map(|b| b as i32)
         .collect();
 
-    let mut state = CURRENT_LINEBREAK.lock().unwrap();
-    *state = Some(LineBreakState { breaks, cursor: 0 });
+    CURRENT_LINEBREAK
+        .with(|state| *state.borrow_mut() = Some(LineBreakState { breaks, cursor: 0 }));
     0
 }
 
@@ -72,18 +76,20 @@ pub unsafe extern "C" fn tt_linebreak_start(
 /// [`tt_linebreak_start`]. Only one iterator may be active at a time.
 #[no_mangle]
 pub unsafe extern "C" fn tt_linebreak_next() -> i32 {
-    let mut state = CURRENT_LINEBREAK.lock().unwrap();
-    if let Some(ref mut lb) = *state {
-        if lb.cursor < lb.breaks.len() {
-            let val = lb.breaks[lb.cursor];
-            lb.cursor += 1;
-            val
+    CURRENT_LINEBREAK.with(|state| {
+        let mut state = state.borrow_mut();
+        if let Some(ref mut lb) = *state {
+            if lb.cursor < lb.breaks.len() {
+                let val = lb.breaks[lb.cursor];
+                lb.cursor += 1;
+                val
+            } else {
+                -1
+            }
         } else {
             -1
         }
-    } else {
-        -1
-    }
+    })
 }
 
 /// Closes and cleans up the current line break iterator.
@@ -94,8 +100,7 @@ pub unsafe extern "C" fn tt_linebreak_next() -> i32 {
 /// initializing it again with [`tt_linebreak_start`].
 #[no_mangle]
 pub unsafe extern "C" fn tt_linebreak_close() {
-    let mut state = CURRENT_LINEBREAK.lock().unwrap();
-    *state = None;
+    CURRENT_LINEBREAK.with(|state| *state.borrow_mut() = None);
 }
 
 /// Returns every UTF-16 code-unit offset `> 0` at which a line break is

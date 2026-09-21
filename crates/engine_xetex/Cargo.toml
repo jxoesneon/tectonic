@@ -27,6 +27,7 @@ tectonic_bridge_core = { path = "../bridge_core", version = "0.17.3"  }
 tectonic_bridge_flate = { path = "../bridge_flate", version = "0.17.3"  }
 tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.17.3"  }
 tectonic_errors = { path = "../errors", version = "0.17.3"  }
+tectonic_fonts = { path = "../fonts", version = "0.17.3"  }
 tectonic_image_probe = { path = "../image_probe", version = "0.17.3"  }
 tectonic_xetex_layout = { path = "../xetex_layout", version = "0.17.3"  }
 unicode-bidi = "^0.3.18"

@@ -1790,6 +1790,12 @@ impl TeXEngineState {
             .or_else(|| self.font_sources.get(&name_key))
             .cloned()
         else {
+            // `open_tfm_file`: registered templates missed, so try TFM
+            // bytes through the byte sources/resolver before the native
+            // fallback (`load_native_font`).
+            if let Some(font) = self.load_tfm_font(s)? {
+                return Ok(font);
+            }
             if !native_syntax {
                 let font = self.load_native_font(s)?;
                 if font != 0 {
@@ -2730,7 +2736,7 @@ impl TeXEngineState {
         if let Some(&bounds) = self.picture_bounds.get(&name) {
             return Ok((name, bounds));
         }
-        let bytes = self.input_byte_sources.get(&name).cloned().ok_or(1)?;
+        let bytes = self.input_byte_source_bytes(&name).ok_or(1)?;
         if pdf_box_type != 0 {
             // `pdf_get_rect`: clamp the page into [1, total] (negative counts
             // back from the last page), probe the requested box, convert bp→pt.
@@ -7758,7 +7764,7 @@ impl TeXEngineState {
                     let mut a = self.math_cur_i.remainder;
                     let mut insn = self.lig_kern_insn(base_f, a);
                     if insn.skip > 128 {
-                        a = 256 * i32::from(insn.op) + insn.remainder + 32768 - 256 * 128;
+                        a = 1 + 256 * i32::from(insn.op) + insn.remainder + 32768 - 256 * 128;
                         insn = self.lig_kern_insn(base_f, a);
                     }
                     let skew = self.font_record(base_f).map_or(-1, |r| r.skew_char);
@@ -8254,7 +8260,7 @@ impl TeXEngineState {
             let cur_c = i32::from(self.mem[(p + 1) as usize].b16_s0());
             let mut insn = self.lig_kern_insn(f, a);
             if insn.skip > 128 {
-                a = 256 * i32::from(insn.op) + insn.remainder + 32768 - 256 * 128;
+                a = 1 + 256 * i32::from(insn.op) + insn.remainder + 32768 - 256 * 128;
                 insn = self.lig_kern_insn(f, a);
             }
             loop {
@@ -10276,7 +10282,8 @@ impl TeXEngineState {
                         Step::LigLoop1
                     };
                     if let Step::LigLoop1 = step {
-                        main_k = 256 * i32::from(main_j.op) + main_j.remainder + 32768 - 256 * 128;
+                        main_k =
+                            1 + 256 * i32::from(main_j.op) + main_j.remainder + 32768 - 256 * 128;
                     }
                 }
                 Step::LigLoop1 => {
@@ -12242,7 +12249,7 @@ impl TeXEngineState {
                     k = start;
                     q = self.lig_kern_insn(self.lb_hf, k);
                     if q.skip > 128 {
-                        k = 256 * i32::from(q.op) + q.remainder + 32768 - 256 * 128;
+                        k = 1 + 256 * i32::from(q.op) + q.remainder + 32768 - 256 * 128;
                         q = self.lig_kern_insn(self.lb_hf, k);
                     }
                 }
@@ -16901,6 +16908,37 @@ mod tests {
     }
 
     #[test]
+    fn font_loads_real_tfm_bytes_and_ligatures_fi() {
+        let mut state = engine();
+        state.register_input_byte_source(
+            "cmr10.tfm",
+            std::fs::read(
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../tests/assets/cmr10.tfm"),
+            )
+            .unwrap(),
+        );
+        state.set_source_text("\\font\\foo=cmr10 \\foo fi");
+        dispatch_all(&mut state, 12);
+
+        assert_eq!(state.font_ptr(), 1);
+        let record = state.font_record(1).unwrap();
+        assert_eq!(record.dsize, 10 * 65_536);
+        assert_eq!(record.checksum, 0x4BF1_6079);
+        // cmr10's `f` lig/kern program turns `fi` into char 12 via `=:`.
+        let mut p = state.link(state.head).unwrap();
+        let mut saw_ligature = false;
+        while p > 0 {
+            if state.node_type(p).unwrap() == LIGATURE_NODE {
+                assert_eq!(state.mem[p as usize + 1].b16_s0(), 12u16);
+                saw_ligature = true;
+            }
+            p = state.link(p).unwrap();
+        }
+        assert!(saw_ligature, "real cmr10 TFM should ligature 'fi'");
+    }
+
+    #[test]
     fn hmode_native_font_collects_a_native_word_node() {
         let mut state = native_engine();
         state.set_source_text("AB");
@@ -16947,7 +16985,10 @@ mod tests {
         let mut state = tfm_engine_with_metrics();
         {
             let font = state.font_table.get_mut(1).unwrap();
-            font.bchar_label = 0;
+            // Sentinel convention: index 0 is the NON_ADDRESS slot, so
+            // the boundary program lives at `bchar_label = 1`.
+            font.lig_kern.push(crate::state::LigKernInsn::default());
+            font.bchar_label = 1;
             font.lig_kern.push(crate::state::LigKernInsn {
                 skip: 0,
                 next_char: i32::from(b'a'),

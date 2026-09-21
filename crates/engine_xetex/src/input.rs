@@ -118,9 +118,18 @@ impl TeXEngineState {
         self.input_byte_sources.insert(name.into(), bytes);
     }
 
+    /// Installs the lazy input resolver (`ttstub_input_open`'s live I/O
+    /// path). Consulted on `input_byte_sources` misses before any `.tex`
+    /// extension fallback.
+    pub fn set_input_resolver(&mut self, resolver: crate::state::InputResolverFn) {
+        self.input_resolver = Some(crate::state::InputResolver(resolver));
+    }
+
     /// Resolves a byte source name, adding `.tex` when the stem has no
     /// extension (the search-path fallback used for `TTBC_FILE_FORMAT_TEX`).
-    pub fn input_byte_source_name(&self, name: &str) -> Option<String> {
+    /// On a registered-map miss the injected `input_resolver` is consulted
+    /// and a hit is cached under the resolved name.
+    pub fn input_byte_source_name(&mut self, name: &str) -> Option<String> {
         if self.input_byte_sources.contains_key(name) {
             return Some(name.to_string());
         }
@@ -134,7 +143,39 @@ impl TeXEngineState {
                 return Some(with_ext);
             }
         }
+        if let Some(resolver) = &self.input_resolver {
+            if let Some(bytes) = resolver.resolve(name) {
+                self.input_byte_sources.insert(name.to_string(), bytes);
+                return Some(name.to_string());
+            }
+            if name
+                .rsplit('/')
+                .next()
+                .is_some_and(|stem| !stem.contains('.'))
+            {
+                let with_ext = format!("{name}.tex");
+                if let Some(bytes) = resolver.resolve(&with_ext) {
+                    self.input_byte_sources.insert(with_ext.clone(), bytes);
+                    return Some(with_ext);
+                }
+            }
+        }
         None
+    }
+
+    /// Fetches raw bytes for `name` from the registered map, consulting
+    /// the injected `input_resolver` on a miss and caching a hit (the
+    /// byte-level half of `input_byte_source_name`, used by TFM and
+    /// picture loaders that carry their own extension).
+    pub fn input_byte_source_bytes(&mut self, name: &str) -> Option<Vec<u8>> {
+        if let Some(bytes) = self.input_byte_sources.get(name) {
+            return Some(bytes.clone());
+        }
+        let resolver = self.input_resolver.clone()?;
+        let bytes = resolver.resolve(name)?;
+        self.input_byte_sources
+            .insert(name.to_string(), bytes.clone());
+        Some(bytes)
     }
 
     /// Packs the scanned `cur_name`/`cur_area`/`cur_ext` into
@@ -934,5 +975,58 @@ mod tests {
         assert!(state
             .u_open_in(TTBC_FILE_FORMAT_TEX, INPUT_MODE_AUTO, 0)
             .is_none());
+    }
+
+    #[test]
+    fn resolver_fills_misses_and_caches_by_exact_name() {
+        let mut state = TeXEngineState::new(4_096);
+        let calls = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = calls.clone();
+        state.set_input_resolver(std::sync::Arc::new(move |name: &str| {
+            seen.lock().unwrap().push(name.to_string());
+            (name == "chap1.tex").then(|| b"hello".to_vec())
+        }));
+        // Exact name resolves through the injected callback.
+        assert_eq!(
+            state.input_byte_source_name("chap1.tex").as_deref(),
+            Some("chap1.tex")
+        );
+        assert_eq!(state.input_byte_sources["chap1.tex"], b"hello");
+        // A second lookup hits the cache, not the resolver.
+        assert_eq!(
+            state.input_byte_source_name("chap1.tex").as_deref(),
+            Some("chap1.tex")
+        );
+        assert_eq!(calls.lock().unwrap().as_slice(), &["chap1.tex"]);
+    }
+
+    #[test]
+    fn resolver_tex_extension_fallback() {
+        let mut state = TeXEngineState::new(4_096);
+        state.set_input_resolver(std::sync::Arc::new(|name: &str| {
+            (name == "story.tex").then(|| b"Once".to_vec())
+        }));
+        // Extensionless name falls back to `.tex`.
+        assert_eq!(
+            state.input_byte_source_name("story").as_deref(),
+            Some("story.tex")
+        );
+        assert_eq!(state.input_byte_sources["story.tex"], b"Once");
+        // Total miss still resolves to nothing.
+        assert_eq!(state.input_byte_source_name("absent"), None);
+    }
+
+    #[test]
+    fn resolver_byte_source_caches_tfm_style_names() {
+        let mut state = TeXEngineState::new(4_096);
+        state.set_input_resolver(std::sync::Arc::new(|name: &str| {
+            (name == "cmr10.tfm").then(|| vec![0u8; 64])
+        }));
+        assert_eq!(
+            state.input_byte_source_bytes("cmr10.tfm"),
+            Some(vec![0u8; 64])
+        );
+        assert!(state.input_byte_sources.contains_key("cmr10.tfm"));
+        assert_eq!(state.input_byte_source_bytes("nope.tfm"), None);
     }
 }

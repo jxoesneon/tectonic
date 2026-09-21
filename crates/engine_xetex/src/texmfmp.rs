@@ -48,7 +48,7 @@ impl TeXEngineState {
     /// The `\pdffilemoddate` text for `name` (`getfilemoddate`): the
     /// registered mtime in PDF format, or empty when the file cannot be
     /// opened.
-    pub(crate) fn file_mod_date_text(&self, name: &str) -> String {
+    pub(crate) fn file_mod_date_text(&mut self, name: &str) -> String {
         let Some(resolved) = self.input_byte_source_name(name) else {
             return String::new();
         };
@@ -60,7 +60,7 @@ impl TeXEngineState {
 
     /// The `\pdffilesize` text for `name` (`getfilesize`): the decimal byte
     /// count, or empty when the file cannot be opened.
-    pub(crate) fn file_size_text(&self, name: &str) -> String {
+    pub(crate) fn file_size_text(&mut self, name: &str) -> String {
         self.input_byte_source_name(name)
             .and_then(|resolved| self.input_byte_sources.get(&resolved))
             .map(|bytes| bytes.len().to_string())
@@ -71,7 +71,7 @@ impl TeXEngineState {
     /// from `offset` as uppercase hex, or empty when the file cannot be
     /// opened. A zero `length` (the keyword's default) yields nothing, as
     /// in C.
-    pub(crate) fn file_dump_text(&self, name: &str, offset: i32, length: i32) -> String {
+    pub(crate) fn file_dump_text(&mut self, name: &str, offset: i32, length: i32) -> String {
         if length == 0 {
             return String::new();
         }
@@ -95,7 +95,7 @@ impl TeXEngineState {
     /// The `\pdfmdfivesum` text (`getmd5sum`): uppercase hex MD5 of the
     /// file's bytes (with the `file` keyword) or of the argument text;
     /// empty when the file cannot be opened.
-    pub(crate) fn md5_sum_text(&self, name: &str, file: bool) -> String {
+    pub(crate) fn md5_sum_text(&mut self, name: &str, file: bool) -> String {
         let data: Option<Vec<u8>> = if file {
             self.input_byte_source_name(name)
                 .and_then(|resolved| self.input_byte_sources.get(&resolved).cloned())

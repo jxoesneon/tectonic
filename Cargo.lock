@@ -3540,6 +3540,7 @@ dependencies = [
  "tectonic_bridge_graphite2",
  "tectonic_cfg_support",
  "tectonic_errors",
+ "tectonic_fonts",
  "tectonic_image_probe",
  "tectonic_xetex_layout",
  "unicode-bidi",
