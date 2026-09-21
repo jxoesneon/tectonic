@@ -55,6 +55,20 @@ impl TeXEngineState {
         if !self.input_byte_sources.contains_key(&resolved) {
             return String::new();
         }
+        // `ttstub_input_get_mtime`: consult the provider metadata resolver
+        // on a cache miss so `\pdffilemoddate` reports real mtimes.
+        if let std::collections::hash_map::Entry::Vacant(e) =
+            self.input_file_mtimes.entry(resolved.clone())
+        {
+            if let Some(mtime) = self
+                .input_metadata_resolver
+                .clone()
+                .and_then(|m| m.resolve(&resolved))
+                .and_then(|meta| meta.mtime)
+            {
+                e.insert(mtime);
+            }
+        }
         pdf_time_str(self.input_file_mtimes.get(&resolved).copied().unwrap_or(0))
     }
 

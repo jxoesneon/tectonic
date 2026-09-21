@@ -37,12 +37,13 @@ pub unsafe extern "C" fn createLayoutEngine(
         Box::new([])
     };
     let shaper_list = if !shapers.is_null() {
+        let mut list = Vec::new();
         let mut len = 0;
         while !(*shapers.add(len)).is_null() {
+            list.push(CStr::from_ptr(*shapers.add(len)).to_owned());
             len += 1;
         }
-        len += 1;
-        slice::from_raw_parts(shapers, len).to_vec()
+        list
     } else {
         Vec::new()
     };
@@ -89,12 +90,13 @@ pub unsafe extern "C" fn createLayoutEngineBorrowed(
         Box::new([])
     };
     let shaper_list = if !shapers.is_null() {
+        let mut list = Vec::new();
         let mut len = 0;
         while !(*shapers.add(len)).is_null() {
+            list.push(CStr::from_ptr(*shapers.add(len)).to_owned());
             len += 1;
         }
-        len += 1;
-        slice::from_raw_parts(shapers, len).to_vec()
+        list
     } else {
         Vec::new()
     };

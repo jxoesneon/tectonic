@@ -78,7 +78,7 @@ pub struct LayoutEngine {
     pub(crate) language: Option<String>,
     pub(crate) features: Box<[LayoutFeature]>,
     /// the requested shapers
-    shaper_list: Vec<*const libc::c_char>,
+    shaper_list: Vec<CString>,
     /// the actually used shaper
     shaper: Option<CString>,
     rgb_value: u32,
@@ -98,7 +98,7 @@ impl LayoutEngine {
         script: u32,
         language: Option<Cow<'static, CStr>>,
         features: Box<[LayoutFeature]>,
-        shaper_list: Vec<*const libc::c_char>,
+        shaper_list: Vec<CString>,
         rgb_value: u32,
         extend: f32,
         slant: f32,
@@ -158,6 +158,68 @@ impl LayoutEngine {
         &mut self.font
     }
 
+    /// Shaped glyph ids from the last `layout_chars` call (`getGlyphs`).
+    pub fn shaped_glyph_ids(&self) -> &[u32] {
+        &self.shaped_glyphs
+    }
+
+    /// Per-glyph advances in points (`getGlyphAdvances`).
+    pub fn glyph_advances_points(&self) -> Vec<f32> {
+        self.shaped_positions
+            .iter()
+            .map(|pos| {
+                let advance = if self.font.layout_dir_vertical() {
+                    pos.y_advance
+                } else {
+                    pos.x_advance
+                };
+                self.font.units_to_points(advance as f64) as f32
+            })
+            .collect()
+    }
+
+    /// Cumulative glyph positions in points, `n + 1` entries where the last
+    /// is the final pen position (`getGlyphPositions`, including the
+    /// extend/slant transform).
+    pub fn glyph_positions_points(&self) -> Vec<(f32, f32)> {
+        let mut x: f32 = 0.0;
+        let mut y: f32 = 0.0;
+        let mut out = Vec::with_capacity(self.shaped_positions.len() + 1);
+        if self.font.layout_dir_vertical() {
+            for pos in &self.shaped_positions {
+                out.push((
+                    -self.font.units_to_points((x + pos.y_offset) as f64) as f32,
+                    self.font.units_to_points((y - pos.x_offset) as f64) as f32,
+                ));
+                x += pos.y_advance;
+                y += pos.x_advance;
+            }
+            out.push((
+                -self.font.units_to_points(x as f64) as f32,
+                self.font.units_to_points(y as f64) as f32,
+            ));
+        } else {
+            for pos in &self.shaped_positions {
+                out.push((
+                    self.font.units_to_points((x + pos.x_offset) as f64) as f32,
+                    -self.font.units_to_points((y + pos.y_offset) as f64) as f32,
+                ));
+                x += pos.x_advance;
+                y += pos.y_advance;
+            }
+            out.push((
+                self.font.units_to_points(x as f64) as f32,
+                self.font.units_to_points(y as f64) as f32,
+            ));
+        }
+        if self.extend != 1.0 || self.slant != 0.0 {
+            for pos in out.iter_mut() {
+                pos.0 = pos.0 * self.extend - pos.1 * self.slant;
+            }
+        }
+        out
+    }
+
     /// Get the default direction
     pub fn default_dir(&self) -> u8 {
         pub const UBIDI_DEFAULT_LTR: u8 = 0xFE;
@@ -204,10 +266,10 @@ impl LayoutEngine {
         self.shaped_positions.clear();
 
         // Check if Graphite is requested and font has Graphite data
-        let wants_graphite = self.shaper_list.iter().any(|&s| {
-            // SAFETY: shaper list strings are valid C strings provided during engine initialization
-            !s.is_null() && unsafe { CStr::from_ptr(s).to_bytes() == b"graphite2" }
-        });
+        let wants_graphite = self
+            .shaper_list
+            .iter()
+            .any(|s| s.as_bytes() == b"graphite2");
 
         if wants_graphite {
             if let Some(gr_face_ptr) = self.font.gr_face_ptr() {

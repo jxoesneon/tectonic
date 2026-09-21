@@ -507,8 +507,8 @@ impl Pass {
                 return MATCH_YES;
             }
 
-            let elem = elem_base + index as usize * 8;
-            let Some(m) = self.table.get(elem..elem + 8) else {
+            let elem = elem_base + index as usize * 4;
+            let Some(m) = self.table.get(elem..elem + 4) else {
                 return MATCH_NO;
             };
             let repeat_min = i32::from(m[0] >> 4);
@@ -545,15 +545,15 @@ impl Pass {
                         if mr != MATCH_NO {
                             return mr;
                         }
-                        alt_index += i32::from(self.table[elem_base + alt_index as usize * 8 + 6]);
-                        let next_type = self.table[elem_base + alt_index as usize * 8 + 1];
+                        alt_index += i32::from(self.table[elem_base + alt_index as usize * 4 + 2]);
+                        let next_type = self.table[elem_base + alt_index as usize * 4 + 1];
                         if next_type & K_MATCH_ELEM_TYPE_MASK != K_MATCH_ELEM_TYPE_OR {
                             break;
                         }
                     }
                 }
                 if repeats >= repeat_min {
-                    let d_after = i32::from(m[7]);
+                    let d_after = i32::from(m[3]);
                     let mr = self.match_rule(
                         input,
                         pos,
@@ -594,7 +594,7 @@ impl Pass {
             }
 
             if ty == K_MATCH_ELEM_TYPE_OR || ty == K_MATCH_ELEM_TYPE_EGROUP {
-                let d_start = i32::from(m[7]);
+                let d_start = i32::from(m[3]);
                 let start_index = index - d_start;
                 let repeats_next = info
                     .get(start_index as usize)
@@ -627,10 +627,10 @@ impl Pass {
             while repeats < repeat_min {
                 let in_char = self.input_char(input, pos, text_loc);
                 let mut matches = match ty {
-                    0 => (be_u32(&self.table, elem + 4) & K_USV_MASK) == in_char,
+                    0 => (be_u32(&self.table, elem) & K_USV_MASK) == in_char,
                     K_MATCH_ELEM_TYPE_CLASS => {
                         let idx =
-                            self.class_match(u32::from(be_u16(&self.table, elem + 6)), in_char);
+                            self.class_match(u32::from(be_u16(&self.table, elem + 2)), in_char);
                         if idx != -1 && repeats == 0 && (0..info_limit).contains(&index) {
                             info[index as usize].class_index = idx;
                         }
@@ -665,10 +665,10 @@ impl Pass {
             if repeats < repeat_max {
                 let in_char = self.input_char(input, pos, text_loc);
                 let mut matches = match ty {
-                    0 => (be_u32(&self.table, elem + 4) & K_USV_MASK) == in_char,
+                    0 => (be_u32(&self.table, elem) & K_USV_MASK) == in_char,
                     K_MATCH_ELEM_TYPE_CLASS => {
                         let idx =
-                            self.class_match(u32::from(be_u16(&self.table, elem + 6)), in_char);
+                            self.class_match(u32::from(be_u16(&self.table, elem + 2)), in_char);
                         if idx != -1 && repeats == 0 && (0..info_limit).contains(&index) {
                             info[index as usize].class_index = idx;
                         }
@@ -862,7 +862,7 @@ impl Pass {
                         mr = self.match_rule(
                             input,
                             pos,
-                            rule + 4 + pattern_len as usize * 8,
+                            rule + 4 + pattern_len as usize * 4,
                             0,
                             0,
                             -1,
@@ -876,7 +876,7 @@ impl Pass {
                     }
                     if mr == MATCH_YES {
                         // Execute the replacement elements.
-                        let rep_base = rule + 4 + (pattern_len + pre_len) as usize * 8;
+                        let rep_base = rule + 4 + (pattern_len + pre_len) as usize * 4;
                         for i in 0..rep_len {
                             let re = rep_base + i as usize * 4;
                             let ty = *self.table.get(re)?;
@@ -1033,20 +1033,17 @@ mod tests {
         v.extend_from_slice(&x.to_be_bytes());
     }
 
-    /// Literal match element: repeat min/max packed, `usv` scalar.
-    fn m_lit(rep: u8, usv: u32) -> [u8; 8] {
-        let mut e = [0u8; 8];
-        e[0] = rep;
-        e[4..8].copy_from_slice(&usv.to_be_bytes());
-        e
+    /// Literal match element: repeat min/max packed, `usv` scalar. The
+    /// 4-byte union overlaps `flags` and `usv.data` — the repeat/type
+    /// bits sit in the high word and are masked off by `K_USV_MASK`.
+    fn m_lit(rep: u8, usv: u32) -> [u8; 4] {
+        ((u32::from(rep) << 24) | usv).to_be_bytes()
     }
-    /// Non-literal match element (EOS/ANY/class/group codes).
-    fn m_typed(rep: u8, ty: u8, value: [u8; 4]) -> [u8; 8] {
-        let mut e = [0u8; 8];
-        e[0] = rep;
-        e[1] = K_MATCH_ELEM_NON_LIT | ty;
-        e[4..8].copy_from_slice(&value);
-        e
+    /// Non-literal match element (EOS/ANY/class/group codes). `value`
+    /// occupies the low u16: class index, or `{dNext, dAfter/dStart}`
+    /// for group navigation.
+    fn m_typed(rep: u8, ty: u8, value: [u8; 2]) -> [u8; 4] {
+        [rep, K_MATCH_ELEM_NON_LIT | ty, value[0], value[1]]
     }
     /// Literal replacement element (the whole word is the value).
     fn r_lit(usv: u32) -> [u8; 4] {
@@ -1062,7 +1059,7 @@ mod tests {
         // TableHeader (48 bytes).
         w32(&mut t, K_TABLE_TYPE_UU); // 0
         w32(&mut t, 0x0001_0000); // 4 version
-        w32(&mut t, 960); // 8 length
+        w32(&mut t, 936); // 8 length
         w32(&mut t, 0); // 12 flags
         w32(&mut t, 48); // 16 pageBase
         w32(&mut t, 816); // 20 lookupBase
@@ -1114,7 +1111,7 @@ mod tests {
         assert_eq!(t.len(), 864);
 
         // String rule list: offsets into stringRuleData.
-        for off in [0u32, 24, 40, 64] {
+        for off in [0u32, 16, 28, 44] {
             w32(&mut t, off);
         }
         assert_eq!(t.len(), 880);
@@ -1122,7 +1119,7 @@ mod tests {
         // Rule 0: x / _EOS -> 'X'  (match=1, post=1, pre=0, rep=1)
         t.extend_from_slice(&[1, 1, 0, 1]);
         t.extend_from_slice(&m_lit(0x11, 0x78));
-        t.extend_from_slice(&m_typed(0x11, K_MATCH_ELEM_TYPE_EOS, [0; 4]));
+        t.extend_from_slice(&m_typed(0x11, K_MATCH_ELEM_TYPE_EOS, [0; 2]));
         t.extend_from_slice(&r_lit(0x58));
         // Rule 1: x -> 'Y' (match=1, post=0, pre=0, rep=1)
         t.extend_from_slice(&[1, 0, 0, 1]);
@@ -1135,9 +1132,9 @@ mod tests {
         t.extend_from_slice(&r_lit(0x4b));
         // Rule 3: [class0] -> repClass0 (match=1, rep=1)
         t.extend_from_slice(&[1, 0, 0, 1]);
-        t.extend_from_slice(&m_typed(0x11, K_MATCH_ELEM_TYPE_CLASS, [0, 0, 0, 0]));
+        t.extend_from_slice(&m_typed(0x11, K_MATCH_ELEM_TYPE_CLASS, [0, 0]));
         t.extend_from_slice(&[K_REP_ELEM_CLASS, 0, 0, 0]);
-        assert_eq!(t.len(), 960);
+        assert_eq!(t.len(), 936);
         t
     }
 
@@ -1199,6 +1196,62 @@ mod tests {
         w32(&mut f, 1); // numRevTables
         w32(&mut f, 36); // rev table offset (fwd array is empty)
         f.extend_from_slice(&ub_table());
+        f
+    }
+
+    /// Builds a U->U table with a single two-element string rule
+    /// `,,` -> `„`, mirroring `tex-text.tec`'s punctuation mapping.
+    /// Regresses the `MatchElem` stride: elements are 4-byte unions, so
+    /// the second literal sits 4 bytes after the first.
+    fn comma_table() -> Vec<u8> {
+        let mut t = Vec::new();
+        w32(&mut t, K_TABLE_TYPE_UU);
+        w32(&mut t, 0x0001_0000);
+        w32(&mut t, 844); // length
+        w32(&mut t, 0); // flags
+        w32(&mut t, 48); // pageBase
+        w32(&mut t, 816); // lookupBase
+        w32(&mut t, 824); // matchClassBase
+        w32(&mut t, 824); // repClassBase
+        w32(&mut t, 824); // stringListBase
+        w32(&mut t, 828); // stringRuleData
+        t.extend_from_slice(&[2, 0, 0, 1]); // maxMatch/maxPre/maxPost/maxOutput
+        w32(&mut t, 0x003f); // replacementChar
+        assert_eq!(t.len(), 48);
+        t.push(0);
+        t.extend_from_slice(&[0xff; 255]);
+        let mut cm = vec![0u16; 256];
+        cm[0x2c] = 1; // ','
+        for x in cm {
+            w16(&mut t, x);
+        }
+        assert_eq!(t.len(), 816);
+        t.extend_from_slice(&[0xfd, 0, 0, 0]); // L0 unmapped
+        t.extend_from_slice(&[0xff, 1, 0, 0]); // L1 ',': 1 rule at list 0
+        assert_eq!(t.len(), 824);
+        w32(&mut t, 0); // rule list: rule 0 at stringRuleData+0
+        assert_eq!(t.len(), 828);
+        // Rule 0: ,, -> „ (match=2, post=0, pre=0, rep=1)
+        t.extend_from_slice(&[2, 0, 0, 1]);
+        t.extend_from_slice(&m_lit(0x11, 0x2c));
+        t.extend_from_slice(&m_lit(0x11, 0x2c));
+        t.extend_from_slice(&r_lit(0x201e));
+        assert_eq!(t.len(), 844);
+        t
+    }
+
+    fn comma_file() -> Vec<u8> {
+        let mut f = Vec::new();
+        w32(&mut f, K_MAGIC_NUMBER);
+        w32(&mut f, K_CURRENT_FILE_VERSION);
+        w32(&mut f, 36);
+        w32(&mut f, K_FLAGS_UNICODE);
+        w32(&mut f, K_FLAGS_UNICODE);
+        w32(&mut f, 0);
+        w32(&mut f, 1);
+        w32(&mut f, 0);
+        w32(&mut f, 36);
+        f.extend_from_slice(&comma_table());
         f
     }
 
@@ -1282,6 +1335,21 @@ mod tests {
         let c = Converter::parse(&f, false).unwrap();
         let decomposed = u16s("e\u{301}");
         assert_eq!(from_u16s(&c.convert_text(&decomposed)), "\u{e9}");
+    }
+
+    #[test]
+    fn two_element_literal_rule() {
+        // `,,` maps to `„`; a lone `,` must NOT match the two-element
+        // rule and copies through (this fails when `MatchElem` is read
+        // with an 8-byte stride, as element 1 is then misdecoded).
+        let c = Converter::parse(&comma_file(), false).unwrap();
+        assert_eq!(from_u16s(&c.convert_text(&u16s(",,"))), "\u{201e}");
+        assert_eq!(from_u16s(&c.convert_text(&u16s("Hello,"))), "Hello,");
+        assert_eq!(from_u16s(&c.convert_text(&u16s("a,b"))), "a,b");
+        assert_eq!(
+            from_u16s(&c.convert_text(&u16s("Hello,, x"))),
+            "Hello\u{201e} x"
+        );
     }
 
     #[test]

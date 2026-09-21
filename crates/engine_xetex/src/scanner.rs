@@ -204,6 +204,11 @@ pub const CR_CODE: i32 = 0x110002;
 /// `\crcr` subcommand marker (`CR_CR_CODE`).
 pub const CR_CR_CODE: i32 = 0x110003;
 
+/// Constructs an `InputOutOfBounds` error for index `i`.
+pub(crate) fn oob(i: i32) -> TeXMouthError {
+    TeXMouthError::InputOutOfBounds(i)
+}
+
 /// Errors produced by the pure-Rust token scanner and expansion input stack.
 #[derive(Debug)]
 pub enum TeXMouthError {
@@ -1032,7 +1037,31 @@ impl TeXEngineState {
     /// Byte sources open through `u_open_in` exactly like C's `a_open_in`;
     /// registered unit-line sources remain as a compatibility fallback.
     pub fn open_file_source(&mut self, name: &str) -> Result<(), TeXMouthError> {
-        let byte_name = self.input_byte_source_name(name);
+        self.open_file_source_fmt(name, crate::input::TTBC_FILE_FORMAT_TEX)
+    }
+
+    /// `open_file_source` with an explicit Tectonic file format:
+    /// `TTBC_FILE_FORMAT_TECTONIC_PRIMARY` opens route through the
+    /// `primary_input_resolver` (`input_open_primary`), matching C's
+    /// `start_input(primary_input_name)` path.
+    pub fn open_file_source_fmt(&mut self, name: &str, filefmt: i32) -> Result<(), TeXMouthError> {
+        let byte_name = if filefmt == crate::input::TTBC_FILE_FORMAT_TECTONIC_PRIMARY {
+            match self.primary_input_resolver.clone() {
+                Some(primary) => {
+                    if self.input_byte_sources.contains_key(name) {
+                        Some(name.to_string())
+                    } else {
+                        primary.resolve(name).map(|bytes| {
+                            self.input_byte_sources.insert(name.to_string(), bytes);
+                            name.to_string()
+                        })
+                    }
+                }
+                None => self.input_byte_source_name(name),
+            }
+        } else {
+            self.input_byte_source_name(name)
+        };
         let lines = if byte_name.is_none() {
             self.input_source_lines(name)
         } else {
@@ -1058,15 +1087,15 @@ impl TeXEngineState {
             Some(resolved) => resolved.clone(),
             None => name.to_string(),
         };
+        // The name as opened, for the `start_input` transcript echo —
+        // `u_open_in` may overwrite `abspath_of_input_file` with provider
+        // metadata, so capture it here.
+        let opened_name = self.abspath_of_input_file.clone();
 
         if let Some(resolved) = byte_name {
             self.name_of_file = resolved.into_bytes();
             self.name_length = self.name_of_file.len() as i32;
-            let f = self.u_open_in(
-                crate::input::TTBC_FILE_FORMAT_TEX,
-                crate::input::INPUT_MODE_AUTO,
-                0,
-            );
+            let f = self.u_open_in(filefmt, crate::input::INPUT_MODE_AUTO, 0);
             if self.input_file.len() <= self.in_open {
                 self.input_file.resize_with(self.in_open + 1, || None);
             }
@@ -1076,6 +1105,33 @@ impl TeXEngineState {
         // C `open_input` tail: assign the frame's sync tag and record the
         // tag↔name mapping.
         self.synctex_start_input();
+
+        // C `start_input` tail: the first opened file names the job and
+        // opens the transcript (`job_name = cur_name; open_log_file()`).
+        if self.job_name.is_none() {
+            let stem: String = self
+                .cur_name
+                .iter()
+                .filter_map(|&u| char::from_u32(u as u32))
+                .collect();
+            self.job_name = Some(stem);
+            self.open_log_file()?;
+        }
+
+        // C `start_input` transcript echo: wrap if the name would overflow
+        // the line, else separate with a space, then `(name` and bump
+        // `open_parens`. C prints `full_source_filename_stack[in_open]` =
+        // `maketexstring(name_of_input_file)`, the name as opened.
+        let full_name = opened_name;
+        let name_len = full_name.chars().count() as i32;
+        if self.term_offset + name_len > self.max_print_line - 2 {
+            self.print_ln();
+        } else if self.term_offset > 0 || self.file_offset > 0 {
+            self.print_char(i32::from(b' '))?;
+        }
+        self.print_char(i32::from(b'('))?;
+        self.open_parens += 1;
+        self.print_str_text(&full_name)?;
 
         if !self.load_next_source_line(false)? {
             self.cur_input.limit = self.cur_input.start - 1;
@@ -1097,15 +1153,22 @@ impl TeXEngineState {
         self.source_lines = lines;
         self.buffer.clear();
         self.line = 0;
-        self.cur_input.name = if self
+        let traced = self
             .int_par(crate::state::INT_PAR_TRACING_SCAN_TOKENS)
             .unwrap_or(0)
-            > 0
-        {
-            19
-        } else {
-            18
-        };
+            > 0;
+        self.cur_input.name = if traced { 19 } else { 18 };
+        if traced {
+            // C `pseudo_start`: traced pseudo-files echo `( ` and join the
+            // `open_parens` accounting like a real file frame.
+            if self.term_offset > self.max_print_line - 3 {
+                self.print_ln();
+            } else if self.term_offset > 0 || self.file_offset > 0 {
+                self.print_char(i32::from(b' '))?;
+            }
+            self.print_cstr("( ")?;
+            self.open_parens += 1;
+        }
         self.cur_input.state = MID_LINE;
         self.cur_input.limit = self.cur_input.start;
         self.cur_input.loc = self.cur_input.limit + 1;
@@ -1202,7 +1265,7 @@ impl TeXEngineState {
         let m = if !(0..=15).contains(&n) {
             16
         } else {
-            usize::try_from(n).map_err(|_| TeXMouthError::InputOutOfBounds(n))?
+            usize::try_from(n).map_err(|_| crate::scanner::oob(n))?
         };
         let saved_align_state = self.align_state;
         self.align_state = 1_000_000;
@@ -1291,8 +1354,20 @@ impl TeXEngineState {
 
     /// Opens a named source directly, bypassing file-name token scanning.
     pub fn start_input_source(&mut self, name: &str) -> Result<(), TeXMouthError> {
+        // C `start_input(primary_input_name)`: the primary name runs
+        // through the same begin/more/end_name trifecta so `cur_name`
+        // holds the stem — `job_name` derives from it exactly like a
+        // scanned `\input` name.
+        self.begin_name();
+        let saved_stop_at_space = self.stop_at_space;
+        self.stop_at_space = false;
+        for c in name.chars() {
+            self.more_name(c as i32);
+        }
+        self.stop_at_space = saved_stop_at_space;
+        self.end_name();
         self.begin_file_reading()?;
-        self.open_file_source(name)
+        self.open_file_source_fmt(name, crate::input::TTBC_FILE_FORMAT_TECTONIC_PRIMARY)
     }
 
     /// Scans a TeX file name (`scan_file_name`), supporting unbraced names,
@@ -1470,7 +1545,7 @@ impl TeXEngineState {
             || j.checked_add(l)
                 .is_none_or(|end| end as usize > self.buffer.len())
         {
-            return Err(TeXMouthError::InputOutOfBounds(j));
+            return Err(crate::scanner::oob(j));
         }
 
         let name = self.buffer[j as usize..(j + l) as usize].to_vec();
@@ -2575,6 +2650,13 @@ impl TeXEngineState {
                                     self.file_warning()?;
                                 }
                                 self.line += 1;
+                                // C `get_next` file close: real files
+                                // (name_field >= 19) echo `)` and drop
+                                // `open_parens`.
+                                if self.cur_input.name >= 19 {
+                                    self.print_char(i32::from(b')'))?;
+                                    self.open_parens -= 1;
+                                }
                                 self.force_eof = false;
                                 self.end_file_reading()?;
                                 self.check_outer_validity()?;
@@ -2672,7 +2754,7 @@ impl TeXEngineState {
 
     fn checked_mem_index(&self, p: i32) -> Result<usize, TeXMouthError> {
         if p < 0 || p as usize >= self.mem.len() {
-            Err(TeXMouthError::InputOutOfBounds(p))
+            Err(crate::scanner::oob(p))
         } else {
             Ok(p as usize)
         }
@@ -2682,7 +2764,7 @@ impl TeXEngineState {
         self.buffer
             .get(i.max(0) as usize)
             .copied()
-            .ok_or(TeXMouthError::InputOutOfBounds(i))
+            .ok_or_else(|| crate::scanner::oob(i))
     }
 
     fn buffer_at_or_zero(&self, i: i32) -> i32 {
@@ -2971,13 +3053,13 @@ impl TeXEngineState {
         value: i32,
     ) -> Result<(), TeXMouthError> {
         if at < 0 || at as usize >= self.buffer.len() || remove < 0 {
-            return Err(TeXMouthError::InputOutOfBounds(at));
+            return Err(crate::scanner::oob(at));
         }
 
         let at = at as usize;
         let remove = remove as usize;
         if at + remove >= self.buffer.len() {
-            return Err(TeXMouthError::InputOutOfBounds(at as i32));
+            return Err(crate::scanner::oob(at as i32));
         }
 
         self.buffer[at] = value;
@@ -3502,8 +3584,12 @@ mod tests {
 
     #[test]
     fn level_zero_eqtb_values_restore_as_undefined() {
+        // `\count` registers are LEVEL_ONE from `initialize` like C's
+        // `xeq_level`; use a slot outside every initialized region so the
+        // entry is genuinely LEVEL_ZERO and saves as `RESTORE_ZERO`.
         let mut state = state();
-        let p = crate::state::COUNT_BASE + 2;
+        let p = crate::state::FAMILY_BASE + crate::state::FAMILY_COUNT + 16;
+        assert_eq!(state.eqtb[p].b16_s0(), crate::state::LEVEL_ZERO);
         state.eqtb[p].s1 = 123;
 
         state.new_save_level(crate::state::SIMPLE_GROUP).unwrap();

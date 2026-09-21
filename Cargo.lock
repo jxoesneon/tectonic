@@ -3542,6 +3542,8 @@ dependencies = [
  "tectonic_errors",
  "tectonic_fonts",
  "tectonic_image_probe",
+ "tectonic_io_base",
+ "tectonic_status_base",
  "tectonic_xetex_layout",
  "unicode-bidi",
  "unicode-normalization",

@@ -35,15 +35,41 @@ impl TeXEngineState {
         }
     }
 
-    /// Starts or replaces the diagnostic capture (`capture_to_diagnostic`).
-    pub fn capture_to_diagnostic(&mut self, capture: bool) {
-        self.diag_capture = if capture { Some(Vec::new()) } else { None };
+    /// Starts or replaces the diagnostic capture with an explicit
+    /// severity (`capture_to_diagnostic` at `diagnostic_begin_capture_*`
+    /// sites). C finishes the pending diagnostic before installing the new
+    /// one (`ttstub_diag_finish`), so an unfinished capture is drained into
+    /// `diag_events` rather than dropped.
+    pub fn capture_to_diagnostic_as(&mut self, severity: crate::state::DiagSeverity) {
+        if let Some(diag) = self.diag_capture.take() {
+            self.diag_events.push(crate::state::CapturedDiagnostic {
+                severity: self.diag_capture_severity,
+                text: String::from_utf8_lossy(&diag).into_owned(),
+            });
+        }
+        self.diag_capture_severity = severity;
+        self.diag_capture = Some(Vec::new());
     }
 
-    /// Pushes `file:line: ` (or `!`) into the diagnostic capture,
-    /// duplicating `print_file_line`'s logic
-    /// (`diagnostic_print_file_line`).
-    pub(crate) fn diagnostic_print_file_line(&mut self) {
+    /// Starts a warning-severity capture or ends the active capture
+    /// (`capture_to_diagnostic(warning)` / `capture_to_diagnostic(NULL)`).
+    /// Ending drains the captured text into `diag_events` — the driver's
+    /// replay queue for `ttstub_diag` status reporting — with the
+    /// severity recorded when the capture began.
+    pub fn capture_to_diagnostic(&mut self, capture: bool) {
+        if capture {
+            self.capture_to_diagnostic_as(crate::state::DiagSeverity::Warning);
+        } else if let Some(diag) = self.diag_capture.take() {
+            self.diag_events.push(crate::state::CapturedDiagnostic {
+                severity: self.diag_capture_severity,
+                text: String::from_utf8_lossy(&diag).into_owned(),
+            });
+        }
+    }
+
+    /// Appends `file:line: ` (or `!`) to a diagnostic buffer, duplicating
+    /// `print_file_line`'s logic (`diagnostic_print_file_line`).
+    fn diagnostic_append_file_line(&self, diag: &mut Vec<u8>) {
         let mut level = self.in_open;
         while level > 0
             && self
@@ -53,36 +79,51 @@ impl TeXEngineState {
         {
             level -= 1;
         }
-        if let Some(diag) = &mut self.diag_capture {
-            if level == 0 {
-                diag.push(b'!');
+        if level == 0 {
+            diag.push(b'!');
+        } else {
+            let line = if level != self.in_open {
+                self.line_stack.get(level + 1).copied().unwrap_or(0)
             } else {
-                let line = if level != self.in_open {
-                    self.line_stack.get(level + 1).copied().unwrap_or(0)
-                } else {
-                    self.line
-                };
-                let text = format!("{}:{}: ", self.file_sources[level].name, line);
-                diag.extend_from_slice(text.as_bytes());
-            }
+                self.line
+            };
+            let text = format!("{}:{}: ", self.file_sources[level].name, line);
+            diag.extend_from_slice(text.as_bytes());
+        }
+    }
+
+    /// Pushes `file:line: ` (or `!`) into the active diagnostic capture.
+    pub(crate) fn diagnostic_print_file_line(&mut self) {
+        if let Some(mut diag) = self.diag_capture.take() {
+            self.diagnostic_append_file_line(&mut diag);
+            self.diag_capture = Some(diag);
         }
     }
 
     /// Opens an error diagnostic at the current position, prints the file
     /// and message through the selector machinery, and starts capturing
-    /// (`error_here_with_diagnostic`).
+    /// (`error_here_with_diagnostic`). The `file:line: message` prefix is
+    /// written into the diagnostic directly — the console echo below runs
+    /// before the capture is installed so it is not doubled into the event
+    /// text (any still-pending diagnostic captures it, exactly like C).
     pub fn error_here_with_diagnostic(&mut self, message: &str) {
-        self.capture_to_diagnostic(true);
-        self.diagnostic_print_file_line();
-        if let Some(diag) = &mut self.diag_capture {
-            diag.extend_from_slice(message.as_bytes());
-        }
+        let mut diag = Vec::new();
+        self.diagnostic_append_file_line(&mut diag);
+        diag.extend_from_slice(message.as_bytes());
         if self.file_line_error_style_p {
             let _ = self.print_file_line();
         } else {
             let _ = self.print_nl_cstr("! ");
         }
         let _ = self.print_cstr(message);
+        if let Some(old) = self.diag_capture.take() {
+            self.diag_events.push(crate::state::CapturedDiagnostic {
+                severity: self.diag_capture_severity,
+                text: String::from_utf8_lossy(&old).into_owned(),
+            });
+        }
+        self.diag_capture_severity = crate::state::DiagSeverity::Error;
+        self.diag_capture = Some(diag);
     }
 
     /// Emits a newline on the active sinks (`print_ln`).
@@ -296,6 +337,15 @@ impl TeXEngineState {
     pub fn print_cstr(&mut self, text: &str) -> Result<(), TeXMouthError> {
         for &b in text.as_bytes() {
             self.print_char(i32::from(b))?;
+        }
+        Ok(())
+    }
+
+    /// Prints decoded text character-by-character through `print_char`,
+    /// matching `token_show`'s emission for already-assembled strings.
+    pub(crate) fn print_str_text(&mut self, text: &str) -> Result<(), TeXMouthError> {
+        for c in text.chars() {
+            self.print_char(c as i32)?;
         }
         Ok(())
     }
@@ -1205,6 +1255,7 @@ impl TeXEngineState {
                 self.help_ptr -= 1;
                 if let Some(line) = self.help_line.get(self.help_ptr).cloned() {
                     self.print_nl_cstr(&line)?;
+                    self.transcript.push(line);
                 }
             }
         }
@@ -1221,6 +1272,9 @@ impl TeXEngineState {
         let err_help = self.local(LOCAL_ERR_HELP)?;
         if err_help != TEX_NULL {
             self.token_show(err_help)?;
+            let start = self.stored_token_list_start(err_help)?;
+            let help = self.token_list_to_string(start)?;
+            self.transcript.push(help);
         }
         Ok(())
     }

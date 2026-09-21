@@ -141,29 +141,15 @@ pub struct TtBiDiContext {
     direction: i32, // 0: LTR, 1: RTL, 2: MIXED
 }
 
-/// Creates and resolves bidirectional runs for a UTF-16 text slice.
-///
-/// # Safety
-///
-/// `text` must be null or point to `text_len` contiguous UTF-16 code units.
-/// The returned pointer is owned by the caller and must be released with
-/// [`tt_bidi_destroy`].
-#[no_mangle]
-pub unsafe extern "C" fn tt_bidi_create(
-    text: *const u16,
-    text_len: i32,
-    default_dir_rtl: bool,
-) -> *mut TtBiDiContext {
-    if text.is_null() || text_len <= 0 {
-        let ctx = Box::new(TtBiDiContext {
-            runs: Vec::new(),
-            direction: if default_dir_rtl { 1 } else { 0 },
-        });
-        return Box::into_raw(ctx);
+/// Resolves the visual runs and overall direction of a UTF-16 text slice —
+/// the safe core of [`tt_bidi_create`]. Returns `(direction, runs)` where
+/// direction is 0 (LTR), 1 (RTL), or 2 (mixed).
+pub fn visual_runs(text: &[u16], default_dir_rtl: bool) -> (i32, Vec<TtBiDiRun>) {
+    if text.is_empty() {
+        return (if default_dir_rtl { 1 } else { 0 }, Vec::new());
     }
 
-    let slice = std::slice::from_raw_parts(text, text_len as usize);
-    let s = String::from_utf16_lossy(slice);
+    let s = String::from_utf16_lossy(text);
 
     let default_level = if default_dir_rtl {
         Level::rtl()
@@ -206,6 +192,32 @@ pub unsafe extern "C" fn tt_bidi_create(
         0 // LTR
     };
 
+    (direction, runs)
+}
+
+/// Creates and resolves bidirectional runs for a UTF-16 text slice.
+///
+/// # Safety
+///
+/// `text` must be null or point to `text_len` contiguous UTF-16 code units.
+/// The returned pointer is owned by the caller and must be released with
+/// [`tt_bidi_destroy`].
+#[no_mangle]
+pub unsafe extern "C" fn tt_bidi_create(
+    text: *const u16,
+    text_len: i32,
+    default_dir_rtl: bool,
+) -> *mut TtBiDiContext {
+    if text.is_null() || text_len <= 0 {
+        let ctx = Box::new(TtBiDiContext {
+            runs: Vec::new(),
+            direction: if default_dir_rtl { 1 } else { 0 },
+        });
+        return Box::into_raw(ctx);
+    }
+
+    let slice = std::slice::from_raw_parts(text, text_len as usize);
+    let (direction, runs) = visual_runs(slice, default_dir_rtl);
     Box::into_raw(Box::new(TtBiDiContext { runs, direction }))
 }
 

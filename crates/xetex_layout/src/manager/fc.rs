@@ -238,7 +238,9 @@ impl FontManagerBackend for FcBackend {
                     && n.language_id == 0
                 {
                     let str = Str::<MacRoman>::from_bytes_infallible(n.name);
-                    str.recode::<Utf8>().ok().and_then(|r| String::from_utf8(r.into_bytes()).ok())
+                    str.recode::<Utf8>()
+                        .ok()
+                        .and_then(|r| String::from_utf8(r.into_bytes()).ok())
                 } else {
                     String::from_utf8(n.name.to_vec()).ok()
                 }

@@ -106,9 +106,10 @@ pub struct SplitFontName {
     pub index: i32,
 }
 
-/// `D2Fix` — IEEE double to 16.16 fixed point.
+/// `D2Fix` — IEEE double to 16.16 fixed point, matching C's
+/// `(int)(d * 65536.0 + 0.5)` round-half-up toward zero.
 pub fn d2fix(d: f64) -> i32 {
-    (d * 65_536.0) as i32
+    (d * 65_536.0 + 0.5) as i32
 }
 
 /// `Fix2D` — 16.16 fixed point to IEEE double.
@@ -433,12 +434,16 @@ impl TeXEngineState {
         {
             return true;
         }
-        let Some(bytes) = self
+        let bytes = self
             .tec_sources
             .get(name)
             .or_else(|| self.tec_sources.get(&format!("{name}.tec")))
             .cloned()
-        else {
+            // `ttstub_input_open(..., TTBC_FILE_FORMAT_MISC_FONTS, 0)`:
+            // fall through to the live resolver like C's I/O stack.
+            .or_else(|| self.input_byte_source_bytes(name))
+            .or_else(|| self.input_byte_source_bytes(&format!("{name}.tec")));
+        let Some(bytes) = bytes else {
             self.font_mapping_warning(name.as_bytes(), 1);
             return false;
         };
@@ -889,6 +894,10 @@ impl TeXEngineState {
         if name_string.first() == Some(&b'[') {
             // `[file[:idx]]` form: direct file load, no name search.
             let stem = String::from_utf8_lossy(&name_string[1..]).into_owned();
+            // C's `createFontFromFile` reaches the I/O stack here; the
+            // Rust engine goes through the injected native-font resolver
+            // to register a `font_sources` record on first miss.
+            self.ensure_native_font_source(&stem, index.max(0) as u32, scaled_size);
             if scaled_size < 0 {
                 let mut size = scaled_size;
                 if let Some(record) = self.font_sources.get(&stem) {
@@ -933,6 +942,14 @@ impl TeXEngineState {
                 format!("{name}/{variant}")
             };
             // C's findFontByName(name, var): exact key, then bare name.
+            // A registered-source miss falls through to the resolver seam,
+            // which covers C's file-name search inside `findFontByName`.
+            if !self.font_sources.contains_key(&key) {
+                self.ensure_native_font_source(&key, index.max(0) as u32, scaled_size);
+            }
+            if !self.font_sources.contains_key(&key) && !self.font_sources.contains_key(&name) {
+                self.ensure_native_font_source(&name, index.max(0) as u32, scaled_size);
+            }
             let resolved = if self.font_sources.contains_key(&key) {
                 Some(key.clone())
             } else if self.font_sources.contains_key(&name) {
@@ -994,6 +1011,120 @@ impl TeXEngineState {
     /// the per-font spec.
     pub fn release_font_engine(&mut self, f: i32) {
         self.font_specs.remove(&f);
+    }
+
+    /// `createFontFromFile`'s file-resolution half: when `font_sources`
+    /// lacks `stem`, consult the injected `native_font_resolver` for the
+    /// font file's bytes and register a parsed [`FontRecord`] built at
+    /// `scaled_size`. No-op when no resolver is installed or the name
+    /// does not resolve.
+    fn ensure_native_font_source(&mut self, stem: &str, index: u32, scaled_size: i32) {
+        if self.font_sources.contains_key(stem) {
+            return;
+        }
+        let Some(resolver) = &self.native_font_resolver else {
+            return;
+        };
+        let Some(data) = (resolver.0)(stem) else {
+            return;
+        };
+
+        // C's two-pass size handling (`createFontFromFile` at 655360 to
+        // read the design size, then at the normalized scaled size).
+        let Some(dsize) = Self::native_design_size(&data, index) else {
+            return;
+        };
+        let size = if scaled_size >= 0 {
+            scaled_size
+        } else if scaled_size == -1000 {
+            dsize
+        } else {
+            self.xn_over_d(dsize, -scaled_size, 1000)
+        };
+        let Some(mut record) = Self::font_record_from_native(stem, index, &data, size) else {
+            return;
+        };
+        record.font_bytes = Some(std::sync::Arc::new(data));
+        self.register_font_source(stem, record);
+    }
+
+    /// Probes `data` for its design size (`getDesignSize`): parses the
+    /// font at 10pt and returns `D2Fix(dsize)`. `None` when the bytes do
+    /// not parse as an SFNT face.
+    fn native_design_size(data: &[u8], index: u32) -> Option<i32> {
+        let font =
+            tectonic_xetex_layout::font::Font::new_data(data.to_vec(), "", index, 10.0).ok()?;
+        Some(d2fix(font.design_size()))
+    }
+
+    /// `createFontFromFile`'s metric-extraction half: parses `data` into
+    /// a [`tectonic_xetex_layout::font::Font`] at `scaled_size` (16.16
+    /// fixed points) and materializes a `FontRecord` — cmap-driven
+    /// `char_to_glyph`, per-glyph `glyph_metrics` (`getGlyphWidth`/
+    /// `getGlyphHeightDepth`/`getGlyphSidebearings`), ascent/descent bases,
+    /// the `MATH` table flag, and the `layout_*` fields `make_font_def`
+    /// serializes. C queries the live layout engine lazily; the seam
+    /// model requires them eagerly.
+    fn font_record_from_native(
+        name: &str,
+        index: u32,
+        data: &[u8],
+        scaled_size: i32,
+    ) -> Option<FontRecord> {
+        let point_size = fix2d(scaled_size.max(1)) as f32;
+        let mut font =
+            tectonic_xetex_layout::font::Font::new_data(data.to_vec(), name, index, point_size)
+                .ok()?;
+
+        let mut record = FontRecord {
+            dsize: d2fix(font.design_size()),
+            height_base: d2fix(f64::from(font.ascent())),
+            depth_base: d2fix(-f64::from(font.descent())),
+            has_math_table: font.has_font_table(u32::from_be_bytes(*b"MATH")),
+            glyph_count: font.num_glyphs() as i32,
+            font_type: 2, // OTGR: OpenType/Graphite layout engine class.
+            layout_filename: name.to_string(),
+            layout_face_index: index,
+            layout_point_size: scaled_size,
+            ..FontRecord::default()
+        };
+        // `ot_get_font_metrics`' registered-value slots for x-height and
+        // cap-height (params[5]/params[8] survive the rebuild in
+        // `load_native_font`).
+        let mut params = vec![0; 9];
+        params[5] = d2fix(f64::from(font.x_height()));
+        params[8] = d2fix(f64::from(font.cap_height()));
+        record.params = params;
+
+        for (cp, gid) in font.cmap_mappings() {
+            record.char_to_glyph.insert(cp, u32::from(gid));
+        }
+        let gids: Vec<u32> = record.char_to_glyph.values().copied().collect();
+        for gid in gids {
+            if record.glyph_metrics.contains_key(&gid) {
+                continue;
+            }
+            let mut height = 0.0f32;
+            let mut depth = 0.0f32;
+            let mut lsb = 0.0f32;
+            let mut rsb = 0.0f32;
+            font.get_glyph_height_depth(gid as u16, Some(&mut height), Some(&mut depth));
+            font.get_glyph_sidebearings(gid as u16, Some(&mut lsb), Some(&mut rsb));
+            record
+                .glyph_bbox_pt
+                .insert(gid, [height.to_bits(), depth.to_bits()]);
+            record.glyph_metrics.insert(
+                gid,
+                NativeGlyphMetric {
+                    width: d2fix(f64::from(font.get_glyph_width(gid))),
+                    height: d2fix(f64::from(height)),
+                    depth: d2fix(f64::from(depth)),
+                    lsb: d2fix(f64::from(lsb)),
+                    rsb: d2fix(f64::from(rsb)),
+                },
+            );
+        }
+        Some(record)
     }
 
     /// `ot_get_font_metrics`: engine-level metrics for a native font —
@@ -1101,6 +1232,7 @@ impl TeXEngineState {
         record.skew_char = self.int_par(INT_PAR_DEFAULT_SKEW_CHAR)?;
         record.letter_space = self.loaded_font_letter_space;
         record.font_flags = self.loaded_font_flags;
+        record.layout_point_size = actual_size;
         record.mapping_name.clone_from(&self.loaded_font_mapping);
 
         let (ascent, descent) = (record.height_base, -record.depth_base);

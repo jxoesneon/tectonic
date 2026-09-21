@@ -16,16 +16,17 @@ use crate::state::{
     DIMEN_PAR_H_OFFSET, DIMEN_PAR_PDF_PAGE_HEIGHT, DIMEN_PAR_PDF_PAGE_WIDTH, DIMEN_PAR_V_OFFSET,
     DLIST, DOWN1, DVI_BUF_SIZE, EDGE_NODE, END_M_CODE, EOP, FILLL, FNT1, FNT_DEF1, FNT_NUM_0,
     FONT_FLAGS_COLORED, FONT_FLAGS_VERTICAL, GLUE_NODE, GLUE_SPEC_SIZE, GLYPH_NODE, HALF_BUF,
-    HLIST_NODE, INS_NODE, INT_PAR_MAG, INT_PAR_TRACING_OUTPUT,
+    HLIST_NODE, INS_NODE, INT_PAR_MAG, INT_PAR_TRACING_ONLINE, INT_PAR_TRACING_OUTPUT,
     INT_PAR_XETEX_INTERWORD_SPACE_SHAPING, KERN_NODE, LANGUAGE_NODE, LEFT_TO_RIGHT, LIGATURE_NODE,
     L_CODE, MARGIN_KERN_NODE, MARK_NODE, MATH_NODE, MAX_HALFWORD, MEDIUM_NODE_SIZE, MIN_HALFWORD,
     MOVEMENT_NODE_SIZE, MOV_D_FIXED, MOV_NONE_SEEN, MOV_YZ_OK, MOV_Y_HERE, MOV_Y_OK, MOV_Y_SEEN,
     MOV_Z_HERE, MOV_Z_OK, MOV_Z_SEEN, NATIVE_WORD_NODE, NATIVE_WORD_NODE_AT, NORMAL, NULL_FLAG,
     PDF_NODE, PDF_SAVE_POS_NODE, PENALTY_NODE, PIC_NODE, PIC_NODE_SIZE, POP, POST, POST_POST, PRE,
-    PUSH, PUT_RULE, REVERSED, RIGHT1, RIGHT_TO_LEFT, RULE_NODE, R_CODE, SET1, SET_GLYPHS, SET_RULE,
-    SET_TEXT_AND_GLYPHS, SHRINKING, SMALL_NODE_SIZE, SPACE_ADJUSTMENT, SPX_ID_BYTE, STRETCHING,
-    TEX_NULL, VLIST_NODE, WHATSIT_NODE, XDV_FLAG_COLORED, XDV_FLAG_EMBOLDEN, XDV_FLAG_EXTEND,
-    XDV_FLAG_SLANT, XDV_FLAG_VERTICAL, XDV_ID_BYTE, XXX1, XXX4,
+    PUSH, PUT_RULE, REVERSED, RIGHT1, RIGHT_TO_LEFT, RULE_NODE, R_CODE, SELECTOR_LOG_ONLY,
+    SELECTOR_TERM_AND_LOG, SELECTOR_TERM_ONLY, SET1, SET_GLYPHS, SET_RULE, SET_TEXT_AND_GLYPHS,
+    SHRINKING, SMALL_NODE_SIZE, SPACE_ADJUSTMENT, SPX_ID_BYTE, STRETCHING, TEX_NULL, VLIST_NODE,
+    WHATSIT_NODE, XDV_FLAG_COLORED, XDV_FLAG_EMBOLDEN, XDV_FLAG_EXTEND, XDV_FLAG_SLANT,
+    XDV_FLAG_VERTICAL, XDV_ID_BYTE, XXX1, XXX4,
 };
 
 /// One scaled point expressed as a fixed-point inch offset; C's literal
@@ -798,8 +799,7 @@ impl TeXEngineState {
                                 } else {
                                     let temp = self.lr_ptr;
                                     self.lr_ptr = self.mem[temp as usize].s1;
-                                    self.mem[temp as usize].s1 = self.avail;
-                                    self.avail = temp;
+                                    self.avail_push(temp);
 
                                     if n > MIN_HALFWORD {
                                         n -= 1;
@@ -1251,8 +1251,7 @@ impl TeXEngineState {
                                 if self.mem[self.lr_ptr as usize].s0 == end_lr_type {
                                     let temp = self.lr_ptr;
                                     self.lr_ptr = self.mem[temp as usize].s1;
-                                    self.mem[temp as usize].s1 = self.avail;
-                                    self.avail = temp;
+                                    self.avail_push(temp);
                                 } else if subtype > L_CODE {
                                     self.lr_problems += 1;
                                 }
@@ -1324,13 +1323,11 @@ impl TeXEngineState {
             }
             let temp = self.lr_ptr;
             self.lr_ptr = self.mem[temp as usize].s1;
-            self.mem[temp as usize].s1 = self.avail;
-            self.avail = temp;
+            self.avail_push(temp);
         }
         let temp = self.lr_ptr;
         self.lr_ptr = self.mem[temp as usize].s1;
-        self.mem[temp as usize].s1 = self.avail;
-        self.avail = temp;
+        self.avail_push(temp);
 
         if i32::from(self.mem[this_box as usize].b16_s0()) == DLIST {
             self.cur_dir = RIGHT_TO_LEFT;
@@ -1864,6 +1861,7 @@ impl TeXEngineState {
         self.mode = old_mode;
         self.end_token_list()?;
 
+        let old_setting = self.selector;
         let j = self.mem[(p + 1) as usize].s0;
         let list_start = self.stored_token_list_start(self.def_ref)?;
         let text = self.token_list_to_string(list_start)?;
@@ -1871,19 +1869,53 @@ impl TeXEngineState {
 
         if j == 18 {
             if self.shell_escape_enabled {
-                self.shell_escape_requests.push(text);
+                // `ttstub_shell_escape`: run synchronously through the
+                // installed hook (the driver path); bare engines record
+                // the request for the embedder to drain instead.
+                if let Some(hook) = self.shell_escape_hook.clone() {
+                    hook.run(&text);
+                } else {
+                    self.shell_escape_requests.push(text);
+                }
             } else {
-                self.transcript
-                    .push(format!("runsystem({text})...disabled."));
+                // C emits `runsystem(<cmd>)...disabled.` as a captured
+                // warning on term+log (term only before the log opens).
+                let message = format!("runsystem({text})...disabled.");
+                self.selector = if self.int_par(INT_PAR_TRACING_ONLINE)? <= 0 {
+                    SELECTOR_LOG_ONLY
+                } else {
+                    SELECTOR_TERM_AND_LOG
+                };
+                if !self.log_opened {
+                    self.selector = SELECTOR_TERM_ONLY;
+                }
+                self.capture_to_diagnostic(true);
+                self.diagnostic_print_file_line();
+                self.print_nl_cstr(&message)?;
+                self.capture_to_diagnostic(false);
+                self.print_nl_cstr("")?;
+                self.print_ln();
+                self.transcript.push(message);
             }
         } else if (0..16).contains(&j) && self.write_stream_open(j) {
-            if let Some(Some(stream)) = self.write_streams.get_mut(j as usize) {
-                stream.text.push_str(&text);
-                stream.text.push('\n');
-            }
+            // `selector = j`: `token_show` writes through `print` into the
+            // stream's text.
+            self.selector = j;
+            self.print_str_text(&text)?;
+            self.print_ln();
         } else {
+            // Closed or terminal stream: `print_nl("")` then `token_show`
+            // on the current selector (TERM_AND_LOG; `\write17` demotes it
+            // to log-only when the terminal is also active).
+            if j == 17 && self.selector == SELECTOR_TERM_AND_LOG {
+                self.selector = SELECTOR_LOG_ONLY;
+            }
+            self.print_nl_cstr("")?;
+            self.print_str_text(&text)?;
+            self.print_ln();
             self.transcript.push(text);
         }
+        self.selector = old_setting;
         Ok(())
     }
 
@@ -1896,27 +1928,46 @@ impl TeXEngineState {
         self.synctex_sheet(mag);
 
         if self.job_name.is_none() {
-            self.job_name = Some("texput".to_string());
+            self.open_log_file()?;
         }
 
         if self.int_par(INT_PAR_TRACING_OUTPUT)? > 0 {
+            self.print_nl_cstr("")?;
+            self.print_ln();
+            self.print_cstr("Completed box being shipped out")?;
             self.transcript
                 .push("Completed box being shipped out".to_string());
         }
 
         // "[1" page-counter progress line.
+        if self.term_offset > self.max_print_line - 9 {
+            self.print_ln();
+        } else if self.term_offset > 0 || self.file_offset > 0 {
+            self.print_char(i32::from(b' '))?;
+        }
+        self.print_char(i32::from(b'['))?;
         let mut j = 9usize;
         while j > 0 && self.count(j)? == 0 {
             j -= 1;
         }
         let mut page_numbers = String::from("[");
         for k in 0..=j {
-            page_numbers.push_str(&self.count(k)?.to_string());
+            let n = self.count(k)?;
+            self.print_int(n)?;
+            page_numbers.push_str(&n.to_string());
             if k < j {
+                self.print_char(i32::from(b'.'))?;
                 page_numbers.push('.');
             }
         }
         self.transcript.push(page_numbers);
+
+        if self.int_par(INT_PAR_TRACING_OUTPUT)? > 0 {
+            self.print_char(i32::from(b']'))?;
+            self.begin_diagnostic()?;
+            self.show_box(p)?;
+            self.end_diagnostic(true)?;
+        }
 
         // §663: huge-page check.
         let (height, depth, width) = (
@@ -2041,6 +2092,7 @@ impl TeXEngineState {
             return Err(self.confusion("LR3"));
         }
         if self.int_par(INT_PAR_TRACING_OUTPUT)? <= 0 {
+            self.print_char(i32::from(b']'))?;
             self.transcript.push("]".to_string());
         }
         self.dead_cycles = 0;
@@ -2066,6 +2118,7 @@ impl TeXEngineState {
         }
 
         if self.total_pages == 0 {
+            self.print_nl_cstr("No pages of output.")?;
             self.transcript.push("No pages of output.".to_string());
             return Ok(());
         }
@@ -2121,6 +2174,22 @@ impl TeXEngineState {
             self.write_to_dvi(0, end);
         }
 
+        // C `dvi_close` tail: `print_nl("Output written on ");
+        // print(output_file_name); print(" ("); print_int(total_pages); …`
+        // — the output name is our plain String, not a pool str_number.
+        let output_name = self.output_file_name.clone();
+        self.print_nl_cstr("Output written on ")?;
+        self.print_str_text(&output_name)?;
+        self.print_cstr(" (")?;
+        self.print_int(self.total_pages)?;
+        if self.total_pages != 1 {
+            self.print_cstr(" pages")?;
+        } else {
+            self.print_cstr(" page")?;
+        }
+        self.print_cstr(", ")?;
+        self.print_int(self.dvi_offset + self.dvi_ptr)?;
+        self.print_cstr(" bytes).")?;
         self.transcript.push(format!(
             "Output written on {} ({} {}, {} bytes).",
             self.output_file_name,

@@ -31,6 +31,7 @@ const HELPMSG: &str = r#"Available unstable options:
                                     Specifically, deterministic mode breaks SyncTeX's auxiliary files
                                     as they include and rely on absolute file paths
     -Z pdf-backend=<engine>     Select PDF backend ('rust' or 'xdvipdfmx'/'c') [default: xdvipdfmx]
+    -Z tex-backend=<engine>     Select TeX backend ('rust' or 'c') [default: c]
 "#;
 
 // Each entry of this should correspond to a field of UnstableOptions.
@@ -46,6 +47,7 @@ pub enum UnstableArg {
     ShellEscapeCwd(String),
     DeterministicModeEnabled,
     PdfBackend(String),
+    TexBackend(String),
 }
 
 impl FromStr for UnstableArg {
@@ -100,7 +102,13 @@ impl FromStr for UnstableArg {
 
             "deterministic-mode" => require_no_value(value, UnstableArg::DeterministicModeEnabled),
 
-            "pdf-backend" => require_value("engine").map(|s| UnstableArg::PdfBackend(s.to_string())),
+            "pdf-backend" => {
+                require_value("engine").map(|s| UnstableArg::PdfBackend(s.to_string()))
+            }
+
+            "tex-backend" => {
+                require_value("engine").map(|s| UnstableArg::TexBackend(s.to_string()))
+            }
 
             _ => Err(format!("Unknown unstable option '{arg}'").into()),
         }
@@ -152,6 +160,12 @@ pub struct UnstableOptions {
 
     /// Whether to use the pure-Rust PDF backend.
     pub use_rust_pdf_backend: bool,
+
+    /// Desired TeX engine backend ("rust" or "c").
+    pub tex_backend: Option<String>,
+
+    /// Whether to use the pure-Rust TeX engine.
+    pub use_rust_tex_backend: bool,
 }
 
 impl UnstableOptions {
@@ -180,6 +194,10 @@ impl UnstableOptions {
                     opts.use_rust_pdf_backend = b.eq_ignore_ascii_case("rust");
                     opts.pdf_backend = Some(b);
                 }
+                TexBackend(b) => {
+                    opts.use_rust_tex_backend = b.eq_ignore_ascii_case("rust");
+                    opts.tex_backend = Some(b);
+                }
             }
         }
 
@@ -191,4 +209,31 @@ impl UnstableOptions {
 pub fn print_unstable_help_and_exit() {
     print!("{HELPMSG}");
     std::process::exit(0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tex_backend_selects_rust() {
+        let args: Vec<UnstableArg> = vec!["tex-backend=rust".parse().unwrap()];
+        let opts = UnstableOptions::from_unstable_args(args.into_iter());
+        assert!(opts.use_rust_tex_backend);
+        assert_eq!(opts.tex_backend.as_deref(), Some("rust"));
+    }
+
+    #[test]
+    fn tex_backend_defaults_to_c() {
+        let opts = UnstableOptions::from_unstable_args(std::iter::empty());
+        assert!(!opts.use_rust_tex_backend);
+        assert_eq!(opts.tex_backend, None);
+    }
+
+    #[test]
+    fn tex_backend_unknown_value_keeps_c() {
+        let args: Vec<UnstableArg> = vec!["tex-backend=bogus".parse().unwrap()];
+        let opts = UnstableOptions::from_unstable_args(args.into_iter());
+        assert!(!opts.use_rust_tex_backend);
+    }
 }

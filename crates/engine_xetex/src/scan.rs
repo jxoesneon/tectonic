@@ -74,9 +74,9 @@ use crate::scanner::{
 };
 use crate::state::{
     CommandCode, TeXEngineState, TeXMode, CAT_CODE_BASE, CHAR_CLASS_LIMIT, CUR_FONT_LOC,
-    DEL_CODE_BASE, FAMILY_BASE, FIL, FILLL, HYPHEN_CHAR_CODE, INT_PAR_MAG, LC_CODE_BASE,
+    DEL_CODE_BASE, FIL, FILLL, HYPHEN_CHAR_CODE, INT_PAR_MAG, LC_CODE_BASE,
     LOCAL_BASE, LOCAL_PAR_SHAPE, LOCAL_XETEX_INTER_CHAR_TOKS, LP_CODE_BASE, MATH_CODE_BASE,
-    MATH_FONT_BASE_C, MAX_HALFWORD, MU_GLUE, NORMAL, PAGE_EMPTY, PAGE_SO_FAR_COUNT, QUAD_CODE,
+    MAX_HALFWORD, MU_GLUE, NORMAL, PAGE_EMPTY, PAGE_SO_FAR_COUNT, QUAD_CODE,
     SA_BOX_VAL, SA_INTER_CHAR_VAL, SA_TOK_VAL, SF_CODE_BASE, SKEW_CHAR_CODE, SPACE_CODE,
     SPACE_SHRINK_CODE, TEX_NULL, UC_CODE_BASE, X_HEIGHT_CODE,
 };
@@ -624,7 +624,7 @@ impl TeXEngineState {
                 let index = usize::try_from(m)
                     .ok()
                     .filter(|&index| index < self.eqtb.len())
-                    .ok_or(TeXMouthError::InputOutOfBounds(m))?;
+                    .ok_or_else(|| crate::scanner::oob(m))?;
                 self.cur_val = self.eqtb[index].s1;
                 self.cur_val_level = INT_VAL;
             }
@@ -632,7 +632,7 @@ impl TeXEngineState {
                 let index = usize::try_from(m)
                     .ok()
                     .filter(|&index| index < self.eqtb.len())
-                    .ok_or(TeXMouthError::InputOutOfBounds(m))?;
+                    .ok_or_else(|| crate::scanner::oob(m))?;
                 self.cur_val = self.eqtb[index].s1;
                 self.cur_val_level = DIMEN_VAL;
             }
@@ -640,7 +640,7 @@ impl TeXEngineState {
                 let index = usize::try_from(m)
                     .ok()
                     .filter(|&index| index < self.eqtb.len())
-                    .ok_or(TeXMouthError::InputOutOfBounds(m))?;
+                    .ok_or_else(|| crate::scanner::oob(m))?;
                 self.cur_val = self.eqtb[index].s1;
                 self.cur_val_level = if c == CommandCode::AssignGlue as u8 {
                     GLUE_VAL
@@ -689,7 +689,7 @@ impl TeXEngineState {
                 let index = usize::try_from(m)
                     .ok()
                     .filter(|&index| index < PAGE_SO_FAR_COUNT)
-                    .ok_or(TeXMouthError::InputOutOfBounds(m))?;
+                    .ok_or_else(|| crate::scanner::oob(m))?;
                 self.cur_val = if self.page_contents == PAGE_EMPTY && !self.output_active {
                     if index == 0 {
                         MAX_HALFWORD
@@ -705,7 +705,7 @@ impl TeXEngineState {
                 let index = usize::try_from(m)
                     .ok()
                     .filter(|&index| index < self.eqtb.len())
-                    .ok_or(TeXMouthError::InputOutOfBounds(m))?;
+                    .ok_or_else(|| crate::scanner::oob(m))?;
                 self.cur_val = if index > LOCAL_BASE + LOCAL_PAR_SHAPE {
                     self.scan_int()?;
                     let shape = self.eqtb[index].s1;
@@ -718,7 +718,7 @@ impl TeXEngineState {
                         let selected = shape
                             .checked_add(selected)
                             .and_then(|p| p.checked_add(1))
-                            .ok_or(TeXMouthError::InputOutOfBounds(shape))?;
+                            .ok_or_else(|| crate::scanner::oob(shape))?;
                         self.mem[self.checked_engine_mem_index(selected)?].s1
                     }
                 } else {
@@ -733,8 +733,8 @@ impl TeXEngineState {
             }
             c if c == CommandCode::DefCode as u8 => {
                 self.scan_usv_num()?;
-                let character = u32::try_from(self.cur_val)
-                    .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+                let character =
+                    u32::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?;
                 self.cur_val = match m {
                     CAT_CODE_BASE => i32::from(self.cat_code(character)),
                     LC_CODE_BASE => self.lc_code(character),
@@ -773,8 +773,8 @@ impl TeXEngineState {
             }
             c if c == CommandCode::XetexDefCode as u8 => {
                 self.scan_usv_num()?;
-                let character = u32::try_from(self.cur_val)
-                    .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+                let character =
+                    u32::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?;
                 self.cur_val = match m {
                     SF_CODE_BASE => self.sf_code(character) / 65_536,
                     MATH_CODE_BASE => self.math_code(character),
@@ -802,7 +802,7 @@ impl TeXEngineState {
                         let key = first_class
                             .checked_mul(CHAR_CLASS_LIMIT)
                             .and_then(|key| key.checked_add(self.cur_val))
-                            .ok_or(TeXMouthError::InputOutOfBounds(self.cur_val))?;
+                            .ok_or_else(|| crate::scanner::oob(self.cur_val))?;
                         let element = self.find_sa_element(SA_INTER_CHAR_VAL, key, false)?;
                         self.cur_val = if element == TEX_NULL {
                             TEX_NULL
@@ -813,7 +813,7 @@ impl TeXEngineState {
                         let index = usize::try_from(m)
                             .ok()
                             .filter(|&index| index < self.eqtb.len())
-                            .ok_or(TeXMouthError::InputOutOfBounds(m))?;
+                            .ok_or_else(|| crate::scanner::oob(m))?;
                         self.cur_val = self.eqtb[index].s1;
                     }
                     self.cur_val_level = TOK_VAL;
@@ -869,7 +869,7 @@ impl TeXEngineState {
                             self.scan_char_num()?;
                         }
                         let key = u32::try_from(self.cur_val)
-                            .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+                            .map_err(|_| crate::scanner::oob(self.cur_val))?;
                         self.cur_val = self.get_cp_code(font, key, m == LP_CODE_BASE);
                     }
                 }
@@ -936,7 +936,7 @@ impl TeXEngineState {
                 self.cur_val = if q == TEX_NULL {
                     0
                 } else {
-                    let index = q.checked_add(m).ok_or(TeXMouthError::InputOutOfBounds(q))?;
+                    let index = q.checked_add(m).ok_or_else(|| crate::scanner::oob(q))?;
                     self.mem[self.checked_engine_mem_index(index)?].s1
                 };
                 self.cur_val_level = DIMEN_VAL;
@@ -1398,7 +1398,7 @@ impl TeXEngineState {
                     let cell = shape
                         .checked_add(2 * self.cur_val)
                         .and_then(|p| p.checked_sub(q))
-                        .ok_or(TeXMouthError::InputOutOfBounds(shape))?;
+                        .ok_or_else(|| crate::scanner::oob(shape))?;
                     self.cur_val = self.mem[self.checked_engine_mem_index(cell)?].s1;
                 }
             }
@@ -1522,7 +1522,7 @@ impl TeXEngineState {
         } else if self.cur_cmd == CommandCode::SetFont as u8 {
             self.cur_chr
         } else if self.cur_cmd == CommandCode::DefFamily as u8 {
-            let base = FAMILY_BASE as i32 + (self.cur_chr - MATH_FONT_BASE_C);
+            let base = Self::c_eqtb_pos_to_compact(self.cur_chr);
             self.scan_math_fam_int()?;
             usize::try_from(base + self.cur_val)
                 .ok()
@@ -1567,7 +1567,7 @@ impl TeXEngineState {
         let param_count = self
             .font_record(font)
             .map_or(0, |record| record.params.len().saturating_sub(1));
-        let n = usize::try_from(n).map_err(|_| TeXMouthError::InputOutOfBounds(n))?;
+        let n = usize::try_from(n).map_err(|_| crate::scanner::oob(n))?;
         if n > param_count {
             if font < self.font_ptr() {
                 self.font_dimen_error(font)?;
@@ -1650,7 +1650,7 @@ impl TeXEngineState {
     pub fn scan_four_bit_int_or_18(&mut self) -> Result<i32, TeXMouthError> {
         let value = self.scan_int()?;
         if !(0..=15).contains(&value) && value != 18 {
-            return Err(TeXMouthError::InputOutOfBounds(value));
+            return Err(crate::scanner::oob(value));
         }
         Ok(value)
     }
@@ -1663,7 +1663,7 @@ impl TeXEngineState {
     fn scan_bounded_int(&mut self, min: i32, max: i32) -> Result<i32, TeXMouthError> {
         let value = self.scan_int()?;
         if !(min..=max).contains(&value) {
-            return Err(TeXMouthError::InputOutOfBounds(value));
+            return Err(crate::scanner::oob(value));
         }
         Ok(value)
     }
@@ -2522,7 +2522,7 @@ impl TeXEngineState {
         self.mem
             .get(idx + 1)
             .map(|word| word.s1)
-            .ok_or(TeXMouthError::InputOutOfBounds(p))
+            .ok_or_else(|| crate::scanner::oob(p))
     }
 
     /// C `mu_error` ("Incompatible glue units"): a recoverable error that

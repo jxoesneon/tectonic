@@ -10,7 +10,7 @@
 
 use crate::primitives::{primitive_defs, PrimitiveExtraInit};
 use crate::scan::INT_VAL;
-use crate::scanner::{TeXMouthError, NEW_LINE, TOKEN_LIST};
+use crate::scanner::{TeXMouthError, EVERY_JOB_TEXT, NEW_LINE, TOKEN_LIST};
 use crate::state::*;
 
 /// Highest `mem` index available to single-word token nodes; the
@@ -1213,25 +1213,32 @@ impl TeXEngineState {
 
     // === `final_cleanup` ===
 
-    /// C `open_log_file` — switches the selector to `TERM_AND_LOG` and
-    /// records the transcript name in `name_of_file`. The byte sink is
-    /// `log_out`; the driver's job is to flush it to `<jobname>.log`.
+    /// C `open_log_file` — echoes `**` plus the loaded input line to the log
+    /// only, then sets `selector = old + 2` (`TERM_AND_LOG` from
+    /// `TERM_ONLY`, `LOG_ONLY` from `NO_PRINT`). The byte sink is `log_out`;
+    /// the driver's job is to flush it to `<jobname>.log`.
     pub(crate) fn open_log_file(&mut self) -> Result<(), TeXMouthError> {
-        let base = self
-            .job_name
-            .clone()
-            .unwrap_or_else(|| "texput".to_string());
-        let stem = base.rsplit_once('.').map_or(base.as_str(), |(s, _)| s);
-        self.name_of_file = format!("{stem}.log").into_bytes();
+        let old_setting = self.selector;
+        if self.job_name.is_none() {
+            self.job_name = Some("texput".to_string());
+        }
+        let base = self.job_name.clone().unwrap_or_default();
+        // `pack_job_name(".log")` appends the extension to `job_name`
+        // verbatim — the job name is already a stem.
+        self.name_of_file = format!("{base}.log").into_bytes();
         self.name_length = self.name_of_file.len() as i32;
-        self.selector = SELECTOR_TERM_AND_LOG;
+        self.log_name = Some(format!("{base}.log"));
+        self.selector = SELECTOR_LOG_ONLY;
         self.log_opened = true;
 
+        // Catch the log up with anything already printed: `**` plus the
+        // bottom input frame's loaded line. The limit refers to the frame
+        // that was active when the engine started, so clamp it to the
+        // bytes the buffer actually holds.
         if let Some(top) = self.input_stack.first().copied() {
             self.print_nl_cstr("**")?;
-            let mut l = top.limit;
+            let mut l = top.limit.min(self.buffer.len() as i32 - 1);
             if l >= 0
-                && (l as usize) < self.buffer.len()
                 && self.buffer[l as usize] == self.int_par(INT_PAR_END_LINE_CHAR).unwrap_or(-1)
             {
                 l -= 1;
@@ -1241,6 +1248,7 @@ impl TeXEngineState {
             }
             self.print_ln();
         }
+        self.selector = old_setting + 2;
         Ok(())
     }
 
@@ -1297,8 +1305,6 @@ impl TeXEngineState {
             self.print_nl_cstr("(see the transcript file for additional information)")?;
             self.selector = SELECTOR_TERM_AND_LOG;
         }
-        // C `close_files_and_terminate`: SyncTeX postamble + stream close.
-        self.synctex_terminate(self.log_opened);
         if c == 1 {
             if self.in_initex_mode {
                 for m in TOP_MARK_CODE..=SPLIT_BOT_MARK_CODE {
@@ -1327,6 +1333,43 @@ impl TeXEngineState {
         Ok(())
     }
 
+    /// C `close_files_and_terminate` — runs after `final_cleanup` at the
+    /// `tt_run_engine` tail: closes `\write` streams, finalizes the XDV
+    /// file (`dvi_close`, which prints `Output written on …`), terminates
+    /// SyncTeX, writes the trailing newline into the log and reports
+    /// `Transcript written on <job>.log.` on the terminal.
+    pub(crate) fn close_files_and_terminate(&mut self) -> Result<(), TeXMouthError> {
+        for k in 0..16 {
+            if self.write_stream_open(k) {
+                self.write_open[k as usize] = false;
+            }
+        }
+        self.set_int_par(INT_PAR_NEW_LINE_CHAR, -1)?;
+
+        if !self.dvi_finalized {
+            self.finalize_dvi_file()?;
+            self.dvi_finalized = true;
+        }
+        self.synctex_terminate(self.log_opened);
+
+        if self.log_opened {
+            // C writes `\n` directly to the log file, then closes it —
+            // the byte lands in `log_out` regardless of `selector`.
+            // `log_opened` stays set: it gates the driver's `log_out`
+            // flush (our buffered equivalent of C's open file handle).
+            self.log_out.push(b'\n');
+            self.selector -= 2;
+            if self.selector == SELECTOR_TERM_ONLY {
+                let name = self.log_name.clone().unwrap_or_default();
+                self.print_nl_cstr("Transcript written on ")?;
+                self.print_str_text(&name)?;
+                self.print_char(i32::from(b'.'))?;
+            }
+        }
+        self.print_ln();
+        Ok(())
+    }
+
     /// C `tt_run_engine` — drives a complete engine invocation on this
     /// state: INITEX primitive setup or format load, input start, the main
     /// control loop, and `final_cleanup`. Returns `history`.
@@ -1352,11 +1395,15 @@ impl TeXEngineState {
         let fmt_bytes = if self.in_initex_mode {
             None
         } else {
-            let fmt_name = format!("{dump_name}.fmt");
-            Some(
-                self.input_byte_source_bytes(&fmt_name)
-                    .ok_or(TeXMouthError::BadFormatFile)?,
-            )
+            // C `open_fmt_file`: `name_of_file` is `dump_name` verbatim,
+            // opened with `TTBC_FILE_FORMAT_FORMAT` so the provider's
+            // format search path (not the extension-derived file kind)
+            // resolves it.
+            let bytes = match self.fmt_input_resolver.clone() {
+                Some(resolver) => resolver.resolve(dump_name),
+                None => self.input_byte_source_bytes(dump_name),
+            };
+            Some(bytes.ok_or(TeXMouthError::BadFormatFile)?)
         };
         self.run_engine(dump_name, fmt_bytes.as_deref(), input_name, build_date)
     }
@@ -1383,8 +1430,6 @@ impl TeXEngineState {
         self.tex_format_default = dump_name.to_string();
 
         self.initialize_more_variables();
-        // C `main_init` tail: map the driver SyncTeX flag onto `\synctex`.
-        self.synctex_init_command();
 
         if self.in_initex_mode {
             self.get_strings_started();
@@ -1402,6 +1447,8 @@ impl TeXEngineState {
         self.job_name = None;
         self.name_in_progress = false;
         self.log_opened = false;
+        self.log_name = None;
+        self.diag_events.clear();
 
         self.input_ptr = 0;
         self.max_in_stack = 0;
@@ -1483,8 +1530,19 @@ impl TeXEngineState {
             self.set_int_par(INT_PAR_XETEX_GENERATE_ACTUAL_TEXT, 1)?;
         }
 
+        // C `tt_run_engine` tail: map the driver SyncTeX flag onto
+        // `\synctex` *after* the format load — the dumped value must not
+        // override the driver's request.
+        self.synctex_init_command();
         self.start_input_source(input_name)?;
         self.history = HISTORY_SPOTLESS;
+
+        // C `main_control` prologue: `\everyjob` runs before the first
+        // dispatch of the job.
+        let every_job = self.local(LOCAL_EVERY_JOB)?;
+        if every_job != TEX_NULL {
+            self.begin_token_list(every_job, EVERY_JOB_TEXT)?;
+        }
 
         // C `main_control` — dispatch until `\end`/`its_all_over` stops the
         // job (end-of-input without `\end` surfaces as `EndOfInput`).
@@ -1493,6 +1551,7 @@ impl TeXEngineState {
         }
 
         self.final_cleanup()?;
+        self.close_files_and_terminate()?;
         Ok(self.history)
     }
 

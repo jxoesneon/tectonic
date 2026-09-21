@@ -125,6 +125,58 @@ impl TeXEngineState {
         self.input_resolver = Some(crate::state::InputResolver(resolver));
     }
 
+    /// Installs the primary-input resolver (`ttstub_input_open_primary`'s
+    /// live I/O path), consulted for `TTBC_FILE_FORMAT_TECTONIC_PRIMARY`
+    /// opens so the driver can serve the primary input from a pipe or
+    /// memory rather than a named file.
+    pub fn set_primary_input_resolver(&mut self, resolver: crate::state::InputResolverFn) {
+        self.primary_input_resolver = Some(crate::state::InputResolver(resolver));
+    }
+
+    /// Installs the format-image resolver consulted for `dump_name`
+    /// resolution in `run` (`ttstub_input_open` with
+    /// `TTBC_FILE_FORMAT_FORMAT`).
+    pub fn set_fmt_input_resolver(&mut self, resolver: crate::state::InputResolverFn) {
+        self.fmt_input_resolver = Some(crate::state::InputResolver(resolver));
+    }
+
+    /// Installs the file-metadata resolver (`ttstub_input_get_mtime` /
+    /// `ttstub_get_last_input_abspath` equivalents), consulted after each
+    /// input open so SyncTeX records real paths and `\pdffilemoddate`
+    /// reports real mtimes.
+    pub fn set_input_metadata_resolver(&mut self, resolver: crate::state::MetadataResolverFn) {
+        self.input_metadata_resolver = Some(crate::state::MetadataResolver(resolver));
+    }
+
+    /// Installs the lazy native-font resolver, consulted by
+    /// `find_native_font` when `font_sources` misses (`createFontFromFile`'s
+    /// file open). The callback receives the file-name stem scanned by
+    /// `scan_file_name` and returns the font file's bytes.
+    pub fn set_native_font_resolver(&mut self, resolver: crate::state::InputResolverFn) {
+        self.native_font_resolver = Some(crate::state::InputResolver(resolver));
+    }
+
+    /// Installs the synchronous shell-escape executor
+    /// (`ttstub_shell_escape`), invoked by `\write18` at `out_what` time
+    /// when `shell_escape_enabled` is set.
+    pub fn set_shell_escape_hook(&mut self, hook: crate::state::ShellEscapeFn) {
+        self.shell_escape_hook = Some(crate::state::ShellEscapeHook(hook));
+    }
+
+    /// Installs the expansion-entry notification hook
+    /// (`ttstub_event_expand_on` / `ttstub_event_macro_expand`), invoked at
+    /// `expand` and `macro_call` entry points.
+    pub fn set_expansion_hook(
+        &mut self,
+        emit_fn: crate::state::ExpansionHookFn,
+        wants_names: bool,
+    ) {
+        self.expansion_hook = Some(crate::state::ExpansionHook {
+            emit_fn,
+            wants_names,
+        });
+    }
+
     /// Resolves a byte source name, adding `.tex` when the stem has no
     /// extension (the search-path fallback used for `TTBC_FILE_FORMAT_TEX`).
     /// On a registered-map miss the injected `input_resolver` is consulted
@@ -201,11 +253,42 @@ impl TeXEngineState {
             return None;
         }
 
-        let resolved = self.input_byte_source_name(&name)?;
+        let resolved = if filefmt == TTBC_FILE_FORMAT_TECTONIC_PRIMARY {
+            // `input_open_primary`: the dedicated provider hook for the
+            // primary input. When a driver resolver is installed its
+            // result is authoritative (the named file may not exist as a
+            // filesystem path); otherwise fall back to named resolution.
+            if let Some(primary) = self.primary_input_resolver.clone() {
+                if self.input_byte_sources.contains_key(&name) {
+                    Some(name.clone())
+                } else {
+                    let bytes = primary.resolve(&name)?;
+                    self.input_byte_sources.insert(name.clone(), bytes);
+                    Some(name.clone())
+                }
+            } else {
+                Some(self.input_byte_source_name(&name)?)
+            }
+        } else {
+            Some(self.input_byte_source_name(&name)?)
+        }?;
         let bytes = self.input_byte_sources.get(&resolved)?.clone();
         self.name_length = self.name_of_file.len() as i32;
         self.name_of_input_file = Some(name);
-        self.abspath_of_input_file.clear();
+        // `ttstub_get_last_input_abspath` after open: the provider's
+        // absolute path when exposed, else the empty string like C.
+        if let Some(meta) = self
+            .input_metadata_resolver
+            .clone()
+            .and_then(|m| m.resolve(&resolved))
+        {
+            self.abspath_of_input_file = meta.abspath.unwrap_or_default();
+            if let Some(mtime) = meta.mtime {
+                self.input_file_mtimes.insert(resolved.clone(), mtime);
+            }
+        } else {
+            self.abspath_of_input_file.clear();
+        }
         Some(bytes)
     }
 
@@ -653,10 +736,9 @@ impl TeXEngineState {
     pub fn open_or_close_in(&mut self) -> Result<(), TeXMouthError> {
         let opening = self.cur_chr != 0;
         self.scan_four_bit_int()?;
-        let n = usize::try_from(self.cur_val)
-            .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+        let n = usize::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?;
         if n >= self.read_open.len() || n >= self.read_file.len() {
-            return Err(TeXMouthError::InputOutOfBounds(self.cur_val));
+            return Err(crate::scanner::oob(self.cur_val));
         }
 
         if self.read_open[n] != ReadOpen::Closed {

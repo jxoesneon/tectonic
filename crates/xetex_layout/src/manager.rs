@@ -766,48 +766,13 @@ impl FontManager {
     }
 
     fn get_op_size(font: &Font) -> Option<OpSizeRec> {
-        let face = font.ttf_face()?;
-        let data = face.raw_face().table(ttf_parser::Tag::from_bytes(b"GPOS"))?;
-        if data.len() < 10 {
-            return None;
-        }
-        let feature_list_offset = u16::from_be_bytes([data[6], data[7]]) as usize;
-        let feat_data = data.get(feature_list_offset..)?;
-        if feat_data.len() < 2 {
-            return None;
-        }
-        let feature_count = u16::from_be_bytes([feat_data[0], feat_data[1]]) as usize;
-        for i in 0..feature_count {
-            let rec = feat_data.get(2 + i * 6..2 + (i + 1) * 6)?;
-            if &rec[0..4] == b"size" {
-                let offset = u16::from_be_bytes([rec[4], rec[5]]) as usize;
-                let table = feat_data.get(offset..)?;
-                if table.len() < 2 {
-                    return None;
-                }
-                let params_offset = u16::from_be_bytes([table[0], table[1]]) as usize;
-                if params_offset == 0 {
-                    return None;
-                }
-                let params = table.get(params_offset..)?;
-                if params.len() < 10 {
-                    return None;
-                }
-                let design_size = u16::from_be_bytes([params[0], params[1]]);
-                let sub_family_id = u16::from_be_bytes([params[2], params[3]]);
-                let name_code = u16::from_be_bytes([params[4], params[5]]);
-                let min_size = u16::from_be_bytes([params[6], params[7]]);
-                let max_size = u16::from_be_bytes([params[8], params[9]]);
-                return Some(OpSizeRec {
-                    sub_family_id: sub_family_id as libc::c_uint,
-                    name_code: name_code as libc::c_uint,
-                    design_size: design_size as f64 * 72.27 / 72.0 / 10.0,
-                    min_size: min_size as f64 * 72.27 / 72.0 / 10.0,
-                    max_size: max_size as f64 * 72.27 / 72.0 / 10.0,
-                });
-            }
-        }
-        None
+        font.op_size().map(|size| OpSizeRec {
+            sub_family_id: size.sub_family_id as libc::c_uint,
+            name_code: size.name_code as libc::c_uint,
+            design_size: size.design_size,
+            min_size: size.min_size,
+            max_size: size.max_size,
+        })
     }
 
     fn search_for_host_platform_fonts(&mut self, name: &CStr) {

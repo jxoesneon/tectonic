@@ -13,6 +13,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
+use crate::fonts::{d2fix, fix2d};
 use crate::scanner::{
     ControlSequenceTable, FileInputSource, InputState, ReadOpen, CS_TOKEN_FLAG, MID_LINE, PAR_CS_ID,
 };
@@ -307,6 +308,137 @@ impl std::fmt::Debug for InputResolver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("InputResolver(..)")
     }
+}
+
+/// Driver-reported metadata for a resolved input file: the engine-side
+/// view of `ttstub_input_get_mtime` and `ttstub_get_last_input_abspath`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct InputFileMetadata {
+    /// File modification time as Unix seconds (`input_get_mtime`).
+    pub mtime: Option<i64>,
+    /// Absolute filesystem path when the provider exposes one
+    /// (`latest_input_path`, honoring `expose_absolute_paths`).
+    pub abspath: Option<String>,
+}
+
+/// The `Arc`-shared, thread-safe name-to-metadata callback type used by
+/// [`MetadataResolver`].
+pub type MetadataResolverFn =
+    std::sync::Arc<dyn Fn(&str) -> Option<InputFileMetadata> + Send + Sync>;
+
+/// Per-engine file-metadata resolver: consulted after byte resolution so
+/// `\pdffilemoddate` and SyncTeX's `abspath_of_input_file` can be backed
+/// by real provider metadata instead of placeholder values.
+#[derive(Clone)]
+pub struct MetadataResolver(
+    /// The name-to-metadata resolution callback.
+    pub MetadataResolverFn,
+);
+
+impl MetadataResolver {
+    /// Resolves `name` to its provider metadata through the callback.
+    pub fn resolve(&self, name: &str) -> Option<InputFileMetadata> {
+        (self.0)(name)
+    }
+}
+
+impl std::fmt::Debug for MetadataResolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("MetadataResolver(..)")
+    }
+}
+
+/// The `Arc`-shared synchronous shell-escape executor type
+/// (`ttstub_shell_escape`): invoked at `\write18` out_what time so
+/// shell-created files exist for the rest of the run. Returns `true`
+/// when the command failed, mirroring `CoreBridgeState::shell_escape`.
+pub type ShellEscapeFn = std::sync::Arc<dyn Fn(&str) -> bool + Send + Sync>;
+
+/// Per-engine shell-escape hook.
+#[derive(Clone)]
+pub struct ShellEscapeHook(
+    /// The command executor callback.
+    pub ShellEscapeFn,
+);
+
+impl ShellEscapeHook {
+    /// Runs `command`, returning `true` on failure.
+    pub fn run(&self, command: &str) -> bool {
+        (self.0)(command)
+    }
+}
+
+impl std::fmt::Debug for ShellEscapeHook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ShellEscapeHook(..)")
+    }
+}
+
+/// Severity of a captured diagnostic (`ttbc_diag_begin_warning` /
+/// `ttbc_diag_begin_error`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DiagSeverity {
+    /// `ttbc_diag_begin_warning`.
+    Warning,
+    /// `ttbc_diag_begin_error`.
+    Error,
+}
+
+/// One expansion-entry notification (`ttstub_event_expand_on` /
+/// `ttstub_event_macro_expand`). `name` is populated at the points where C
+/// delivers a rich `MacroExpansionContext`: always at `macro_call` entry,
+/// and in `expand` only when `cur_cmd < CALL`. The consumer maps
+/// `name.is_some()` to `event_macro_expand` when its rich hook is active
+/// and to `event_expand_on` otherwise — matching the C dispatch exactly.
+#[derive(Clone, Debug)]
+pub struct ExpansionEvent {
+    /// Control-sequence name when C would report one.
+    pub name: Option<String>,
+    /// C's depth parameter: `expand_depth_count` in `expand`,
+    /// `input_ptr` in `macro_call`.
+    pub depth: i32,
+    /// TeX `cur_cmd` at the point of expansion.
+    pub cur_cmd: i32,
+    /// TeX `cur_chr` at the point of expansion.
+    pub cur_chr: i32,
+}
+
+/// The `Arc`-shared expansion-notification callback type.
+pub type ExpansionHookFn = std::sync::Arc<dyn Fn(&ExpansionEvent) + Send + Sync>;
+
+/// Per-engine expansion-event hook.
+#[derive(Clone)]
+pub struct ExpansionHook {
+    /// The notification callback.
+    pub emit_fn: ExpansionHookFn,
+    /// Whether the consumer wants control-sequence names — C's
+    /// `ttstub_is_expansion_hook_active` gate, which lets the engine skip
+    /// name marshalling on the hot expansion path.
+    pub wants_names: bool,
+}
+
+impl ExpansionHook {
+    /// Delivers one expansion-entry notification.
+    pub fn emit(&self, event: &ExpansionEvent) {
+        (self.emit_fn)(event)
+    }
+}
+
+impl std::fmt::Debug for ExpansionHook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ExpansionHook(..)")
+    }
+}
+
+/// One completed diagnostic capture, drained by the driver and replayed
+/// to the status backend the way C hands `current_diagnostic` to
+/// `ttstub_diag`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CapturedDiagnostic {
+    /// Capture severity.
+    pub severity: DiagSeverity,
+    /// The assembled diagnostic text.
+    pub text: String,
 }
 
 /// Deterministic pseudo-random number generator for `\random` and `\uniformdeviate`.
@@ -2324,6 +2456,14 @@ pub struct FontRecord {
     pub char_to_glyph: HashMap<u32, u32>,
     /// Per-glyph metrics for native fonts keyed by glyph id.
     pub glyph_metrics: HashMap<u32, NativeGlyphMetric>,
+    /// Raw per-glyph `(height, depth)` in points as `f32` bits, keyed by
+    /// glyph id (`cacheGlyphBBox` data). `measure_native_node` accumulates
+    /// these unquantized values and rounds once, like C.
+    pub glyph_bbox_pt: HashMap<u32, [u32; 2]>,
+    /// Resolved SFNT file bytes for native fonts (`createFontFromFile`'s
+    /// backing data) — feeds the on-demand `LayoutEngine` in
+    /// `measure_native_node`. `None` for TFM and stub fonts.
+    pub font_bytes: Option<std::sync::Arc<Vec<u8>>>,
     /// Native glyph count (`\XeTeXcountglyphs` result).
     pub glyph_count: i32,
     /// Letter-space adjustment in scaled points (`font_letter_space`).
@@ -2406,6 +2546,8 @@ impl Default for FontRecord {
             glyph_id_names: HashMap::new(),
             char_to_glyph: HashMap::new(),
             glyph_metrics: HashMap::new(),
+            glyph_bbox_pt: HashMap::new(),
+            font_bytes: None,
             glyph_count: 0,
             letter_space: 0,
             font_type: 0,
@@ -2637,6 +2779,15 @@ pub struct TeXEngineState {
     pub log_out: Vec<u8>,
     /// Active diagnostic capture (`current_diagnostic` replacement).
     pub diag_capture: Option<Vec<u8>>,
+    /// Severity of the in-progress capture, set by
+    /// `capture_to_diagnostic_as` at capture start.
+    pub diag_capture_severity: DiagSeverity,
+    /// Completed diagnostic captures awaiting driver replay through the
+    /// status backend (`ttstub_diag` equivalents).
+    pub diag_events: Vec<CapturedDiagnostic>,
+    /// Log file name recorded by `open_log_file` (`name_of_file` at open
+    /// time); the driver flushes `log_out` to this name.
+    pub log_name: Option<String>,
     /// Error-context help text lines (`help_line`).
     pub help_line: Vec<String>,
     /// Number of active help lines (`help_ptr`).
@@ -3197,6 +3348,35 @@ pub struct TeXEngineState {
     /// hit its bytes are cached in `input_byte_sources` under the name
     /// that was requested.
     pub input_resolver: Option<InputResolver>,
+    /// Primary-input resolver consulted for `TTBC_FILE_FORMAT_TECTONIC_PRIMARY`
+    /// opens (`ttstub_input_open_primary`): serves the driver's
+    /// `input_open_primary` provider hook, which may source the primary
+    /// input from a pipe or memory rather than a named file.
+    pub primary_input_resolver: Option<InputResolver>,
+    /// Format-image resolver consulted for `TTBC_FILE_FORMAT_FORMAT`
+    /// opens (`open_fmt_file`/`pack_buffered_name`): the format name is
+    /// resolved verbatim through the provider's format search path, not
+    /// the extension-derived file-format guess.
+    pub fmt_input_resolver: Option<InputResolver>,
+    /// Lazily resolves input names to provider metadata (mtime and exposed
+    /// absolute path), backing `ttstub_input_get_mtime` and
+    /// `ttstub_get_last_input_abspath`.
+    pub input_metadata_resolver: Option<MetadataResolver>,
+    /// Lazily resolves native-font file names to file bytes when
+    /// `font_sources` misses (`find_native_font`'s
+    /// `createFontFromFile` path, which opens the name through the
+    /// OpenType/TrueType/Type1 file formats). Like `input_resolver`,
+    /// the callback is injected per engine so no process-global state
+    /// is consulted.
+    pub native_font_resolver: Option<InputResolver>,
+    /// Synchronous `\write18` executor (`ttstub_shell_escape`); when
+    /// installed, enabled shell escapes run at `out_what` time so
+    /// generated files exist for the remainder of the run.
+    pub shell_escape_hook: Option<ShellEscapeHook>,
+    /// Expansion-entry notifications (`ttstub_event_expand_on` /
+    /// `ttstub_event_macro_expand`); the driver uses them for debugging
+    /// breakpoints and security auditing.
+    pub expansion_hook: Option<ExpansionHook>,
     /// Registered modification times (seconds since the Unix epoch) backing
     /// `ttstub_input_get_mtime` for `\pdffilemoddate`; absent entries read
     /// as the epoch.
@@ -3479,7 +3659,10 @@ impl TeXEngineState {
             term_out: Vec::new(),
             log_out: Vec::new(),
             diag_capture: None,
-            help_line: Vec::new(),
+            diag_capture_severity: DiagSeverity::Warning,
+            diag_events: Vec::new(),
+            log_name: None,
+            help_line: vec![String::new(); 6],
             help_ptr: 0,
             history: HISTORY_SPOTLESS,
             file_line_error_style_p: false,
@@ -3732,6 +3915,12 @@ impl TeXEngineState {
             read_sources: vec![None; 17],
             input_byte_sources: HashMap::new(),
             input_resolver: None,
+            primary_input_resolver: None,
+            fmt_input_resolver: None,
+            input_metadata_resolver: None,
+            native_font_resolver: None,
+            shell_escape_hook: None,
+            expansion_hook: None,
             input_file_mtimes: HashMap::new(),
             start_time_str: String::new(),
             input_file: Vec::new(),
@@ -3823,6 +4012,13 @@ impl TeXEngineState {
             .chain(DIMEN_PAR_BASE..DIMEN_PAR_BASE + DIMEN_PAR_COUNT)
             .chain(GLUE_PAR_BASE..GLUE_PAR_BASE + GLUE_PAR_COUNT)
             .chain(LOCAL_BASE..LOCAL_BASE + LOCAL_COUNT)
+            // `\count`/`\dimen` registers sit at/above C's `INT_BASE`: C
+            // tracks their levels in `xeq_level`, initialized to
+            // `LEVEL_ONE` for the whole high region (xetex-ini.c
+            // `initialize`). Our compact model carries the level in the
+            // word itself.
+            .chain(COUNT_BASE..COUNT_BASE + COUNT_REG_COUNT)
+            .chain(DIMEN_BASE..DIMEN_BASE + DIMEN_REG_COUNT)
         {
             state.eqtb[p].set_b16_s0(LEVEL_ONE);
         }
@@ -4953,11 +5149,21 @@ impl TeXEngineState {
             return Err(TeXMemoryError::OutOfMemory(1));
         } else {
             self.hi_mem_min -= 1;
+            // C `get_avail` clears the link on every allocation path,
+            // including `hi_mem_min` descent.
+            self.mem[self.hi_mem_min as usize].s1 = TEX_NULL;
             return Ok(self.hi_mem_min);
         }
 
         self.set_link(p, TEX_NULL)?;
         Ok(p)
+    }
+
+    /// Pushes a single cell onto the `avail` chain (C's `mem[p].s1 = avail;
+    /// avail = p` idiom).
+    pub(crate) fn avail_push(&mut self, p: i32) {
+        self.mem[p as usize].s1 = self.avail;
+        self.avail = p;
     }
 
     /// Frees a single-word node returned by `get_avail` (`free_avail`).
@@ -4998,8 +5204,7 @@ impl TeXEngineState {
             let word = self.word_at(p, 0)?;
             let next = word.s1;
             if p >= self.hi_mem_min {
-                self.mem[p as usize].s1 = self.avail;
-                self.avail = p;
+                self.avail_push(p);
                 p = next;
                 continue;
             }
@@ -5182,6 +5387,7 @@ impl TeXEngineState {
                             for offset in 0..words {
                                 self.mem[(r + offset) as usize] = self.mem[(p + offset) as usize];
                             }
+                            self.copy_native_glyph_info(p, r);
                             words = 0;
                             r
                         }
@@ -5262,8 +5468,7 @@ impl TeXEngineState {
 
         self.mem[q as usize].s1 = TEX_NULL;
         let result = self.mem[h as usize].s1;
-        self.mem[h as usize].s1 = self.avail;
-        self.avail = h;
+        self.avail_push(h);
         Ok(result)
     }
 
@@ -6161,7 +6366,7 @@ impl TeXEngineState {
     }
 
     /// Returns the `print_file_line` prefix (`name:line: ` or `! `).
-    fn file_line_prefix(&self) -> String {
+    pub(crate) fn file_line_prefix(&self) -> String {
         let mut level = self.in_open;
         while level > 0
             && self
@@ -6326,10 +6531,27 @@ impl TeXEngineState {
     }
 
     /// Italic correction of a native-word node
-    /// (`get_native_italic_correction`): the registered italic of the last
-    /// character in the word.
+    /// (`get_native_italic_correction`): `D2Fix(extend *
+    /// italCorr(last shaped glyph)) + font_letter_space`, matching C's
+    /// `real_get_native_italic_correction`. Falls back to the last
+    /// character's sidebearing italic when no layout engine exists.
     pub fn get_native_italic_correction(&mut self, p: i32) -> Result<i32, TeXMemoryError> {
         let font = self.native_node_font(p)?;
+        let n = self.native_glyph_count(p);
+        if n > 0 {
+            if let Some(gid) = self
+                .native_glyph_info(p)
+                .and_then(|info| info.glyphs.last().map(|loc| loc.glyph))
+            {
+                if let Some(mut engine) = self.native_layout_engine(font) {
+                    let ic = engine.extend() * engine.font_mut().get_glyph_ital_corr(gid);
+                    let letter_space = self
+                        .font_record(font)
+                        .map_or(0, |record| record.letter_space);
+                    return Ok(d2fix(f64::from(ic)) + letter_space);
+                }
+            }
+        }
         let length = self.native_node_length(p)?;
         let mut last = 0i32;
         let mut i = length - 1;
@@ -6350,19 +6572,17 @@ impl TeXEngineState {
     }
 
     /// Italic correction of a `GLYPH_NODE`
-    /// (`get_native_glyph_italic_correction`).
+    /// (`get_native_glyph_italic_correction`): `D2Fix(extend *
+    /// italCorr(gid))` — no letter-space term, as in C.
     pub fn get_native_glyph_italic_correction(&mut self, p: i32) -> Result<i32, TeXMemoryError> {
         let font = self.native_node_font(p)?;
         let gid = u32::from(self.word_at(p, 4)?.b16_s1());
+        if let Some(mut engine) = self.native_layout_engine(font) {
+            let ic = engine.extend() * engine.font_mut().get_glyph_ital_corr(gid as u16);
+            return Ok(d2fix(f64::from(ic)));
+        }
         let metric = self.native_glyph_metric(font, gid);
-        let letter_space = self
-            .font_record(font)
-            .map_or(0, |record| record.letter_space);
-        Ok(if metric.rsb < 0 {
-            letter_space - metric.rsb
-        } else {
-            letter_space
-        })
+        Ok(if metric.rsb < 0 { -metric.rsb } else { 0 })
     }
 
     /// Returns a registered layout-engine query result
@@ -6572,38 +6792,12 @@ impl TeXEngineState {
         Ok(())
     }
 
-    /// Computes the dimensions of a native-word node from the state-local
-    /// character metric table (`set_native_metrics`).
+    /// Measures a native-word node and attaches its positioned-glyph
+    /// buffer (`set_native_metrics(p, INTPAR(xetex_use_glyph_metrics) > 0)`,
+    /// which is `measure_native_node` in C).
     pub fn set_native_metrics(&mut self, p: i32) -> Result<(), TeXMemoryError> {
-        let info = self.word_at(p, 4)?;
-        let font = i32::from(info.b16_s2());
-        let length = i32::from(info.b16_s1());
-        let mut text = Vec::with_capacity(length as usize);
-        for index in 0..length {
-            text.push(self.native_text_at(p, index)?);
-        }
-
-        let mut width = 0i32;
-        let mut height = 0i32;
-        let mut depth = 0i32;
-        let text = String::from_utf16(&text).map_err(|_| TeXMemoryError::CorruptedNode(p))?;
-        for c in text.chars() {
-            let glyph = self.map_char_to_glyph(font, c as u32);
-            let (w, h, d) = if glyph > 0 {
-                let m = self.native_glyph_metric(font, glyph as u32);
-                (m.width, m.height, m.depth)
-            } else {
-                let m = self.font_char_metric(font, c as u32);
-                (m.width, m.height, m.depth)
-            };
-            width = width.saturating_add(w);
-            height = height.max(h);
-            depth = depth.max(d);
-        }
-        self.mem[(p + 1) as usize].s1 = width;
-        self.mem[(p + 3) as usize].s1 = height;
-        self.mem[(p + 2) as usize].s1 = depth;
-        Ok(())
+        let use_glyph_metrics = self.int_par(INT_PAR_XETEX_USE_GLYPH_METRICS)? > 0;
+        self.measure_native_node(p, use_glyph_metrics)
     }
 
     /// UTF-16 text of a native-word node (`NATIVE_NODE_text` contents).
@@ -6656,12 +6850,103 @@ impl TeXEngineState {
         }
     }
 
+    /// Builds a transient [`tectonic_xetex_layout::engine::LayoutEngine`]
+    /// for native font `f` from the record's shared font bytes and parsed
+    /// `FontSpec` — the pure-Rust equivalent of C's per-font
+    /// `font_layout_engine[f]` (`createLayoutEngine`). `None` when the
+    /// font has no SFNT bytes (TFM/stub fonts use per-glyph metrics).
+    fn native_layout_engine(
+        &self,
+        font: i32,
+    ) -> Option<tectonic_xetex_layout::engine::LayoutEngine> {
+        use tectonic_xetex_layout::engine::{LayoutEngine, LayoutFeature, MaybeBorrow};
+        let record = self.font_record(font)?;
+        let bytes = record.font_bytes.clone()?;
+        let spec = self.font_specs.get(&font).cloned().unwrap_or_default();
+        let mut layout_font = tectonic_xetex_layout::font::Font::new_shared(
+            bytes,
+            &record.layout_filename,
+            record.layout_face_index,
+            fix2d(record.layout_point_size) as f32,
+        )
+        .ok()?;
+        if spec.flags & FONT_FLAGS_VERTICAL != 0 {
+            layout_font.set_layout_dir_vertical(true);
+        }
+        let language = if spec.language.is_empty() {
+            None
+        } else {
+            std::ffi::CString::new(spec.language.clone())
+                .ok()
+                .map(std::borrow::Cow::Owned)
+        };
+        let features: Box<[LayoutFeature]> = spec
+            .features
+            .iter()
+            .map(|feat| LayoutFeature {
+                tag: feat.tag,
+                value: feat.value as u32,
+                start: feat.start,
+                end: feat.end,
+            })
+            .collect();
+        let shaper_list = spec
+            .shapers
+            .iter()
+            .filter_map(|s| std::ffi::CString::new(s.clone()).ok())
+            .collect();
+        Some(LayoutEngine::new(
+            MaybeBorrow::Owned(Box::new(layout_font)),
+            spec.script,
+            language,
+            features,
+            shaper_list,
+            spec.rgb,
+            spec.extend,
+            spec.slant,
+            spec.embolden,
+        ))
+    }
+
+    /// Shapes one run through the engine and appends
+    /// `layoutChars`/`getGlyphs`/`getGlyphAdvances`/`getGlyphPositions`
+    /// results to `glyphs`/`advances`, offset by the running pen position
+    /// `(x_off, y_off)`. Returns the run's final pen position in points.
+    fn shape_native_run(
+        engine: &mut tectonic_xetex_layout::engine::LayoutEngine,
+        text: &[u16],
+        rtl: bool,
+        x_off: f64,
+        y_off: f64,
+        glyphs: &mut Vec<NativeGlyphLoc>,
+        advances: &mut Vec<i32>,
+    ) -> (f64, f64) {
+        engine.layout_chars(text, rtl);
+        let positions = engine.glyph_positions_points();
+        let run_advances = engine.glyph_advances_points();
+        for (i, &gid) in engine.shaped_glyph_ids().iter().enumerate() {
+            let (px, py) = positions.get(i).copied().unwrap_or((0.0, 0.0));
+            glyphs.push(NativeGlyphLoc {
+                x: d2fix(f64::from(px) + x_off),
+                y: d2fix(f64::from(py) + y_off),
+                glyph: gid as u16,
+            });
+            advances.push(d2fix(f64::from(run_advances[i])));
+        }
+        positions
+            .last()
+            .map(|&(px, py)| (f64::from(px), f64::from(py)))
+            .unwrap_or((0.0, 0.0))
+    }
+
     /// Fills a native-word node's positioned-glyph buffer and dimensions
-    /// (`measure_native_node`). Until the OT layout engine is ported,
-    /// shaping is one glyph per character via `map_char_to_glyph` with
-    /// cumulative advances — equivalent to `layoutChars` output for fonts
-    /// with no active GSUB/GPOS features. The `font_letter_space`
-    /// adjustment loop mirrors C exactly.
+    /// (`measure_native_node`). Shapes the text through the per-font
+    /// `LayoutEngine` — one `layoutChars` call for single-direction text,
+    /// per visual run for `UBIDI_MIXED` — so OpenType kerning and
+    /// substitutions match the C backend. Falls back to one glyph per
+    /// character via `map_char_to_glyph` when the font record carries no
+    /// SFNT bytes. The `font_letter_space` adjustment loop mirrors C
+    /// exactly.
     pub fn measure_native_node(
         &mut self,
         p: i32,
@@ -6676,23 +6961,79 @@ impl TeXEngineState {
 
         let mut glyphs = Vec::new();
         let mut advances = Vec::new();
-        let mut x = 0i64;
-        let mut index = 0i32;
-        while index < length {
-            let c = self.get_native_usv(p, index)?.max(0) as u32;
-            let glyph = self.map_char_to_glyph(font, c).max(0) as u16;
-            let advance = self.native_glyph_metric(font, u32::from(glyph)).width;
-            glyphs.push(NativeGlyphLoc {
-                x: x as i32,
-                y: 0,
-                glyph,
-            });
-            advances.push(advance);
-            x += i64::from(advance);
-            index += if c >= 0x10000 { 2 } else { 1 };
+        let mut width;
+        let mut fallback_height = 0i32;
+        let mut fallback_depth = 0i32;
+        let mut engine = self.native_layout_engine(font);
+
+        if let Some(engine) = engine.as_mut() {
+            let text = self.native_word_text(p)?;
+            let default_dir_rtl = (engine.default_dir() & 1) != 0;
+            let (dir, runs) = crate::unicode::visual_runs(&text, default_dir_rtl);
+            let mut x = 0.0f64;
+            if dir == 2 {
+                // UBIDI_MIXED: shape each visual run and accumulate the
+                // pen position across runs, like C's run loop.
+                let mut y = 0.0f64;
+                for run in &runs {
+                    let start = run.start.max(0) as usize;
+                    let end =
+                        (run.start + run.length).clamp(start as i32, text.len() as i32) as usize;
+                    if start >= end {
+                        continue;
+                    }
+                    let (px, py) = Self::shape_native_run(
+                        engine,
+                        &text[start..end],
+                        run.is_rtl,
+                        x,
+                        y,
+                        &mut glyphs,
+                        &mut advances,
+                    );
+                    x += px;
+                    y += py;
+                }
+            } else {
+                let (px, _) = Self::shape_native_run(
+                    engine,
+                    &text,
+                    dir == 1,
+                    0.0,
+                    0.0,
+                    &mut glyphs,
+                    &mut advances,
+                );
+                x = px;
+            }
+            width = d2fix(x);
+        } else {
+            let mut x = 0i64;
+            let mut index = 0i32;
+            while index < length {
+                let c = self.get_native_usv(p, index)?.max(0) as u32;
+                let glyph = self.map_char_to_glyph(font, c).max(0) as u16;
+                let metric = if glyph > 0 {
+                    let m = self.native_glyph_metric(font, u32::from(glyph));
+                    (m.width, m.height, m.depth)
+                } else {
+                    let m = self.font_char_metric(font, c);
+                    (m.width, m.height, m.depth)
+                };
+                glyphs.push(NativeGlyphLoc {
+                    x: x as i32,
+                    y: 0,
+                    glyph,
+                });
+                advances.push(metric.0);
+                x += i64::from(metric.0);
+                fallback_height = fallback_height.max(metric.1);
+                fallback_depth = fallback_depth.max(metric.2);
+                index += if c >= 0x10000 { 2 } else { 1 };
+            }
+            width = x as i32;
         }
 
-        let mut width = x as i32;
         if letter_space != 0 && !glyphs.is_empty() {
             let mut ls_delta = 0i32;
             for (i, loc) in glyphs.iter_mut().enumerate() {
@@ -6713,29 +7054,58 @@ impl TeXEngineState {
         let (height_base, depth_base) = self
             .font_record(font)
             .map_or((0, 0), |record| (record.height_base, record.depth_base));
-        if !use_glyph_metrics || self.native_glyph_count(p) == 0 {
+        if engine.is_none() {
+            // Synthetic font records (no SFNT bytes) carry no bbox data —
+            // measure from the per-glyph/per-char metric tables.
+            self.mem[(p + 3) as usize].s1 = fallback_height;
+            self.mem[(p + 2) as usize].s1 = fallback_depth;
+        } else if !use_glyph_metrics || self.native_glyph_count(p) == 0 {
             self.mem[(p + 3) as usize].s1 = height_base;
             self.mem[(p + 2) as usize].s1 = depth_base;
         } else {
-            let mut y_max = f64::NEG_INFINITY;
-            let mut y_min = f64::INFINITY;
-            if let Some(info) = self.native_glyph_info.get(&p) {
-                for loc in &info.glyphs {
-                    let metric = self.native_glyph_metric(font, u32::from(loc.glyph));
-                    let y = -f64::from(loc.y) / 65_536.0;
-                    let ht = f64::from(metric.height) / 65_536.0;
-                    let dp = f64::from(metric.depth) / 65_536.0;
-                    y_max = y_max.max(y + ht);
-                    y_min = y_min.min(y - dp);
+            let mut y_max = -65_536.0f32;
+            let mut y_min = 65_536.0f32;
+            let count = self.native_glyph_count(p);
+            for i in 0..count {
+                let Some(loc) = self
+                    .native_glyph_info
+                    .get(&p)
+                    .and_then(|info| info.glyphs.get(i).copied())
+                else {
+                    break;
+                };
+                let gid = u32::from(loc.glyph);
+                let cached = self
+                    .font_record(font)
+                    .and_then(|record| record.glyph_bbox_pt.get(&gid).copied());
+                let (ht, dp) = match cached {
+                    Some([h, d]) => (f32::from_bits(h), f32::from_bits(d)),
+                    None => {
+                        // `getCachedGlyphBBox` miss: measure through the
+                        // layout engine and cache on the record.
+                        let (h, d) = engine
+                            .as_mut()
+                            .map(|engine| {
+                                let bbox = engine.font_mut().get_glyph_bounds(gid as u16);
+                                (bbox.y_max, -bbox.y_min)
+                            })
+                            .unwrap_or((0.0, 0.0));
+                        if let Some(record) = self.font_record_mut(font) {
+                            record.glyph_bbox_pt.insert(gid, [h.to_bits(), d.to_bits()]);
+                        }
+                        (h, d)
+                    }
+                };
+                let y = (f64::from(-loc.y) / 65_536.0) as f32;
+                if y + ht > y_max {
+                    y_max = y + ht;
+                }
+                if y - dp < y_min {
+                    y_min = y - dp;
                 }
             }
-            let (height, depth) = if y_max == f64::NEG_INFINITY {
-                (height_base, depth_base)
-            } else {
-                (tex_round(y_max * 65_536.0), tex_round(-y_min * 65_536.0))
-            };
-            self.mem[(p + 3) as usize].s1 = height;
-            self.mem[(p + 2) as usize].s1 = depth;
+            self.mem[(p + 3) as usize].s1 = d2fix(f64::from(y_max));
+            self.mem[(p + 2) as usize].s1 = -d2fix(f64::from(y_min));
         }
         Ok(())
     }
@@ -6825,10 +7195,6 @@ impl TeXEngineState {
             .job_name
             .clone()
             .unwrap_or_else(|| "texput".to_string());
-        let base = base.rsplit('.').next().map_or(base.as_str(), |_| {
-            base.rsplit_once('.')
-                .map_or(base.as_str(), |(stem, _)| stem)
-        });
         self.output_file_name = format!("{base}{extension}");
         self.output_file_opened = true;
     }
@@ -7480,7 +7846,10 @@ impl TeXEngineState {
                 }
             }
 
-            if matches!(action, BreakAction::Update) && p != TEX_NULL {
+            // C's `update_heights`: any glue or kern reaching this point
+            // accumulates into `active_width`, including breakpoint
+            // candidates (`pi = 0` glues still consume their width).
+            if p != TEX_NULL && matches!(self.node_type(p)?, GLUE_NODE | KERN_NODE) {
                 let q = if self.node_type(p)? == KERN_NODE {
                     p
                 } else {

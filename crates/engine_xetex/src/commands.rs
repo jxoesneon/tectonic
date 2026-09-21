@@ -56,7 +56,7 @@ use crate::state::{
     DIMEN_PAR_MAX_DEPTH, DIMEN_PAR_OVERFULL_RULE, DIMEN_PAR_PAR_INDENT, DIMEN_PAR_PRE_DISPLAY_SIZE,
     DIMEN_PAR_VFUZZ, DIMEN_PAR_VSIZE, DISC_GROUP, DISC_NODE, DISPLAY_STYLE, EDGE_NODE,
     EJECT_PENALTY, END_L_CODE, END_M_CODE, ERROR_STOP_MODE, ETEX_PEN_BASE, ETEX_PEN_CLUB,
-    ETEX_PEN_DISPLAY_WIDOW, ETEX_PEN_INTER_LINE, ETEX_PEN_WIDOW, EXACTLY, EXPLICIT, FAMILY_BASE,
+    ETEX_PEN_DISPLAY_WIDOW, ETEX_PEN_INTER_LINE, ETEX_PEN_WIDOW, EXACTLY, EXPLICIT,
     FIL, FILL, FILLL, FIRE_UP_DONE, FIRE_UP_INIT, FIRST_MARK_CODE, FIXED_ACC, FRACTION_NOAD,
     FRACTION_NOAD_SIZE, GLOBAL_BOX_FLAG, GLUE_NODE, GLUE_PAR_ABOVE_DISPLAY_SHORT_SKIP,
     GLUE_PAR_ABOVE_DISPLAY_SKIP, GLUE_PAR_BASE, GLUE_PAR_BELOW_DISPLAY_SHORT_SKIP,
@@ -85,21 +85,22 @@ use crate::state::{
     LOCAL_ERR_HELP, LOCAL_EVERY_CR, LOCAL_EVERY_DISPLAY, LOCAL_EVERY_HBOX, LOCAL_EVERY_MATH,
     LOCAL_EVERY_PAR, LOCAL_EVERY_VBOX, LOCAL_OUTPUT_ROUTINE, LOCAL_PAR_SHAPE,
     LOCAL_XETEX_INTER_CHAR_TOKS, LOOSE_FIT, LP_CODE_BASE, L_CODE, MARGIN_KERN_NODE, MARK_NODE,
-    MATH_CHAR, MATH_CHOICE_GROUP, MATH_CODE_BASE, MATH_FIELD_EMPTY, MATH_FONT_BASE_C, MATH_GROUP,
-    MATH_LEFT_GROUP, MATH_NODE, MATH_SHIFT_GROUP, MAX_HALFWORD, MAX_HYPH_CHAR, MEDIUM_NODE_SIZE,
-    MIN_HALFWORD, MSKIP_CODE, MU_GLUE, MU_SKIP_BASE, NATIVE_WORD_NODE, NATIVE_WORD_NODE_AT,
-    NON_ADDRESS, NORMAL, NO_ALIGN_GROUP, NULL_FLAG, OPEN_NODE, OPEN_NODE_SIZE, OP_NOAD, ORD_NOAD,
-    OUTPUT_GROUP, OVER_CODE, PAGE_BOX_THERE, PAGE_EMPTY, PAGE_INSERTS_ONLY, PAGE_INS_NODE_SIZE,
+    MATH_CHAR, MATH_CHOICE_GROUP, MATH_CODE_BASE, MATH_FIELD_EMPTY, MATH_GROUP, MATH_LEFT_GROUP,
+    MATH_NODE, MATH_SHIFT_GROUP, MAX_HALFWORD, MAX_HYPH_CHAR, MEDIUM_NODE_SIZE, MIN_HALFWORD,
+    MSKIP_CODE, MU_GLUE, MU_SKIP_BASE, NATIVE_WORD_NODE, NATIVE_WORD_NODE_AT, NON_ADDRESS, NORMAL,
+    NO_ALIGN_GROUP, NULL_FLAG, OPEN_NODE, OPEN_NODE_SIZE, OP_NOAD, ORD_NOAD, OUTPUT_GROUP,
+    OVER_CODE, PAGE_BOX_THERE, PAGE_EMPTY, PAGE_INSERTS_ONLY, PAGE_INS_NODE_SIZE,
     PAGE_SO_FAR_COUNT, PASSIVE_NODE_SIZE, PDF_NODE, PDF_SAVE_POS_NODE, PENALTY_NODE, PIC_NODE,
     PIC_NODE_SIZE, QUAD_CODE, RADICAL_NOAD, RADICAL_NOAD_SIZE, RIGHT_NOAD, RIGHT_TO_LEFT,
     RULE_NODE, RULE_NODE_SIZE, R_CODE, SA_BOX_VAL, SA_INTER_CHAR_VAL, SA_MARK_VAL, SA_TOK_VAL,
-    SCRIPT_SCRIPT_SIZE, SCRIPT_SIZE, SELECTOR_NO_PRINT, SELECTOR_TERM_ONLY, SEMI_SIMPLE_GROUP,
-    SF_CODE_BASE, SHIP_OUT_FLAG, SHRINKING, SIMPLE_GROUP, SKIP_BASE, SKIP_CODE, SLANT_CODE,
-    SMALL_NODE_SIZE, SPACE_ADJUSTMENT, SPACE_CODE, SPACE_SHRINK_CODE, SPACE_STRETCH_CODE,
-    SPAN_NODE_SIZE, SPECIAL_NODE, STRETCHING, SUB_BOX, SUB_MLIST, TEXT_SIZE, TEXT_STYLE, TEX_NULL,
-    TIGHT_FIT, TOKS_BASE, TOO_BIG_CHAR, TOP_MARK_CODE, TOTAL_MATHEX_PARAMS, TOTAL_MATHSY_PARAMS,
-    UC_CODE_BASE, UNHYPHENATED, UNSET_NODE, VBOX_GROUP, VCENTER_GROUP, VERY_LOOSE_FIT, VLIST_NODE,
-    VSPLIT_CODE, VTOP_CODE, VTOP_GROUP, WHATSIT_NODE, WRITE_NODE, WRITE_NODE_SIZE, X_HEIGHT_CODE,
+    SCRIPT_SCRIPT_SIZE, SCRIPT_SIZE, SELECTOR_LOG_ONLY, SELECTOR_NO_PRINT, SELECTOR_TERM_AND_LOG,
+    SELECTOR_TERM_ONLY, SEMI_SIMPLE_GROUP, SF_CODE_BASE, SHIP_OUT_FLAG, SHRINKING, SIMPLE_GROUP,
+    SKIP_BASE, SKIP_CODE, SLANT_CODE, SMALL_NODE_SIZE, SPACE_ADJUSTMENT, SPACE_CODE,
+    SPACE_SHRINK_CODE, SPACE_STRETCH_CODE, SPAN_NODE_SIZE, SPECIAL_NODE, STRETCHING, SUB_BOX,
+    SUB_MLIST, TEXT_SIZE, TEXT_STYLE, TEX_NULL, TIGHT_FIT, TOKS_BASE, TOO_BIG_CHAR, TOP_MARK_CODE,
+    TOTAL_MATHEX_PARAMS, TOTAL_MATHSY_PARAMS, UC_CODE_BASE, UNHYPHENATED, UNSET_NODE, VBOX_GROUP,
+    VCENTER_GROUP, VERY_LOOSE_FIT, VLIST_NODE, VSPLIT_CODE, VTOP_CODE, VTOP_GROUP, WHATSIT_NODE,
+    WRITE_NODE, WRITE_NODE_SIZE, X_HEIGHT_CODE,
 };
 use crate::state::{
     OtMathAssembly, BIN_NOAD, CHOICE_NODE, CLOSE_NOAD, DIMEN_PAR_DELIMITER_SHORTFALL,
@@ -203,9 +204,10 @@ fn glue_amount_text(value: i32, order: u16) -> String {
     format!("{}{}", scaled_number(value), glue_order_unit(order, "pt"))
 }
 
-/// Formats a rule dimension, using `*` for C's null/default rule marker.
+/// Formats a rule dimension, using `*` for C's running-dimension marker
+/// (`print_rule_dimen`: `NULL_FLAG` prints `*`).
 fn rule_dimen_text(value: i32) -> String {
-    if value == DEFAULT_RULE {
+    if value == NULL_FLAG {
         "*".to_string()
     } else {
         scaled_text(value, "pt")
@@ -623,14 +625,19 @@ impl TeXEngineState {
                 self.unpackage()
             }
             Some(CommandCode::Hmove | CommandCode::Vmove) => {
+                // C dispatches on `abs(mode)+cur_cmd`: `VMODE+HMOVE`,
+                // `HMODE+VMOVE`, `MMODE+VMOVE` are the legal cases; the
+                // forbidden combos land on `report_illegal_case` — a
+                // recoverable error, not a fatal abort.
                 let legal = if self.cur_cmd == CommandCode::Hmove as u8 {
-                    self.mode == TeXMode::Vmode as i16
+                    self.mode.abs() == TeXMode::Vmode as i16
                 } else {
                     self.mode.abs() == TeXMode::Hmode as i16
                         || self.mode.abs() == TeXMode::Mmode as i16
                 };
                 if !legal {
-                    return Err(TeXMouthError::UnsupportedPrimitive("box movement"));
+                    self.report_illegal_case();
+                    return Ok(());
                 }
                 let direction = self.cur_chr;
                 self.scan_dimen(false, false, false)?;
@@ -711,7 +718,9 @@ impl TeXEngineState {
                 self.begin_insert_or_adjust()
             }
             Some(CommandCode::StartPar) => {
-                if self.mode == TeXMode::Vmode as i16 {
+                // C dispatches on `abs(mode) + cur_cmd`: `VMODE + START_PAR`
+                // covers both outer (1) and internal (-1) vertical mode.
+                if self.mode.abs() == TeXMode::Vmode as i16 {
                     self.new_graf(self.cur_chr > 0)
                 } else if self.mode.abs() == TeXMode::Hmode as i16
                     || self.mode.abs() == TeXMode::Mmode as i16
@@ -722,7 +731,7 @@ impl TeXEngineState {
                 }
             }
             Some(CommandCode::ParEnd) => {
-                if self.mode == TeXMode::Vmode as i16 {
+                if self.mode.abs() == TeXMode::Vmode as i16 {
                     self.normal_paragraph()?;
                     if self.mode > 0 {
                         self.build_page()?;
@@ -745,14 +754,15 @@ impl TeXEngineState {
                 }
             }
             Some(CommandCode::Stop) => {
-                if self.mode == TeXMode::Vmode as i16 {
+                // C `VMODE + STOP` matches `abs(mode) == 1`: in internal
+                // vertical mode `its_all_over` is gated by `privileged()`
+                // and simply returns false, ignoring `\end`.
+                if self.mode.abs() == TeXMode::Vmode as i16 {
+                    // C `its_all_over` returns true and `main_control`
+                    // exits; `final_cleanup` + `close_files_and_terminate`
+                    // run once at the `run_engine` tail.
                     if self.its_all_over()? {
                         self.job_stopped = true;
-                        if !self.dvi_finalized {
-                            self.finalize_dvi_file()?;
-                            self.dvi_finalized = true;
-                        }
-                        self.final_cleanup()?;
                     }
                     Ok(())
                 } else if self.mode.abs() == TeXMode::Mmode as i16 {
@@ -1052,13 +1062,19 @@ impl TeXEngineState {
                 self.define_eqtb(CUR_FONT_LOC, CommandCode::Data as u16, self.cur_chr, a >= 4)?;
             }
             Some(CommandCode::DefFamily) => {
-                // C ~1891: `p = cur_chr; scan_math_fam_int; scan_font_ident`.
-                let base = FAMILY_BASE as i32 + (self.cur_chr - MATH_FONT_BASE_C);
+                // C ~1891: `p = cur_chr; scan_math_fam_int; p += cur_val`.
+                // The base must be captured before scanning, since the
+                // family argument (e.g. `\symoperators`) reloads `cur_chr`.
+                // `cur_chr` arrives as a raw C `MATH_FONT_BASE` position
+                // (primitive table) or an already-compact `FAMILY_BASE`
+                // position (fmt-restored cs); `c_eqtb_pos_to_compact`
+                // normalizes both.
+                let p_base = Self::c_eqtb_pos_to_compact(self.cur_chr);
                 self.scan_math_fam_int()?;
-                let p = usize::try_from(base + self.cur_val)
+                let p = usize::try_from(p_base + self.cur_val)
                     .ok()
                     .filter(|&index| index < self.eqtb.len())
-                    .ok_or(TeXMouthError::InputOutOfBounds(base + self.cur_val))?;
+                    .ok_or_else(|| crate::scanner::oob(p_base + self.cur_val))?;
                 self.scan_optional_equals()?;
                 self.scan_font_ident()?;
                 self.define_eqtb(p, CommandCode::Data as u16, self.cur_val, a >= 4)?;
@@ -1280,7 +1296,7 @@ impl TeXEngineState {
                     }
                 } else {
                     let register = usize::try_from(self.cur_val)
-                        .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+                        .map_err(|_| crate::scanner::oob(self.cur_val))?;
                     match definition_kind {
                         COUNT_DEF_CODE => (CommandCode::AssignInt, (COUNT_BASE + register) as i32),
                         DIMEN_DEF_CODE => {
@@ -1339,8 +1355,8 @@ impl TeXEngineState {
         };
 
         self.scan_usv_num()?;
-        let character = u32::try_from(self.cur_val)
-            .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+        let character =
+            u32::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?;
         self.scan_optional_equals()?;
         self.scan_int()?;
         let mut value = self.cur_val;
@@ -1371,8 +1387,8 @@ impl TeXEngineState {
     fn prefixed_xetex_def_code(&mut self, a: i32) -> Result<(), TeXMouthError> {
         let base = self.cur_chr;
         self.scan_usv_num()?;
-        let character = u32::try_from(self.cur_val)
-            .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+        let character =
+            u32::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?;
         self.scan_optional_equals()?;
 
         let (table, value) = match base {
@@ -1480,7 +1496,7 @@ impl TeXEngineState {
         let c = usize::try_from(self.cur_chr)
             .ok()
             .filter(|&c| c < PAGE_SO_FAR_COUNT)
-            .ok_or(TeXMouthError::InputOutOfBounds(self.cur_chr))?;
+            .ok_or_else(|| crate::scanner::oob(self.cur_chr))?;
         self.scan_optional_equals()?;
         self.scan_dimen(false, false, false)?;
         self.page_so_far[c] = self.cur_val;
@@ -1519,15 +1535,15 @@ impl TeXEngineState {
                 self.sparse_ptr_value(element)?
             }
         } else {
-            let register = usize::try_from(self.cur_val)
-                .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+            let register =
+                usize::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?;
             self.box_reg(register)?
         };
         self.scan_optional_equals()?;
         self.scan_dimen(false, false, false)?;
         if b != TEX_NULL {
             let index = self.checked_engine_mem_index(
-                b.checked_add(c).ok_or(TeXMouthError::InputOutOfBounds(b))?,
+                b.checked_add(c).ok_or_else(|| crate::scanner::oob(b))?,
             )?;
             self.mem[index].s1 = self.cur_val;
         }
@@ -1548,11 +1564,11 @@ impl TeXEngineState {
             let pair_words = count
                 .checked_div(2)
                 .and_then(|n| n.checked_add(1))
-                .ok_or(TeXMouthError::InputOutOfBounds(count))?;
+                .ok_or_else(|| crate::scanner::oob(count))?;
             let size = pair_words
                 .checked_mul(2)
                 .and_then(|n| n.checked_add(1))
-                .ok_or(TeXMouthError::InputOutOfBounds(count))?;
+                .ok_or_else(|| crate::scanner::oob(count))?;
             let p = self.get_node(size)?;
             let base = self.checked_engine_mem_index(p)?;
             self.mem[base].s0 = pair_words;
@@ -1569,7 +1585,7 @@ impl TeXEngineState {
             let size = count
                 .checked_mul(2)
                 .and_then(|n| n.checked_add(1))
-                .ok_or(TeXMouthError::InputOutOfBounds(count))?;
+                .ok_or_else(|| crate::scanner::oob(count))?;
             let p = self.get_node(size)?;
             let base = self.checked_engine_mem_index(p)?;
             self.mem[base].s0 = count;
@@ -1624,8 +1640,7 @@ impl TeXEngineState {
         } else {
             self.scan_char_num()?;
         }
-        let key = u32::try_from(self.cur_val)
-            .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?;
+        let key = u32::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?;
         self.scan_optional_equals()?;
         self.scan_int()?;
         self.set_cp_code(font, key, n == LP_CODE_BASE, self.cur_val);
@@ -1897,8 +1912,8 @@ impl TeXEngineState {
                     let element = self.find_sa_element(quantity, register, true)?;
                     RegisterTarget::Sparse(element)
                 } else {
-                    let register = usize::try_from(register)
-                        .map_err(|_| TeXMouthError::InputOutOfBounds(register))?;
+                    let register =
+                        usize::try_from(register).map_err(|_| crate::scanner::oob(register))?;
                     RegisterTarget::Dense(match quantity as u8 {
                         INT_VAL => COUNT_BASE + register,
                         DIMEN_VAL => DIMEN_BASE + register,
@@ -2076,7 +2091,7 @@ impl TeXEngineState {
             let key = first_class
                 .checked_mul(crate::state::CHAR_CLASS_LIMIT)
                 .and_then(|key| key.checked_add(self.cur_val))
-                .ok_or(TeXMouthError::InputOutOfBounds(self.cur_val))?;
+                .ok_or_else(|| crate::scanner::oob(self.cur_val))?;
             p = self.find_sa_element(SA_INTER_CHAR_VAL, key, true)?;
             sparse = true;
         }
@@ -2084,9 +2099,7 @@ impl TeXEngineState {
         let target = if sparse {
             TokenListTarget::Sparse(p)
         } else {
-            TokenListTarget::Dense(
-                usize::try_from(p).map_err(|_| TeXMouthError::InputOutOfBounds(p))?,
-            )
+            TokenListTarget::Dense(usize::try_from(p).map_err(|_| crate::scanner::oob(p))?)
         };
 
         self.scan_optional_equals()?;
@@ -2129,7 +2142,7 @@ impl TeXEngineState {
                         let key = first_class
                             .checked_mul(crate::state::CHAR_CLASS_LIMIT)
                             .and_then(|key| key.checked_add(self.cur_val))
-                            .ok_or(TeXMouthError::InputOutOfBounds(self.cur_val))?;
+                            .ok_or_else(|| crate::scanner::oob(self.cur_val))?;
                         let element = self.find_sa_element(SA_INTER_CHAR_VAL, key, false)?;
                         if element == TEX_NULL {
                             TEX_NULL
@@ -2161,8 +2174,7 @@ impl TeXEngineState {
         let value = self.def_ref;
         let def_idx = self.checked_engine_mem_index(value)?;
         if self.mem[def_idx].s1 == TEX_NULL {
-            self.mem[def_idx].s1 = self.avail;
-            self.avail = value;
+            self.avail_push(value);
             self.assign_token_list_target(target, TEX_NULL, a >= 4)
         } else {
             if matches!(target, TokenListTarget::Dense(target) if target == LOCAL_BASE + LOCAL_OUTPUT_ROUTINE)
@@ -2214,31 +2226,44 @@ impl TeXEngineState {
         self.flush_list(def_ref)?;
 
         if !error_message {
+            // C §1315: `\message` prints inline — a separating space when
+            // mid-line, a wrap when the text would overflow the line.
+            let len = text.encode_utf16().count() as i32;
+            if self.term_offset + len > self.max_print_line - 2 {
+                self.print_ln();
+            } else if self.term_offset > 0 || self.file_offset > 0 {
+                self.print_char(i32::from(b' '))?;
+            }
+            self.print_str_text(&text)?;
             self.transcript.push(text);
             return Ok(());
         }
 
+        // C §1318: `\errmessage` — `error_here` + the message text, then
+        // `\errhelp` or the standard four-line help through `error()`.
         self.transcript.push(format!("! {text}"));
+        self.error_here_with_diagnostic("");
+        self.print_str_text(&text)?;
+        self.capture_to_diagnostic(false);
         let err_help = self.local(LOCAL_ERR_HELP)?;
         if err_help != TEX_NULL {
-            let help = self.stored_token_list_start(err_help)?;
-            let help = self.token_list_to_string(help)?;
-            self.transcript.push(help);
+            self.use_err_help = true;
         } else if self.long_help_seen {
-            self.transcript
-                .push("(That was another \\errmessage.)".to_string());
+            self.help_ptr = 1;
+            self.help_line[0] = "(That was another \\errmessage.)".to_string();
         } else {
             if self.interaction < ERROR_STOP_MODE {
                 self.long_help_seen = true;
             }
-            self.transcript.extend([
-                "This error message was generated by an \\errmessage".to_string(),
-                "command, so I can't give any explicit help.".to_string(),
-                "Pretend that you're Hercule Poirot: Examine all clues,".to_string(),
-                "and deduce the truth by order and method.".to_string(),
-            ]);
+            self.help_ptr = 4;
+            self.help_line[3] = "This error message was generated by an \\errmessage".to_string();
+            self.help_line[2] = "command, so I can't give any explicit help.".to_string();
+            self.help_line[1] =
+                "Pretend that you're Hercule Poirot: Examine all clues,".to_string();
+            self.help_line[0] = "and deduce the truth by order and method.".to_string();
         }
-        self.error_count = self.error_count.saturating_add(1);
+        self.error()?;
+        self.use_err_help = false;
         Ok(())
     }
 
@@ -2274,9 +2299,7 @@ impl TeXEngineState {
 
         let list = self.mem[self.checked_engine_mem_index(def_ref)?].s1;
         self.begin_token_list(list, BACKED_UP)?;
-        let def_idx = self.checked_engine_mem_index(def_ref)?;
-        self.mem[def_idx].s1 = self.avail;
-        self.avail = def_ref;
+        self.avail_push(def_ref);
         Ok(())
     }
 
@@ -2438,15 +2461,58 @@ impl TeXEngineState {
             OPEN_NODE => {
                 let stream = self.word_at(p, 1)?.s0;
                 if !(0..16).contains(&stream) {
-                    return Err(TeXMouthError::InputOutOfBounds(stream));
+                    return Ok(());
                 }
-                let name = self.string_text(self.word_at(p, 1)?.s1).unwrap_or_default();
                 let index = stream as usize;
+                // C closes a still-open stream occupying the slot before
+                // opening the new file (`ttstub_output_close(write_file[j])`).
+                if self.write_open[index] {
+                    if let Some(prev) = &self.write_streams[index] {
+                        self.input_byte_sources
+                            .insert(prev.name.clone(), prev.text.clone().into_bytes());
+                    }
+                }
+                // `pack_file_name(open_name, open_area, open_ext)`: C hands
+                // the assembled `name_of_file` to `ttstub_output_open`.
+                // `cur_ext` retains its leading '.', so the pack is a plain
+                // concatenation (same shape as `file_name_string`).
+                let cur_name = self.word_at(p, 1)?.s1;
+                let cur_area = self.word_at(p, 2)?.s0;
+                let mut cur_ext = self.word_at(p, 2)?.s1;
+                // C: `if (length(cur_ext) == 0) cur_ext = ".tex"`.
+                if self.string_text(cur_ext).unwrap_or_default().is_empty() {
+                    cur_ext = self.intern_string(&[0x2E, 0x74, 0x65, 0x78]);
+                }
+                let stem = self.string_text(cur_name).unwrap_or_default();
+                let area = self.string_text(cur_area).unwrap_or_default();
+                let ext = self.string_text(cur_ext).unwrap_or_default();
+                let name = format!("{area}{stem}{ext}");
                 self.write_open[index] = true;
                 self.write_streams[index] = Some(WriteStream {
-                    name,
+                    name: name.clone(),
                     text: String::new(),
                 });
+                // `ttstub_output_open` registers the file with the I/O
+                // provider at open time; the (initially empty) file is
+                // then resolvable by `\input`/`\openin`. Mirror that with
+                // an empty byte-source entry, filled at close.
+                self.input_byte_sources.insert(name, Vec::new());
+                if self.log_opened {
+                    self.old_setting = self.selector;
+                    if self.int_par(INT_PAR_TRACING_ONLINE)? <= 0 {
+                        self.selector = SELECTOR_LOG_ONLY;
+                    } else {
+                        self.selector = SELECTOR_TERM_AND_LOG;
+                    }
+                    self.print_nl_cstr("\\openout")?;
+                    self.print_int(stream)?;
+                    self.print_cstr(" = `")?;
+                    self.print_file_name(cur_name, cur_area, cur_ext)?;
+                    self.print_cstr("'.")?;
+                    self.print_nl_cstr("")?;
+                    self.print_ln();
+                    self.selector = self.old_setting;
+                }
             }
             WRITE_NODE => {
                 self.write_out(p)?;
@@ -2454,9 +2520,18 @@ impl TeXEngineState {
             CLOSE_NODE => {
                 let stream = self.word_at(p, 1)?.s0;
                 if !(0..16).contains(&stream) {
-                    return Err(TeXMouthError::InputOutOfBounds(stream));
+                    return Err(crate::scanner::oob(stream));
                 }
-                self.write_open[stream as usize] = false;
+                // `ttstub_output_close(write_file[j])`: the finished file
+                // becomes readable input for a later `\@input`.
+                let index = stream as usize;
+                if self.write_open[index] {
+                    if let Some(prev) = &self.write_streams[index] {
+                        self.input_byte_sources
+                            .insert(prev.name.clone(), prev.text.clone().into_bytes());
+                    }
+                }
+                self.write_open[index] = false;
             }
             SPECIAL_NODE => {
                 self.special_out(p)?;
@@ -3344,7 +3419,7 @@ impl TeXEngineState {
     }
 
     /// Emits a semantic node list rooted at `p` (`show_box`).
-    fn show_box(&mut self, p: i32) -> Result<(), TeXMouthError> {
+    pub(crate) fn show_box(&mut self, p: i32) -> Result<(), TeXMouthError> {
         let mut breadth = self.int_par(INT_PAR_SHOW_BOX_BREADTH)?;
         if breadth <= 0 {
             breadth = 5;
@@ -4070,7 +4145,11 @@ impl TeXEngineState {
     }
 
     /// Formats a glue specification (`print_spec`).
-    fn glue_spec_text(&self, spec: i32, unit: &'static str) -> Result<String, TeXMouthError> {
+    pub(crate) fn glue_spec_text(
+        &self,
+        spec: i32,
+        unit: &'static str,
+    ) -> Result<String, TeXMouthError> {
         if spec == TEX_NULL {
             return Ok(scaled_text(0, unit));
         }
@@ -4531,11 +4610,6 @@ impl TeXEngineState {
         let p = self.new_penalty(self.cur_val)?;
         self.mem[self.tail as usize].s1 = p;
         self.tail = p;
-        if self.mode.abs() == TeXMode::Vmode as i16 {
-            self.aux.s1 = IGNORE_DEPTH;
-        } else if self.mode.abs() == TeXMode::Hmode as i16 {
-            self.aux.s0 = 1000;
-        }
         if self.mode == TeXMode::Vmode as i16 {
             self.build_page()?;
         }
@@ -4708,10 +4782,8 @@ impl TeXEngineState {
 
     /// Restores the enclosing alignment context (`pop_alignment`).
     fn pop_alignment(&mut self) -> Result<(), TeXMouthError> {
-        self.mem[self.cur_head as usize].s1 = self.avail;
-        self.avail = self.cur_head;
-        self.mem[self.cur_pre_head as usize].s1 = self.avail;
-        self.avail = self.cur_pre_head;
+        self.avail_push(self.cur_head);
+        self.avail_push(self.cur_pre_head);
         let p = self.align_ptr;
         self.cur_tail = self.mem[(p + 4) as usize].s1;
         self.cur_head = self.mem[(p + 4) as usize].s0;
@@ -6620,19 +6692,23 @@ impl TeXEngineState {
                     self.lr_ptr = temp;
                 }
                 'measure: while p != TEX_NULL {
-                    let d;
-                    'reswitch: loop {
+                    // `found` mirrors C's `found:`/`not_found:` split: only
+                    // chars, boxes, rules, native whatsits, and leader glues
+                    // update `w`; every other node accumulates into `v` alone
+                    // and can never end the scan on `MAX_HALFWORD`.
+                    let (d, found) = 'reswitch: loop {
                         if self.is_char_node(p) {
                             let f = self.mem[p as usize].b16_s1() as i32;
                             let ch = self.mem[p as usize].b16_s0() as i32;
                             let eff = self.effective_char(f, ch);
-                            d = self.font_char_metric(f, eff.max(0) as u32).width;
-                            break 'reswitch;
+                            break 'reswitch (
+                                self.font_char_metric(f, eff.max(0) as u32).width,
+                                true,
+                            );
                         }
                         match self.node_type(p)? {
                             t if t == HLIST_NODE || t == VLIST_NODE || t == RULE_NODE => {
-                                d = self.mem[(p + 1) as usize].s1;
-                                break 'reswitch;
+                                break 'reswitch (self.mem[(p + 1) as usize].s1, true);
                             }
                             t if t == LIGATURE_NODE => {
                                 let garbage = self.lig_trick();
@@ -6643,15 +6719,13 @@ impl TeXEngineState {
                                 continue 'reswitch;
                             }
                             t if t == KERN_NODE => {
-                                d = self.mem[(p + 1) as usize].s1;
-                                break 'reswitch;
+                                break 'reswitch (self.mem[(p + 1) as usize].s1, false);
                             }
                             t if t == MARGIN_KERN_NODE => {
-                                d = self.mem[(p + 1) as usize].s1;
-                                break 'reswitch;
+                                break 'reswitch (self.mem[(p + 1) as usize].s1, false);
                             }
                             t if t == MATH_NODE => {
-                                d = self.mem[(p + 1) as usize].s1;
+                                let d = self.mem[(p + 1) as usize].s1;
                                 if self.int_par(INT_PAR_TEXXET)? > 0 {
                                     let subtype = self.mem[p as usize].b16_s0() as i32;
                                     if subtype % 2 == 1 {
@@ -6679,16 +6753,15 @@ impl TeXEngineState {
                                     w = MAX_HALFWORD;
                                     break 'measure;
                                 }
-                                break 'reswitch;
+                                break 'reswitch (d, false);
                             }
                             t if t == EDGE_NODE => {
-                                d = self.mem[(p + 1) as usize].s1;
                                 self.cur_dir = self.mem[p as usize].b16_s0() as i32;
-                                break 'reswitch;
+                                break 'reswitch (self.mem[(p + 1) as usize].s1, false);
                             }
                             t if t == GLUE_NODE => {
                                 let spec = self.mem[(p + 1) as usize].s0;
-                                d = self.mem[(spec + 1) as usize].s1;
+                                let d = self.mem[(spec + 1) as usize].s1;
                                 let sign = self.mem[(self.just_box + 5) as usize].b16_s1();
                                 let order = self.mem[(self.just_box + 5) as usize].b16_s0();
                                 if sign == STRETCHING {
@@ -6706,7 +6779,8 @@ impl TeXEngineState {
                                 if self.mem[p as usize].b16_s0() as i32 >= A_LEADERS {
                                     // Leader glue terminates the measure loop.
                                     if v < MAX_HALFWORD {
-                                        w = v + d;
+                                        v += d;
+                                        w = v;
                                     } else {
                                         w = MAX_HALFWORD;
                                         break 'measure;
@@ -6714,7 +6788,7 @@ impl TeXEngineState {
                                     p = self.mem[p as usize].s1;
                                     continue 'measure;
                                 }
-                                break 'reswitch;
+                                break 'reswitch (d, false);
                             }
                             t if t == WHATSIT_NODE => {
                                 let subtype = self.mem[p as usize].b16_s0();
@@ -6724,24 +6798,25 @@ impl TeXEngineState {
                                     || subtype == PIC_NODE
                                     || subtype == PDF_NODE
                                 {
-                                    d = self.mem[(p + 1) as usize].s1;
-                                    break 'reswitch;
+                                    break 'reswitch (self.mem[(p + 1) as usize].s1, true);
                                 }
-                                d = 0;
-                                break 'reswitch;
+                                break 'reswitch (0, false);
                             }
                             _ => {
-                                d = 0;
-                                break 'reswitch;
+                                break 'reswitch (0, false);
                             }
                         }
-                    }
-                    if v < MAX_HALFWORD {
+                    };
+                    if found {
+                        if v < MAX_HALFWORD {
+                            v += d;
+                            w = v;
+                        } else {
+                            w = MAX_HALFWORD;
+                            break 'measure;
+                        }
+                    } else if v < MAX_HALFWORD {
                         v += d;
-                        w = v;
-                    } else {
-                        w = MAX_HALFWORD;
-                        break 'measure;
                     }
                     p = self.mem[p as usize].s1;
                 }
@@ -7665,7 +7740,7 @@ impl TeXEngineState {
             return Err(self.confusion("vcenter"));
         }
         let delta = self.mem[(v + 3) as usize].s1 + self.mem[(v + 2) as usize].s1;
-        let half_d = delta / 2;
+        let half_d = half(delta);
         self.mem[(v + 3) as usize].s1 = self.axis_height(self.cur_size) + half_d;
         self.mem[(v + 2) as usize].s1 = delta - self.mem[(v + 3) as usize].s1;
         Ok(())
@@ -7705,7 +7780,7 @@ impl TeXEngineState {
         let delta = self.mem[(y + 2) as usize].s1
             - (self.mem[(x + 3) as usize].s1 + self.mem[(x + 2) as usize].s1 + clr);
         if delta > 0 {
-            clr += delta / 2;
+            clr += half(delta);
         }
         self.mem[(y + 4) as usize].s1 = -(self.mem[(x + 3) as usize].s1 + clr);
         let xh = self.mem[(y + 3) as usize].s1;
@@ -7893,19 +7968,19 @@ impl TeXEngineState {
                     let pos =
                         self.ot_math_accent_pos(f, i32::from(self.mem[(p + 4) as usize].b16_s1()));
                     if pos == TEX_INFINITY {
-                        self.mem[(y + 1) as usize].s1 / 2
+                        half(self.mem[(y + 1) as usize].s1)
                     } else {
                         pos
                     }
                 } else {
-                    self.mem[(y + 1) as usize].s1 / 2
+                    half(self.mem[(y + 1) as usize].s1)
                 };
                 if st == BOTTOM_ACC as u16 || st == (BOTTOM_ACC + 1) as u16 || s == TEX_INFINITY {
-                    s = w / 2;
+                    s = half(w);
                 }
                 self.mem[(y + 4) as usize].s1 = s - sa;
             } else {
-                self.mem[(y + 4) as usize].s1 = s + (w - self.mem[(y + 1) as usize].s1) / 2;
+                self.mem[(y + 4) as usize].s1 = s + half(w - self.mem[(y + 1) as usize].s1);
             }
             self.mem[(y + 1) as usize].s1 = 0;
             let st = self.mem[q as usize].b16_s0();
@@ -7980,10 +8055,10 @@ impl TeXEngineState {
             } else {
                 3 * self.default_rule_thickness()
             };
-            let extra = (clr
-                - ((shift_up - self.mem[(x + 2) as usize].s1)
-                    - (self.mem[(z + 3) as usize].s1 - shift_down)))
-                / 2;
+            let extra = half(
+                clr - ((shift_up - self.mem[(x + 2) as usize].s1)
+                    - (self.mem[(z + 3) as usize].s1 - shift_down)),
+            );
             if extra > 0 {
                 shift_up += extra;
                 shift_down += extra;
@@ -7994,7 +8069,7 @@ impl TeXEngineState {
             let delta1;
             let delta2;
             if self.is_ot_math_font(self.math_cur_f) {
-                delta = self.mem[(q + 1) as usize].s1 / 2;
+                delta = half(self.mem[(q + 1) as usize].s1);
                 let clr = if self.cur_style < TEXT_STYLE {
                     self.ot_math_constant(self.math_cur_f, 37) // FRACTIONNUMDISPLAYSTYLEGAPMIN
                 } else {
@@ -8017,7 +8092,7 @@ impl TeXEngineState {
                 } else {
                     self.mem[(q + 1) as usize].s1
                 };
-                delta = self.mem[(q + 1) as usize].s1 / 2;
+                delta = half(self.mem[(q + 1) as usize].s1);
                 delta1 = clr
                     - ((shift_up - self.mem[(x + 2) as usize].s1)
                         - (self.axis_height(self.cur_size) + delta));
@@ -8153,7 +8228,7 @@ impl TeXEngineState {
                 self.mem[(x + 1) as usize].s1 -= delta;
             }
             self.mem[(x + 4) as usize].s1 =
-                (self.mem[(x + 3) as usize].s1 - self.mem[(x + 2) as usize].s1) / 2
+                half(self.mem[(x + 3) as usize].s1 - self.mem[(x + 2) as usize].s1)
                     - self.axis_height(self.cur_size);
             self.mem[(q + 1) as usize].s1 = SUB_BOX;
             self.mem[(q + 1) as usize].s0 = x;
@@ -8178,8 +8253,8 @@ impl TeXEngineState {
             x = self.rebox(x, vw)?;
             y = self.rebox(y, vw)?;
             z = self.rebox(z, vw)?;
-            self.mem[(x + 4) as usize].s1 = delta / 2;
-            self.mem[(z + 4) as usize].s1 = -(delta / 2);
+            self.mem[(x + 4) as usize].s1 = half(delta);
+            self.mem[(z + 4) as usize].s1 = -self.mem[(x + 4) as usize].s1;
             self.mem[(v + 3) as usize].s1 = self.mem[(y + 3) as usize].s1;
             self.mem[(v + 2) as usize].s1 = self.mem[(y + 2) as usize].s1;
             self.math_cur_f = save_f;
@@ -9193,7 +9268,7 @@ impl TeXEngineState {
             b = bb;
         }
         self.mem[(b + 4) as usize].s1 =
-            (self.mem[(b + 3) as usize].s1 - self.mem[(b + 2) as usize].s1) / 2
+            half(self.mem[(b + 3) as usize].s1 - self.mem[(b + 2) as usize].s1)
                 - self.axis_height(s);
         Ok(b)
     }
@@ -9691,6 +9766,10 @@ impl TeXEngineState {
                             break;
                         }
                     }
+                    // C falls through to `collected:` with the non-character
+                    // token still pending, then `goto reswitch` re-dispatches
+                    // it. Back it up so the outer dispatch loop re-reads it.
+                    self.back_input()?;
                     break;
                 }
             }
@@ -9904,7 +9983,8 @@ impl TeXEngineState {
         if len <= 0 {
             return Ok(());
         }
-        if self.int_par(INT_PAR_XETEX_LINEBREAK_LOCALE)? == 0 || len == 1 {
+        let locale_val = self.int_par(INT_PAR_XETEX_LINEBREAK_LOCALE)?;
+        if locale_val == 0 || len == 1 {
             let p = self.new_native_word_node(main_f, len)?;
             self.set_link(self.tail, p)?;
             self.tail = p;
@@ -10203,8 +10283,7 @@ impl TeXEngineState {
                         .map_or((0, 0), |r| (r.bc as i32, r.ec as i32));
                     if eff > ec || eff < bc || !self.char_exists(main_f, eff.max(0) as u32) {
                         self.char_warning(main_f, self.cur_chr);
-                        self.set_link(lig_stack, self.avail)?;
-                        self.avail = lig_stack;
+                        self.avail_push(lig_stack);
                         return Ok(()); // goto big_switch
                     }
                     self.set_link(self.tail, lig_stack)?;
@@ -10738,31 +10817,61 @@ impl TeXEngineState {
     }
 
     /// Inter-word space after a `Spacer` token in HMODE (`app_space`,
-    /// C ~14165).
+    /// C ~14163): `\xspaceskip` when `\spacefactor` ≥ 2000, else a
+    /// spacefactor-scaled copy of `\spaceskip` or the font glue.
     fn app_space(&mut self) -> Result<(), TeXMouthError> {
         let q = if self.aux.s0 >= 2000 && self.glue_par(GLUE_PAR_XSPACE_SKIP)? != TEX_NULL {
             self.new_param_glue(GLUE_PAR_XSPACE_SKIP)?
-        } else if self.glue_par(GLUE_PAR_SPACE_SKIP)? != TEX_NULL {
-            let main_p = self.glue_par(GLUE_PAR_SPACE_SKIP)?;
-            let temp = self.mem[main_p as usize + 2].s1;
-            let temp2 = self.mem[main_p as usize + 3].s1;
-            self.mem[main_p as usize + 2].s1 = self
-                .font_record(self.eqtb[CUR_FONT_LOC].s1)
-                .and_then(|r| r.params.get(SPACE_STRETCH_CODE as usize))
-                .copied()
-                .unwrap_or(0);
-            self.mem[main_p as usize + 3].s1 = self
-                .font_record(self.eqtb[CUR_FONT_LOC].s1)
-                .and_then(|r| r.params.get(SPACE_SHRINK_CODE as usize))
-                .copied()
-                .unwrap_or(0);
-            let q = self.new_glue(main_p)?;
-            self.mem[main_p as usize + 2].s1 = temp;
-            self.mem[main_p as usize + 3].s1 = temp2;
-            q
         } else {
-            self.append_normal_space()?;
-            return Ok(());
+            let main_p = if self.glue_par(GLUE_PAR_SPACE_SKIP)? != TEX_NULL {
+                self.glue_par(GLUE_PAR_SPACE_SKIP)?
+            } else {
+                let f = self.eqtb[CUR_FONT_LOC].s1;
+                match self.font_record(f).map(|r| r.glue) {
+                    Some(g) if g != TEX_NULL => g,
+                    _ => {
+                        let p = self.new_spec(0)?;
+                        let (space, stretch, shrink) = self.font_record(f).map_or((0, 0, 0), |r| {
+                            (
+                                r.params.get(SPACE_CODE as usize).copied().unwrap_or(0),
+                                r.params
+                                    .get(SPACE_STRETCH_CODE as usize)
+                                    .copied()
+                                    .unwrap_or(0),
+                                r.params
+                                    .get(SPACE_SHRINK_CODE as usize)
+                                    .copied()
+                                    .unwrap_or(0),
+                            )
+                        });
+                        self.mem[(p + 1) as usize].s1 = space;
+                        self.mem[(p + 2) as usize].s1 = stretch;
+                        self.mem[(p + 3) as usize].s1 = shrink;
+                        if let Some(record) = self.font_record_mut(f) {
+                            record.glue = p;
+                        }
+                        p
+                    }
+                }
+            };
+            let main_p = self.new_spec(main_p)?;
+            if self.aux.s0 >= 2000 {
+                let f = self.eqtb[CUR_FONT_LOC].s1;
+                let extra = self.font_record(f).map_or(0, |r| {
+                    r.params
+                        .get(crate::state::EXTRA_SPACE_CODE as usize)
+                        .copied()
+                        .unwrap_or(0)
+                });
+                self.mem[(main_p + 1) as usize].s1 += extra;
+            }
+            let stretch = self.mem[(main_p + 2) as usize].s1;
+            let shrink = self.mem[(main_p + 3) as usize].s1;
+            self.mem[(main_p + 2) as usize].s1 = self.xn_over_d(stretch, self.aux.s0, 1000);
+            self.mem[(main_p + 3) as usize].s1 = self.xn_over_d(shrink, 1000, self.aux.s0);
+            let q = self.new_glue(main_p)?;
+            self.mem[main_p as usize].s1 = TEX_NULL;
+            q
         };
         self.set_link(self.tail, q)?;
         self.tail = q;
@@ -10869,7 +10978,7 @@ impl TeXEngineState {
 
     /// Discards a box register after an output/box diagnostic (`box_error`).
     fn box_error(&mut self, n: i32) -> Result<(), TeXMouthError> {
-        let register = usize::try_from(n).map_err(|_| TeXMouthError::InputOutOfBounds(n))?;
+        let register = usize::try_from(n).map_err(|_| crate::scanner::oob(n))?;
         let boxed = self.box_reg(register)?;
         if boxed != TEX_NULL {
             self.flush_node_list(boxed)?;
@@ -10880,7 +10989,7 @@ impl TeXEngineState {
 
     /// Verifies that an insertion class targets a vertical box (`ensure_vbox`).
     fn ensure_vbox(&mut self, n: i32) -> Result<(), TeXMouthError> {
-        let register = usize::try_from(n).map_err(|_| TeXMouthError::InputOutOfBounds(n))?;
+        let register = usize::try_from(n).map_err(|_| crate::scanner::oob(n))?;
         let boxed = self.box_reg(register)?;
         if boxed != TEX_NULL && self.node_type(boxed)? == HLIST_NODE {
             self.box_error(n)?;
@@ -11431,7 +11540,11 @@ impl TeXEngineState {
                 }
             }
 
-            if !(GLUE_NODE..=crate::state::KERN_NODE).contains(&p_type) {
+            // C's `goto contribute` here applies only to penalty nodes that
+            // survived the empty-page discard; a `Discard` step chosen above
+            // must not be overridden back onto the page.
+            if !(GLUE_NODE..=crate::state::KERN_NODE).contains(&p_type) && step != PageStep::Discard
+            {
                 step = PageStep::Contribute;
             }
             if step == PageStep::UpdateHeights {
@@ -12926,8 +13039,7 @@ impl TeXEngineState {
                             if lr_ptr != TEX_NULL && self.mem[lr_ptr as usize].s0 == expected {
                                 let temp = lr_ptr;
                                 lr_ptr = self.mem[temp as usize].s1;
-                                self.mem[temp as usize].s1 = self.avail;
-                                self.avail = temp;
+                                self.avail_push(temp);
                             }
                         } else {
                             let temp = self.get_avail()?;
@@ -13007,8 +13119,7 @@ impl TeXEngineState {
                         if lr_ptr != TEX_NULL && self.mem[lr_ptr as usize].s0 == expected {
                             let temp = lr_ptr;
                             lr_ptr = self.mem[temp as usize].s1;
-                            self.mem[temp as usize].s1 = self.avail;
-                            self.avail = temp;
+                            self.avail_push(temp);
                         }
                     } else {
                         let temp = self.get_avail()?;
@@ -13209,8 +13320,7 @@ impl TeXEngineState {
                             if lr_ptr != TEX_NULL && self.mem[lr_ptr as usize].s0 == expected {
                                 let temp = lr_ptr;
                                 lr_ptr = self.mem[temp as usize].s1;
-                                self.mem[temp as usize].s1 = self.avail;
-                                self.avail = temp;
+                                self.avail_push(temp);
                             }
                         } else {
                             let temp = self.get_avail()?;
@@ -13782,8 +13892,7 @@ impl TeXEngineState {
                         i += 1;
                         c = self.lb_hu[i as usize];
                         self.lb_hu[i as usize] = self.lb_hyf_char;
-                        self.mem[hyf_node as usize].s1 = self.avail;
-                        self.avail = hyf_node;
+                        self.avail_push(hyf_node);
                     }
                     while l <= i {
                         l = self.reconstitute(
@@ -14246,10 +14355,9 @@ impl TeXEngineState {
 
     /// Converts a non-negative primitive `cur_chr` payload into an `eqtb` index.
     fn checked_eqtb_payload(&self, payload: i32) -> Result<usize, TeXMouthError> {
-        let index =
-            usize::try_from(payload).map_err(|_| TeXMouthError::InputOutOfBounds(payload))?;
+        let index = usize::try_from(payload).map_err(|_| crate::scanner::oob(payload))?;
         if index >= self.eqtb.len() {
-            return Err(TeXMouthError::InputOutOfBounds(payload));
+            return Err(crate::scanner::oob(payload));
         }
         Ok(index)
     }
@@ -14302,7 +14410,8 @@ mod tests {
         RIGHT_BRACE_TOKEN, SPACE_TOKEN,
     };
     use crate::state::{
-        TeXMode, ADJUST_NODE, BOX_FLAG, CHAR_CLASS_LIMIT, FIL, GLUE_NODE, HBOX_GROUP, INSERT_GROUP,
+        TeXMode, ADJUST_NODE, BOX_FLAG, CHAR_CLASS_LIMIT, FAMILY_BASE, FIL, GLUE_NODE, HBOX_GROUP,
+        INSERT_GROUP,
         INS_NODE, INT_PAR_END_LINE_CHAR, KERN_NODE, LEVEL_ONE, LEVEL_ZERO, LOCAL_BASE,
         LOCAL_EVERY_EOF, LOCAL_PAR_SHAPE, PAGE_BOX_THERE, PENALTY_NODE, SELECTOR_LOG_ONLY,
         SELECTOR_TERM_ONLY, XXX1,
@@ -15843,7 +15952,7 @@ mod tests {
 
         state.out_what(node).unwrap();
         assert!(state.write_stream_open(2));
-        assert_eq!(state.write_streams[2].as_ref().unwrap().name, "out-file");
+        assert_eq!(state.write_streams[2].as_ref().unwrap().name, "out-file.tex");
     }
 
     #[test]
@@ -15889,7 +15998,7 @@ mod tests {
 
         assert!(!state.write_stream_open(1));
         let stream = state.write_streams[1].as_ref().unwrap();
-        assert_eq!(stream.name, "journal");
+        assert_eq!(stream.name, "journal.tex");
         assert_eq!(stream.text, "line\n");
     }
 
@@ -16955,7 +17064,9 @@ mod tests {
         assert_eq!(state.native_node_length(p).unwrap(), 2);
         assert_eq!(state.native_word_text_at(p, 0).unwrap(), u16::from(b'A'));
         assert_eq!(state.native_word_text_at(p, 1).unwrap(), u16::from(b'B'));
-        assert_eq!(state.mem[p as usize + 1].s1, 110);
+        // Width includes `font_letter_space` × (glyphs - 1) like C's
+        // `measure_native_node` adjustment loop: 50 + 60 + 5 = 115.
+        assert_eq!(state.mem[p as usize + 1].s1, 115);
     }
 
     #[test]

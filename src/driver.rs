@@ -1834,6 +1834,7 @@ impl ProcessingSession {
                 .halt_on_error_mode(true)
                 .initex_mode(true)
                 .shell_escape(self.shell_escape_mode != ShellEscapeMode::Disabled)
+                .rust_backend(self.unstables.use_rust_tex_backend)
                 .process(&mut launcher, "UNUSED.fmt", "texput");
             self.bs.leave_format_mode();
             r
@@ -1912,6 +1913,7 @@ impl ProcessingSession {
                 .synctex(self.synctex_enabled)
                 .semantic_pagination(self.output_format == OutputFormat::Html)
                 .shell_escape(self.shell_escape_mode != ShellEscapeMode::Disabled)
+                .rust_backend(self.unstables.use_rust_tex_backend)
                 .build_date(self.build_date)
                 .process(
                     &mut launcher,

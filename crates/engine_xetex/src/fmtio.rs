@@ -13,9 +13,14 @@
 //! maintained by `ini.rs` (`fmt_hash`, `fmt_eqtb`, `prim`, the packed trie,
 //! `hyph_*` arrays) plus per-region translation from the compact tables.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use crate::scanner::{TeXMouthError, CS_TOKEN_FLAG};
+use crate::scanner::{
+    TeXMouthError, CS_TOKEN_FLAG, END_WRITE_ID, FROZEN_CR_ID, FROZEN_DONT_EXPAND_ID,
+    FROZEN_ENDV_ID, FROZEN_END_GROUP_ID, FROZEN_END_TEMPLATE_ID, FROZEN_FI_ID, FROZEN_NULL_FONT_ID,
+    FROZEN_PRIMITIVE_ID, FROZEN_PROTECTION_ID, FROZEN_RELAX_ID, FROZEN_RIGHT_ID, FROZEN_SPECIAL_ID,
+    NULL_CS_ID, UNDEFINED_CS_ID,
+};
 use crate::state::*;
 
 /// `FORMAT_HEADER_MAGIC` — the "TTNC" format-file signature.
@@ -26,6 +31,56 @@ pub(crate) const FORMAT_FOOTER_MAGIC: i32 = 0x0000_029A;
 pub(crate) const FORMAT_SERIAL: i32 = 33;
 /// `\patterns`/`\hyphenation` prime modulus used in the format header.
 const HYPH_PRIME_VALUE: i32 = HYPH_PRIME;
+
+/// Null pointer as serialized in C-generated format files: upstream's
+/// `TEX_NULL` is `MIN_HALFWORD` (`-0x0FFFFFFF`), while this engine uses
+/// `TEX_NULL == 0` internally. Pointer slots in the loaded image carrying
+/// the C sentinel are normalized to `TEX_NULL` on load; `TEX_NULL` slots
+/// are written back as `C_FMT_NULL` on dump.
+const C_FMT_NULL: i32 = -0x0FFF_FFFF;
+
+/// Maps a loaded C-format null sentinel to this engine's `TEX_NULL`.
+/// `MIN_HALFWORD` is a reserved non-value in the format, so any occurrence
+/// in a serialized pointer slot is the null marker.
+#[inline]
+fn fmt_null_to_tex(x: i32) -> i32 {
+    if x == C_FMT_NULL {
+        TEX_NULL
+    } else {
+        x
+    }
+}
+
+/// Maps this engine's `TEX_NULL` back to the C-format null sentinel for
+/// serialization.
+#[inline]
+fn tex_null_to_fmt(x: i32) -> i32 {
+    if x == TEX_NULL {
+        C_FMT_NULL
+    } else {
+        x
+    }
+}
+
+/// Frozen-control-sequence offsets from `FROZEN_CONTROL_SEQUENCE` and the
+/// reserved compact `cs_table` id each maps to. The C ordering is fixed by
+/// `xetex-constants.h`; the compact ordering is fixed by
+/// `ControlSequenceTable::new`. (`FROZEN_NULL_FONT` sits after the
+/// `PRIM_EQTB` slots and is mapped separately.)
+const C_FROZEN_COMPACT: [(i32, i32); 12] = [
+    (0, FROZEN_PROTECTION_ID),
+    (1, FROZEN_CR_ID),
+    (2, FROZEN_END_GROUP_ID),
+    (3, FROZEN_RIGHT_ID),
+    (4, FROZEN_FI_ID),
+    (5, FROZEN_END_TEMPLATE_ID),
+    (6, FROZEN_ENDV_ID),
+    (7, FROZEN_RELAX_ID),
+    (8, END_WRITE_ID),
+    (9, FROZEN_DONT_EXPAND_ID),
+    (10, FROZEN_SPECIAL_ID),
+    (11, FROZEN_PRIMITIVE_ID),
+];
 
 // === Big-endian reader/writer (`do_dump`/`do_undump`/`swap_items`) ===
 
@@ -215,8 +270,10 @@ impl TeXEngineState {
             LOCAL_BASE as i32 + pos - C_LOCAL_BASE
         } else if (C_TOKS_BASE..C_ETEX_PEN_BASE).contains(&pos) {
             TOKS_BASE as i32 + pos - C_TOKS_BASE
-        } else if (C_ETEX_PEN_BASE..C_CUR_FONT_LOC).contains(&pos) {
+        } else if (C_ETEX_PEN_BASE..C_BOX_BASE).contains(&pos) {
             ETEX_PEN_BASE as i32 + pos - C_ETEX_PEN_BASE
+        } else if (C_BOX_BASE..C_CUR_FONT_LOC).contains(&pos) {
+            BOX_BASE as i32 + pos - C_BOX_BASE
         } else if pos == C_CUR_FONT_LOC {
             CUR_FONT_LOC as i32
         } else if (C_MATH_FONT_BASE..C_CAT_CODE_BASE).contains(&pos) {
@@ -452,6 +509,10 @@ impl TeXEngineState {
             let cell = &mut e[pos as usize];
             if (self.hi_mem_min..=compact_mem_top).contains(&cell.s1) {
                 cell.s1 += hi_shift;
+            } else {
+                // These regions hold mem pointers; a `TEX_NULL` equiv
+                // serializes as C's `MIN_HALFWORD` null.
+                cell.s1 = tex_null_to_fmt(cell.s1);
             }
         }
         Ok(e)
@@ -581,6 +642,10 @@ impl TeXEngineState {
         for wd in &mut hi_image {
             if (self.hi_mem_min..=compact_mem_top).contains(&wd.s1) {
                 wd.s1 += hi_shift;
+            } else {
+                // Hi-mem `s1` is always a list link; `TEX_NULL` serializes
+                // as C's `MIN_HALFWORD` null.
+                wd.s1 = tex_null_to_fmt(wd.s1);
             }
         }
         self.dyn_used = C_MEM_TOP + 1 - c_hi_mem_min;
@@ -590,7 +655,7 @@ impl TeXEngineState {
         let avail = if (self.hi_mem_min..=compact_mem_top).contains(&self.avail) {
             self.avail + hi_shift
         } else {
-            self.avail
+            tex_null_to_fmt(self.avail)
         };
         w.int(avail);
         w.words(&hi_image);
@@ -737,8 +802,10 @@ impl TeXEngineState {
         w.ints(&arrays.param_base);
         w.ints(&arrays.font_glue);
         w.ints(&arrays.bchar_label);
-        w.u16s(&arrays.font_bchar);
-        w.u16s(&arrays.font_false_bchar);
+        // `font_bchar`/`font_false_bchar` are `nine_bits` = int32_t in C,
+        // not UTF16_code — they serialize as 4-byte ints.
+        w.ints(&arrays.font_bchar);
+        w.ints(&arrays.font_false_bchar);
 
         for k in FONT_BASE as usize..=font_ptr as usize {
             self.print_nl_cstr("\\font")?;
@@ -792,6 +859,8 @@ impl TeXEngineState {
                 let mut list = self.hyph_list[k];
                 if (self.hi_mem_min..=compact_mem_top).contains(&list) {
                     list += C_MEM_TOP - compact_mem_top;
+                } else {
+                    list = tex_null_to_fmt(list);
                 }
                 w.int(list);
             }
@@ -925,8 +994,8 @@ impl TeXEngineState {
             arrays.font_ec[f] = rec.ec.min(0xFFFF) as u16;
             arrays.font_glue[f] = rec.glue;
             arrays.bchar_label[f] = rec.bchar_label;
-            arrays.font_bchar[f] = rec.bchar.clamp(0, TOO_BIG_CHAR) as u16;
-            arrays.font_false_bchar[f] = rec.false_bchar.clamp(0, TOO_BIG_CHAR) as u16;
+            arrays.font_bchar[f] = rec.bchar.clamp(0, TOO_BIG_CHAR);
+            arrays.font_false_bchar[f] = rec.false_bchar.clamp(0, TOO_BIG_CHAR);
 
             // char_info block: dedupe metric values into index tables in
             // first-seen order over bc..=ec.
@@ -1131,7 +1200,7 @@ impl TeXEngineState {
             if !(MIN_HALFWORD..=self.lo_mem_max).contains(&x) {
                 return Err(bad());
             }
-            self.sa_root[k as usize] = x;
+            self.sa_root[k as usize] = fmt_null_to_tex(x);
         }
         let mut p = 0i32;
         let mut q = self.rover;
@@ -1161,10 +1230,16 @@ impl TeXEngineState {
         if !(MIN_HALFWORD..=C_MEM_TOP).contains(&x) {
             return Err(bad());
         }
-        self.avail = x;
+        self.avail = fmt_null_to_tex(x);
         self.mem_end = C_MEM_TOP;
         let words = r.words((self.mem_end + 1 - self.hi_mem_min) as usize)?;
         self.mem[self.hi_mem_min as usize..(self.mem_end + 1) as usize].copy_from_slice(&words);
+        // C dumps `TEX_NULL` (`MIN_HALFWORD`) as the null link; normalize the
+        // serialized sentinel to this engine's `TEX_NULL` throughout `mem`.
+        for w in &mut self.mem {
+            w.s0 = fmt_null_to_tex(w.s0);
+            w.s1 = fmt_null_to_tex(w.s1);
+        }
         self.var_used = r.int()?;
         self.dyn_used = r.int()?;
 
@@ -1198,6 +1273,12 @@ impl TeXEngineState {
             let words = r.words(self.hash_high as usize)?;
             e[(C_EQTB_SIZE + 1) as usize..(C_EQTB_SIZE + 1 + self.hash_high) as usize]
                 .copy_from_slice(&words);
+        }
+        // Same `TEX_NULL` normalization as `mem`: C null equivs deserialize
+        // as `MIN_HALFWORD`.
+        for w in &mut e {
+            w.s0 = fmt_null_to_tex(w.s0);
+            w.s1 = fmt_null_to_tex(w.s1);
         }
         let x = r.int()?;
         if !(C_HASH_BASE..=self.hash_top).contains(&x) {
@@ -1294,20 +1375,37 @@ impl TeXEngineState {
         let kern_base = r.ints(nf)?;
         let exten_base = r.ints(nf)?;
         let param_base = r.ints(nf)?;
-        let font_glue = r.ints(nf)?;
-        for &v in &font_glue {
-            if !(MIN_HALFWORD..=self.lo_mem_max).contains(&v) {
-                return Err(bad());
-            }
-        }
+        let font_glue: Vec<i32> = r
+            .ints(nf)?
+            .into_iter()
+            .map(|v| {
+                if !(MIN_HALFWORD..=self.lo_mem_max).contains(&v) {
+                    None
+                } else {
+                    Some(fmt_null_to_tex(v))
+                }
+            })
+            .collect::<Option<Vec<i32>>>()
+            .ok_or_else(bad)?;
         let bchar_label = r.ints(nf)?;
         for &v in &bchar_label {
             if !(0..self.fmem_ptr).contains(&v) {
                 return Err(bad());
             }
         }
-        let font_bchar = r.u16s(nf)?;
-        let font_false_bchar = r.u16s(nf)?;
+        // `nine_bits` is int32_t in C: checked in [0, TOO_BIG_CHAR].
+        let font_bchar = r.ints(nf)?;
+        for &v in &font_bchar {
+            if !(0..=TOO_BIG_CHAR).contains(&v) {
+                return Err(bad());
+            }
+        }
+        let font_false_bchar = r.ints(nf)?;
+        for &v in &font_false_bchar {
+            if !(0..=TOO_BIG_CHAR).contains(&v) {
+                return Err(bad());
+            }
+        }
 
         self.unpack_fmt_fonts(
             &font_info,
@@ -1385,14 +1483,14 @@ impl TeXEngineState {
             if !(MIN_HALFWORD..=MAX_HALFWORD).contains(&x) {
                 return Err(bad());
             }
-            self.hyph_list[j as usize] = x;
+            self.hyph_list[j as usize] = fmt_null_to_tex(x);
             // Mirror into the runtime exception map.
             let key = self
                 .string_units(self.hyph_word[j as usize])
                 .unwrap_or(&[])
                 .to_vec();
             let mut positions = Vec::new();
-            let mut node = x;
+            let mut node = self.hyph_list[j as usize];
             while node != TEX_NULL {
                 positions.push(self.mem[node as usize].s0);
                 node = self.mem[node as usize].s1;
@@ -1608,6 +1706,14 @@ impl TeXEngineState {
                 let target = Self::c_eqtb_pos_to_compact(cp) as usize;
                 if target < state.eqtb.len() && (cp as usize) < e.len() {
                     state.eqtb[target] = e[cp as usize];
+                    // For positions at or above `INT_BASE`, C keeps the
+                    // level in the parallel `xeq_level` array — never
+                    // dumped, and `initialize` sets every entry to
+                    // `LEVEL_ONE`. Our compact model stores the level in
+                    // the word itself, so stamp it here.
+                    if cp >= C_INT_BASE {
+                        state.eqtb[target].set_b16_s0(LEVEL_ONE);
+                    }
                 }
             }
         };
@@ -1621,6 +1727,7 @@ impl TeXEngineState {
             C_ETEX_PEN_BASE + C_NUM_ETEX_PENALTIES - 1,
             e,
         );
+        copy_region(self, C_BOX_BASE, C_BOX_BASE + C_NUMBER_REGS - 1, e);
         copy_region(self, C_CUR_FONT_LOC, C_CUR_FONT_LOC, e);
         copy_region(
             self,
@@ -1647,7 +1754,13 @@ impl TeXEngineState {
                 (CODE_TABLE_MATH, C_MATH_CODE_BASE),
                 (CODE_TABLE_DEL, C_DEL_CODE_BASE),
             ] {
-                let w = e[(base + c) as usize];
+                let mut w = e[(base + c) as usize];
+                // `DEL_CODE_BASE >= INT_BASE`: in C the level lives in
+                // `xeq_level` (initialized to `LEVEL_ONE`), not in the
+                // dumped word — stamp it into the stored word here.
+                if table == CODE_TABLE_DEL {
+                    w.set_b16_s0(LEVEL_ONE);
+                }
                 let default = self.default_code_table_value_pub(table, cu);
                 if w.s1 != default || w.b16_s0() != LEVEL_ONE {
                     self.code_tables[table as usize].insert(cu, w);
@@ -1655,7 +1768,19 @@ impl TeXEngineState {
             }
         }
 
-        // Control sequences: rebuild cs_table from the hash image.
+        // Control sequences: rebuild cs_table from the hash image. Along
+        // the way, record the C eqtb position → compact cs id map used to
+        // translate cs tokens carried inside serialized token lists (macro
+        // bodies, \toks registers, mark/write nodes, e-TeX sparse arrays).
+        let mut cs_map: HashMap<i32, i32> = HashMap::new();
+        cs_map.insert(0, 0);
+        cs_map.insert(C_NULL_CS, NULL_CS_ID);
+        cs_map.insert(C_UNDEFINED_CONTROL_SEQUENCE, UNDEFINED_CS_ID);
+        for (offset, id) in C_FROZEN_COMPACT {
+            cs_map.insert(C_FROZEN_CONTROL_SEQUENCE + offset, id);
+        }
+        cs_map.insert(C_FROZEN_NULL_FONT, FROZEN_NULL_FONT_ID);
+
         let mut positions: Vec<i32> = self.fmt_hash.keys().copied().collect();
         positions.sort_unstable();
         for pos in positions {
@@ -1666,16 +1791,285 @@ impl TeXEngineState {
             if (C_SINGLE_BASE..C_HASH_BASE).contains(&pos) {
                 continue; // single-char cs's are implicit
             }
-            let name = self.string_units(t.rh).unwrap_or(&[]).to_vec();
             let w = e.get(pos as usize).copied().unwrap_or_default();
             let command = w.b16_s1() as u8;
             let chr = Self::c_eqtb_pos_to_compact(w.s1);
             let level = w.b16_s0();
+            if let Some(&cs) = cs_map.get(&pos) {
+                // Frozen/reserved positions keep their fixed compact ids;
+                // refresh the reserved entry's meaning from the image.
+                let _ = self.cs_table.restore(cs, command, chr, level);
+                continue;
+            }
+            let name = self.string_units(t.rh).unwrap_or(&[]).to_vec();
             let cs = self.cs_table.define_units(&name, command, chr);
             let _ = self.cs_table.restore(cs, command, chr, level);
+            cs_map.insert(pos, cs);
         }
+        self.translate_fmt_cs_tokens(e, &mut cs_map);
         self.unpack_fmt_eqtb_shadow(e);
         Ok(())
+    }
+
+    /// Resolves a serialized C eqtb/hash position appearing as a cs-token
+    /// payload to the compact runtime `cs_table` id, defining single-char
+    /// and active-character entries lazily from the eqtb image.
+    fn fmt_cs_pos_to_compact(
+        &mut self,
+        pos: i32,
+        e: &[MemoryWord],
+        map: &mut HashMap<i32, i32>,
+    ) -> i32 {
+        if let Some(&id) = map.get(&pos) {
+            return id;
+        }
+        let w = e.get(pos as usize).copied().unwrap_or_default();
+        let command = w.b16_s1() as u8;
+        let chr = Self::c_eqtb_pos_to_compact(w.s1);
+        let level = w.b16_s0();
+        let id = if (C_ACTIVE_BASE..C_SINGLE_BASE).contains(&pos) {
+            let c = pos - C_ACTIVE_BASE;
+            let cs = self.cs_table.define_active(
+                c,
+                CommandCode::from_u8(command).unwrap_or(CommandCode::UndefinedCs),
+                chr,
+            );
+            let _ = self.cs_table.restore(cs, command, chr, level);
+            cs
+        } else if (C_SINGLE_BASE..C_HASH_BASE).contains(&pos) {
+            let cs = self
+                .cs_table
+                .define_units(&[pos - C_SINGLE_BASE], command, chr);
+            let _ = self.cs_table.restore(cs, command, chr, level);
+            cs
+        } else {
+            UNDEFINED_CS_ID
+        };
+        map.insert(pos, id);
+        id
+    }
+
+    /// Translates one `s0` cell of a serialized token list from
+    /// `CS_TOKEN_FLAG + C eqtb position` to `CS_TOKEN_FLAG + compact id`.
+    fn fmt_translate_token_cell(
+        &mut self,
+        p: i32,
+        e: &[MemoryWord],
+        map: &mut HashMap<i32, i32>,
+        visited: &mut HashSet<i32>,
+    ) {
+        if p <= 0 || p as usize >= self.mem.len() || !visited.insert(p) {
+            return;
+        }
+        self.fmt_translate_token_cell_inner(p, e, map);
+    }
+
+    /// Translates `mem[p].s0` if it is a cs token (`CS_TOKEN_FLAG` payload
+    /// mapped through `map`, defining single-char/active entries lazily).
+    fn fmt_translate_token_cell_inner(
+        &mut self,
+        p: i32,
+        e: &[MemoryWord],
+        map: &mut HashMap<i32, i32>,
+    ) {
+        let token = self.mem[p as usize].s0;
+        if token >= CS_TOKEN_FLAG {
+            let id = self.fmt_cs_pos_to_compact(token - CS_TOKEN_FLAG, e, map);
+            self.mem[p as usize].s0 = CS_TOKEN_FLAG + id;
+        }
+    }
+
+    /// Walks a token list (`get_avail` cells: `s0` = token, `s1` = link)
+    /// translating cs-token payloads to compact ids.
+    fn fmt_translate_token_list(
+        &mut self,
+        mut p: i32,
+        e: &[MemoryWord],
+        map: &mut HashMap<i32, i32>,
+        visited: &mut HashSet<i32>,
+    ) {
+        while p != TEX_NULL && p > 0 && (p as usize) < self.mem.len() {
+            if !visited.insert(p) {
+                break;
+            }
+            self.fmt_translate_token_cell_inner(p, e, map);
+            p = self.mem[p as usize].s1;
+        }
+    }
+
+    /// Walks a node list (mirroring `flush_node_list`'s type dispatch),
+    /// translating the token lists embedded in mark, write, and special
+    /// nodes and recursing into nested lists.
+    fn fmt_translate_node_list(
+        &mut self,
+        mut p: i32,
+        e: &[MemoryWord],
+        map: &mut HashMap<i32, i32>,
+        visited: &mut HashSet<i32>,
+    ) {
+        while p != TEX_NULL && p > 0 && (p as usize) < self.mem.len() {
+            let word = self.mem[p as usize];
+            if p >= self.hi_mem_min {
+                // Single-word cells in node lists are character nodes —
+                // their `s0` is packed character data, not a token.
+                p = word.s1;
+                continue;
+            }
+            match word.b16_s1() {
+                HLIST_NODE | VLIST_NODE | UNSET_NODE => {
+                    self.fmt_translate_node_list(self.mem[(p + 5) as usize].s1, e, map, visited);
+                }
+                INS_NODE => {
+                    self.fmt_translate_node_list(self.mem[(p + 4) as usize].s0, e, map, visited);
+                }
+                WHATSIT_NODE => {
+                    if word.b16_s0() == WRITE_NODE || word.b16_s0() == SPECIAL_NODE {
+                        self.fmt_translate_token_list(
+                            self.mem[(p + 1) as usize].s1,
+                            e,
+                            map,
+                            visited,
+                        );
+                    }
+                }
+                GLUE_NODE => {
+                    let leaders = self.mem[(p + 1) as usize].s1;
+                    if leaders != TEX_NULL {
+                        self.fmt_translate_node_list(leaders, e, map, visited);
+                    }
+                }
+                LIGATURE_NODE => {
+                    self.fmt_translate_node_list(self.mem[(p + 1) as usize].s1, e, map, visited);
+                }
+                MARK_NODE => {
+                    self.fmt_translate_token_list(self.mem[(p + 1) as usize].s1, e, map, visited);
+                }
+                DISC_NODE => {
+                    self.fmt_translate_node_list(self.mem[(p + 1) as usize].s0, e, map, visited);
+                    self.fmt_translate_node_list(self.mem[(p + 1) as usize].s1, e, map, visited);
+                }
+                ADJUST_NODE => {
+                    self.fmt_translate_node_list(self.mem[(p + 1) as usize].s1, e, map, visited);
+                }
+                CHOICE_NODE => {
+                    self.fmt_translate_node_list(self.mem[(p + 1) as usize].s0, e, map, visited);
+                    self.fmt_translate_node_list(self.mem[(p + 1) as usize].s1, e, map, visited);
+                    self.fmt_translate_node_list(self.mem[(p + 2) as usize].s0, e, map, visited);
+                    self.fmt_translate_node_list(self.mem[(p + 2) as usize].s1, e, map, visited);
+                }
+                ORD_NOAD | OP_NOAD | BIN_NOAD | REL_NOAD | OPEN_NOAD | CLOSE_NOAD | PUNCT_NOAD
+                | INNER_NOAD | RADICAL_NOAD | OVER_NOAD | UNDER_NOAD | VCENTER_NOAD
+                | ACCENT_NOAD => {
+                    for offset in 1..=3 {
+                        let field = self.mem[(p + offset) as usize];
+                        if field.s1 >= SUB_BOX {
+                            self.fmt_translate_node_list(field.s0, e, map, visited);
+                        }
+                    }
+                }
+                FRACTION_NOAD => {
+                    self.fmt_translate_node_list(self.mem[(p + 2) as usize].s0, e, map, visited);
+                    self.fmt_translate_node_list(self.mem[(p + 3) as usize].s0, e, map, visited);
+                }
+                _ => {}
+            }
+            p = word.s1;
+        }
+    }
+
+    /// Walks one e-TeX sparse-array tree of class `t`. The tree is a fixed
+    /// four levels deep (`find_sa_element`): children below depth 4 are
+    /// index blocks carrying 64 halfword child slots; children at depth 4
+    /// are leaves whose layout depends on `t` — token-list elements, box
+    /// elements, and mark classes all carry pointers into `mem` that need
+    /// translation.
+    fn fmt_translate_sa(
+        &mut self,
+        root: i32,
+        t: i32,
+        e: &[MemoryWord],
+        map: &mut HashMap<i32, i32>,
+        visited: &mut HashSet<i32>,
+    ) {
+        let mut stack = vec![(root, 0)];
+        while let Some((q, depth)) = stack.pop() {
+            if q == TEX_NULL || q <= 0 || !visited.insert(q) {
+                continue;
+            }
+            if depth < 4 {
+                for i in 0..64usize {
+                    let Some(slot) = self.mem.get(q as usize + 1 + i / 2) else {
+                        break;
+                    };
+                    let child = if i & 1 == 0 { slot.s0 } else { slot.s1 };
+                    stack.push((child, depth + 1));
+                }
+                continue;
+            }
+            let q = q as usize;
+            match t {
+                SA_TOK_VAL | SA_INTER_CHAR_VAL => {
+                    if let Some(w) = self.mem.get(q + 1).copied() {
+                        self.fmt_translate_token_list(w.s1, e, map, visited);
+                    }
+                }
+                SA_BOX_VAL => {
+                    if let Some(w) = self.mem.get(q + 1).copied() {
+                        self.fmt_translate_node_list(w.s1, e, map, visited);
+                    }
+                }
+                SA_MARK_VAL => {
+                    for off in [q + 1, q + 2, q + 3] {
+                        if let Some(w) = self.mem.get(off).copied() {
+                            self.fmt_translate_token_list(w.s0, e, map, visited);
+                            self.fmt_translate_token_list(w.s1, e, map, visited);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Translates every cs token stored in the loaded `mem` image from
+    /// `CS_TOKEN_FLAG + C eqtb position` to `CS_TOKEN_FLAG + compact id`.
+    /// Token lists are identified structurally from their roots: macro
+    /// definitions in the eqtb image, `\toks` registers, token-list local
+    /// parameters, and the token lists embedded in node lists reachable
+    /// from box registers and the sparse e-TeX arrays.
+    fn translate_fmt_cs_tokens(&mut self, e: &[MemoryWord], map: &mut HashMap<i32, i32>) {
+        // Token lists are shared between eqtb entries (`\let\a=\b`
+        // aliases one def list); already-visited cells must not be
+        // retranslated — a compact id reads back as a low C position.
+        let mut visited: HashSet<i32> = HashSet::new();
+        // Macro bodies: any eqtb entry whose type is a call command holds
+        // a token-list pointer in `equiv`.
+        for w in e.iter() {
+            if (CommandCode::Call as u16..=CommandCode::LongOuterCall as u16).contains(&w.b16_s1())
+            {
+                self.fmt_translate_token_list(w.s1, e, map, &mut visited);
+            }
+        }
+        // \toks registers and the token-list local parameters
+        // (`output_routine` .. `tectonic_coda_tokens`; `par_shape` is a
+        // node-shaped spec, not a token list).
+        for pos in (C_TOKS_BASE..C_TOKS_BASE + C_NUMBER_REGS)
+            .chain((C_LOCAL_BASE + 1)..(C_LOCAL_BASE + C_NUM_LOCALS))
+        {
+            self.fmt_translate_token_list(e[pos as usize].s1, e, map, &mut visited);
+        }
+        // Box registers hold node lists which may embed mark/write token
+        // references.
+        for pos in C_BOX_BASE..C_BOX_BASE + C_NUMBER_REGS {
+            self.fmt_translate_node_list(e[pos as usize].s1, e, map, &mut visited);
+        }
+        // e-TeX sparse arrays.
+        for t in 0..SA_ROOT_COUNT {
+            self.fmt_translate_sa(self.sa_root[t], t as i32, e, map, &mut visited);
+        }
+        // The `\omit` template cell carries a baked cs token.
+        let omit = self.omit_template();
+        self.fmt_translate_token_cell(omit, e, map, &mut visited);
     }
 
     /// Stores the loaded eqtb words back into `fmt_eqtb` for re-dumps.
@@ -1721,8 +2115,8 @@ impl TeXEngineState {
         param_base: &[i32],
         font_glue: &[i32],
         bchar_label: &[i32],
-        font_bchar: &[u16],
-        font_false_bchar: &[u16],
+        font_bchar: &[i32],
+        font_false_bchar: &[i32],
     ) -> Result<(), TeXMouthError> {
         self.font_table.clear();
         self.font_char_metrics.clear();
@@ -1750,8 +2144,8 @@ impl TeXEngineState {
                 ec: u32::from(font_ec[f]),
                 glue: font_glue[f],
                 bchar_label: bchar_label[f],
-                bchar: i32::from(font_bchar[f]),
-                false_bchar: i32::from(font_false_bchar[f]),
+                bchar: font_bchar[f],
+                false_bchar: font_false_bchar[f],
                 ..Default::default()
             };
 
@@ -1795,11 +2189,10 @@ impl TeXEngineState {
             }
 
             // lig/kern program — block ends at the next font's base or the
-            // kern base.
-            let lk_start = lig_kern_base[f] as usize;
-            let lk_end = kern_base[f] as usize;
-            for i in lk_start..lk_end {
-                let w = font_info.get(i).copied().unwrap_or_default();
+            // kern base. Ranges stay in i32 like C: a base of -1 yields an
+            // empty loop, and `.get()` bounds-checks each index.
+            for i in lig_kern_base[f]..kern_base[f] {
+                let w = font_info.get(i as usize).copied().unwrap_or_default();
                 rec.lig_kern.push(LigKernInsn {
                     skip: w.b16_s3() as u8,
                     next_char: i32::from(w.b16_s2()),
@@ -1807,15 +2200,17 @@ impl TeXEngineState {
                     remainder: i32::from(w.b16_s0()),
                 });
             }
-            let k_end = exten_base[f] as usize;
-            for i in kern_base[f] as usize..k_end {
-                rec.kerns.push(font_info.get(i).map(|w| w.s1).unwrap_or(0));
+            for i in kern_base[f]..exten_base[f] {
+                rec.kerns
+                    .push(font_info.get(i as usize).map(|w| w.s1).unwrap_or(0));
             }
-            let x_end = param_base[f] as usize + 1;
-            for i in exten_base[f] as usize..x_end {
-                let w = font_info.get(i).copied().unwrap_or_default();
+            for i in exten_base[f]..=param_base[f] {
+                // `param_base` can be -1 for the null font; C's
+                // `i <= param_base[f]` loop simply never runs there, so an
+                // empty inclusive range is the faithful equivalent.
+                let w = font_info.get(i as usize).copied().unwrap_or_default();
                 rec.exten_recipes.insert(
-                    (i - exten_base[f] as usize) as i32,
+                    i - exten_base[f],
                     [
                         i32::from(w.b16_s3()),
                         i32::from(w.b16_s2()),
@@ -1824,14 +2219,23 @@ impl TeXEngineState {
                     ],
                 );
             }
-            let n_params = font_params[f].max(0) as usize;
-            for i in 0..n_params {
-                rec.params.push(
-                    font_info
-                        .get(param_base[f] as usize + 1 + i)
-                        .map(|w| w.s1)
-                        .unwrap_or(0),
-                );
+            let n_params = font_params[f].max(0);
+            // `FontRecord::default()` seeds `params` with the sentinel slot
+            // plus seven fontdimen slots, so `params[n]` must hold C's
+            // `font_info[param_base[f] + n]` — fontdimen `n` — exactly as
+            // the runtime TFM path lays it out. Overwrite the seeded slots
+            // and extend for `n_params > 7`.
+            for i in 1..=n_params {
+                let v = font_info
+                    .get((param_base[f] + i) as usize)
+                    .map(|w| w.s1)
+                    .unwrap_or(0);
+                let slot = i as usize;
+                if slot < rec.params.len() {
+                    rec.params[slot] = v;
+                } else {
+                    rec.params.push(v);
+                }
             }
             self.font_table.push(rec);
         }
@@ -1858,8 +2262,8 @@ struct FmtFontArrays {
     param_base: Vec<i32>,
     font_glue: Vec<i32>,
     bchar_label: Vec<i32>,
-    font_bchar: Vec<u16>,
-    font_false_bchar: Vec<u16>,
+    font_bchar: Vec<i32>,
+    font_false_bchar: Vec<i32>,
 }
 
 /// First-seen dedupe into `table`; returns the 1-based index (TFM indices
@@ -1879,8 +2283,6 @@ const HI_MEM_STAT_USAGE_CHECK: i32 = 14;
 mod tests {
     use super::*;
 
-    /// A minimal INITEX-configured engine: runtime primitives plus the
-    /// C-layout image (prim table, frozen entries, INITEX counters).
     fn initex_state() -> TeXEngineState {
         let mut state = TeXEngineState::default();
         state.install_core_primitives();
@@ -2055,6 +2457,64 @@ mod tests {
         assert_eq!(b.int_par(INT_PAR_TIME).unwrap(), 0);
     }
 
+    /// A format image preserves the single-word `avail` free list: whatever
+    /// INITEX freed onto `avail` before `\dump` is the post-load headroom for
+    /// `get_avail`, exactly as in C. Churning a `\toks` register frees the old
+    /// list on each reassignment, so the dumped image carries usable words.
+    #[test]
+    fn load_preserves_avail_free_list_for_get_avail() {
+        let mut ini = TeXEngineState {
+            in_initex_mode: true,
+            ..TeXEngineState::new(5_000_000)
+        };
+        let mut job = String::new();
+        for _ in 0..50 {
+            job.push_str("\\toks0={aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}");
+        }
+        job.push_str("\\dump");
+        ini.register_input_source("job.tex", &job);
+        ini.run_engine(
+            "test.fmt",
+            None,
+            "job.tex",
+            std::time::SystemTime::UNIX_EPOCH,
+        )
+        .unwrap();
+
+        let mut b = TeXEngineState::new(5_000_000);
+        b.initialize_more_variables();
+        b.load_fmt_file(&ini.fmt_bytes).unwrap();
+        let mut n = 0;
+        let mut a = b.avail;
+        while a != crate::state::TEX_NULL {
+            n += 1;
+            a = b.mem[a as usize].s1;
+            if n > 100_000 {
+                break;
+            }
+        }
+        assert!(n > 10, "avail free list should survive the dump/load");
+
+        // Post-load allocation exercises `avail` and the `hi_mem_min` bump
+        // path without exhausting the compact free region.
+        b.register_input_source(
+            "job.tex",
+            "\\immediate\\openout1=auxfile.aux \\immediate\\write1{hello}\\end",
+        );
+        let h = b
+            .run_engine(
+                "test.fmt",
+                Some(&ini.fmt_bytes),
+                "job.tex",
+                std::time::SystemTime::UNIX_EPOCH,
+            )
+            .unwrap();
+        assert_eq!(h, HISTORY_SPOTLESS);
+        assert!(b.write_streams[1]
+            .as_ref()
+            .is_some_and(|w| w.text == "hello\n"));
+    }
+
     #[test]
     fn civil_from_unix_matches_known_dates() {
         assert_eq!(crate::ini::civil_from_unix(0), (0, 1, 1, 1970));
@@ -2076,7 +2536,42 @@ mod tests {
         a.set_source_text("\\dump");
         a.dispatch_x_command().unwrap();
         assert!(a.job_stopped);
+        // `final_cleanup` (the `\dump` serializer) runs at the `run_engine`
+        // tail like C's `main_control` epilogue.
+        a.final_cleanup().unwrap();
         assert!(!a.fmt_bytes.is_empty());
         assert_eq!(&a.fmt_bytes[..4], &FORMAT_HEADER_MAGIC.to_be_bytes());
+    }
+
+    /// Loads a real C-generated format file when one is available on the
+    /// host (via `XETEX_C_FMT_PATH` or a cached Tectonic format), checking
+    /// that the `TEX_NULL` sentinel normalization and section decoding
+    /// succeed. Skips silently when no C format is present.
+    #[test]
+    fn loads_c_generated_format() {
+        let path = std::env::var_os("XETEX_C_FMT_PATH")
+            .map(std::path::PathBuf::from)
+            .or_else(cached_plain_format);
+        let Some(path) = path else { return };
+        let Ok(data) = std::fs::read(&path) else {
+            return;
+        };
+        let mut b = TeXEngineState::new(5_000_000);
+        b.initialize_more_variables();
+        b.load_fmt_file(&data)
+            .unwrap_or_else(|e| panic!("loading {} failed: {e:?}", path.display()));
+        assert!(b.str_ptr > TOO_BIG_CHAR);
+        assert!(b.pool_ptr > 0);
+        assert!(b.hi_mem_min > b.lo_mem_max);
+    }
+
+    fn cached_plain_format() -> Option<std::path::PathBuf> {
+        let home = std::env::var_os("HOME")?;
+        let dir = std::path::PathBuf::from(home).join(".cache/tectonic/formats");
+        std::fs::read_dir(dir).ok()?.find_map(|e| {
+            let p = e.ok()?.path();
+            let n = p.file_name()?.to_string_lossy();
+            (n.ends_with(".fmt") && n.contains("-plain-")).then_some(p)
+        })
     }
 }

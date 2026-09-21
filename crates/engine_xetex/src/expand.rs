@@ -13,7 +13,7 @@
 
 use std::collections::VecDeque;
 
-use crate::scan::{DIMEN_VAL, INT_VAL, TOK_VAL};
+use crate::scan::{DIMEN_VAL, GLUE_VAL, IDENT_VAL, INT_VAL, MU_VAL, TOK_VAL};
 use crate::scanner::{
     TeXMouthError, BIGGEST_USV, CAT_ACTIVE_CHAR, CS_TOKEN_FLAG, END_MATCH_TOKEN, FROZEN_RELAX_ID,
     INSERTED, LEFT_BRACE_LIMIT, MACRO, MARK_TEXT, MATCH_TOKEN, MAX_CHAR_VAL, MAX_COMMAND, NORMAL,
@@ -90,11 +90,28 @@ impl TeXEngineState {
     /// saved and restored around the expansion, matching the C implementation's
     /// re-entrant behavior.
     pub fn expand(&mut self) -> Result<(), TeXMouthError> {
+        // `ttstub_event_macro_expand`/`ttstub_event_expand_on` at `expand`
+        // entry: the rich context only when `cur_cmd < CALL`, exactly the
+        // C gating; `expand_depth_count` is the pre-increment depth.
+        if let Some(hook) = self.expansion_hook.clone() {
+            // C only marshals the name when the rich hook is active
+            // (`ttstub_is_expansion_hook_active`); skip the lookup for the
+            // lightweight counter.
+            let name = (hook.wants_names && self.cur_cmd < CommandCode::Call as u8)
+                .then(|| self.cs_name_text(self.cur_cs));
+            hook.emit(&crate::state::ExpansionEvent {
+                name,
+                depth: self.expand_depth_count as i32,
+                cur_cmd: i32::from(self.cur_cmd),
+                cur_chr: self.cur_chr,
+            });
+        }
+
+        self.expand_depth_count += 1;
         if self.expand_depth_count >= self.expand_depth {
             return Err(TeXMouthError::ExpansionDepthExceeded);
         }
 
-        self.expand_depth_count += 1;
         let cv_backup = self.cur_val;
         let cvl_backup = self.cur_val_level;
         let radix_backup = self.radix;
@@ -152,6 +169,19 @@ impl TeXEngineState {
     /// interpreted as alternating `MATCH_TOKEN` boundaries and delimiter runs,
     /// preserving TeX's delimited/undelimited argument behavior.
     pub fn macro_call(&mut self) -> Result<(), TeXMouthError> {
+        // `ttstub_event_macro_expand` at `macro_call` entry: the name is
+        // always delivered when a hook is installed; `input_ptr` is the
+        // depth parameter C passes.
+        if let Some(hook) = self.expansion_hook.clone() {
+            let name = hook.wants_names.then(|| self.cs_name_text(self.cur_cs));
+            hook.emit(&crate::state::ExpansionEvent {
+                name,
+                depth: self.input_ptr as i32,
+                cur_cmd: i32::from(self.cur_cmd),
+                cur_chr: self.cur_chr,
+            });
+        }
+
         let save_scanner_status = self.scanner_status;
         let save_warning_index = self.warning_index;
 
@@ -240,7 +270,20 @@ impl TeXEngineState {
                         return Ok(());
                     }
                     x if x == CommandCode::UndefinedCs as u8 => {
-                        return Err(TeXMouthError::UndefinedControlSequence(self.cur_cs));
+                        // C `expand`'s `default:` (~6429-6440): the
+                        // undefined-control-sequence error is recoverable —
+                        // report and forget, matching `error()` semantics.
+                        self.report_error(
+                            "Undefined control sequence",
+                            &[
+                                "The control sequence at the end of the top line",
+                                "of your error message was never \\def'ed. If you have",
+                                "misspelled it (e.g., `\\hobx'), type `I' and the correct",
+                                "spelling (e.g., `I\\hbox'). Otherwise just continue,",
+                                "and I'll forget about whatever was undefined.",
+                            ],
+                        );
+                        return Ok(());
                     }
                     _ => return Err(TeXMouthError::UnsupportedPrimitive("expandable command")),
                 }
@@ -915,7 +958,7 @@ impl TeXEngineState {
     fn evaluate_if_box(&mut self, this_if: i32) -> Result<bool, TeXMouthError> {
         let register = self.scan_int()?;
         if !(0..256).contains(&register) {
-            return Err(TeXMouthError::InputOutOfBounds(register));
+            return Err(crate::scanner::oob(register));
         }
         let node = self.box_reg(register as usize)?;
         Ok(match this_if {
@@ -1143,7 +1186,15 @@ impl TeXEngineState {
             37 => self.expand_glyph_name(),
             38 => self.expand_uchar(CommandCode::OtherChar as u8),
             39 => self.expand_ucharcat(),
-            40 => self.insert_character_tokens("FerroTeX".chars()),
+            40 => {
+                // `\jobname` (C `conv_toks` JOB_NAME_CODE): open the log if
+                // the job is still unnamed, then `print_file_name(job_name)`.
+                if self.job_name.is_none() {
+                    self.open_log_file()?;
+                }
+                let name = self.job_name.clone().unwrap_or_default();
+                self.insert_character_tokens(name.chars())
+            }
             _ => Err(TeXMouthError::UnsupportedPrimitive("conversion primitive")),
         }
     }
@@ -1305,24 +1356,36 @@ impl TeXEngineState {
     }
 
     fn expand_strcmp(&mut self) -> Result<(), TeXMouthError> {
+        // C `conv_toks` `PDF_STRCMP_CODE` (~9591-9605): scanner_status,
+        // warning_index, and def_ref are saved around `compare_strings`
+        // because the two `scan_toks` calls clobber all three.
         let save_cur_cs = self.cur_cs;
-        self.scan_toks(false, true)?;
-        let first = self.def_ref;
-        let first_string = self.token_list_display_string(first)?;
-        self.delete_token_ref(first)?;
-        self.cur_cs = save_cur_cs;
+        let save_scanner_status = self.scanner_status;
+        let save_warning_index = self.warning_index;
+        let save_def_ref = self.def_ref;
+        let result = (|engine: &mut Self| -> Result<i32, TeXMouthError> {
+            engine.scan_toks(false, true)?;
+            let first = engine.def_ref;
+            let first_string = engine.token_list_display_string(first)?;
+            engine.delete_token_ref(first)?;
+            engine.cur_cs = save_cur_cs;
 
-        self.scan_toks(false, true)?;
-        let second = self.def_ref;
-        let second_string = self.token_list_display_string(second)?;
-        self.delete_token_ref(second)?;
-        self.cur_cs = save_cur_cs;
+            engine.scan_toks(false, true)?;
+            let second = engine.def_ref;
+            let second_string = engine.token_list_display_string(second)?;
+            engine.delete_token_ref(second)?;
+            engine.cur_cs = save_cur_cs;
 
-        let value = match first_string.cmp(&second_string) {
-            std::cmp::Ordering::Less => -1,
-            std::cmp::Ordering::Equal => 0,
-            std::cmp::Ordering::Greater => 1,
-        };
+            Ok(match first_string.cmp(&second_string) {
+                std::cmp::Ordering::Less => -1,
+                std::cmp::Ordering::Equal => 0,
+                std::cmp::Ordering::Greater => 1,
+            })
+        })(self);
+        self.def_ref = save_def_ref;
+        self.warning_index = save_warning_index;
+        self.scanner_status = save_scanner_status;
+        let value = result?;
         self.insert_character_tokens(value.to_string().chars())
     }
 
@@ -1377,10 +1440,23 @@ impl TeXEngineState {
         // `scan_pdf_ext_toks` + `tokens_to_string(def_ref)`: the scanned
         // token list is rendered to the file-name text (C's `gettexstring`
         // yields UTF-8; `token_list_display_string` yields the same text).
-        self.scan_toks(false, true)?;
-        let name_ref = self.def_ref;
-        let name = self.token_list_display_string(name_ref)?;
-        self.delete_token_ref(name_ref)?;
+        // C `conv_toks` saves and restores scanner_status, warning_index,
+        // and def_ref around the scan (~9406-9501) because `scan_toks`
+        // clobbers all three.
+        let save_scanner_status = self.scanner_status;
+        let save_warning_index = self.warning_index;
+        let save_def_ref = self.def_ref;
+        let scan_result = (|engine: &mut Self| -> Result<String, TeXMouthError> {
+            engine.scan_toks(false, true)?;
+            let name_ref = engine.def_ref;
+            let name = engine.token_list_display_string(name_ref)?;
+            engine.delete_token_ref(name_ref)?;
+            Ok(name)
+        })(self);
+        self.def_ref = save_def_ref;
+        self.warning_index = save_warning_index;
+        self.scanner_status = save_scanner_status;
+        let name = scan_result?;
 
         let text = match code {
             PDF_FILE_MOD_DATE_CODE => self.file_mod_date_text(&name),
@@ -1413,7 +1489,16 @@ impl TeXEngineState {
                         }
                     }
                 } else {
-                    output.push('\\');
+                    // C `print_esc` honors `escapechar`: a negative or
+                    // out-of-range value suppresses the escape prefix.
+                    let escape = self
+                        .int_par(crate::state::INT_PAR_ESCAPE_CHAR)
+                        .unwrap_or(-1);
+                    if (0..=crate::scanner::BIGGEST_USV).contains(&escape) {
+                        if let Some(ch) = char::from_u32(escape as u32) {
+                            output.push(ch);
+                        }
+                    }
                     for &unit in name {
                         if let Some(ch) = char::from_u32(unit.max(0) as u32) {
                             output.push(ch);
@@ -1451,8 +1536,7 @@ impl TeXEngineState {
             }
         } else {
             self.box_reg(
-                usize::try_from(self.cur_val)
-                    .map_err(|_| TeXMouthError::InputOutOfBounds(self.cur_val))?,
+                usize::try_from(self.cur_val).map_err(|_| crate::scanner::oob(self.cur_val))?,
             )?
         };
 
@@ -1588,7 +1672,19 @@ impl TeXEngineState {
                     characters.push(ch);
                 }
             } else {
-                characters.push('\\');
+                // C `sprint_cs` prints the escape character only when
+                // `escapechar` is a valid USV (TeX's `print_esc` checks
+                // `escapechar` against the USV range); `\escapechar=-1`
+                // suppresses it, which `\set@curr@file` relies on to build
+                // bare file names.
+                let escape = self
+                    .int_par(crate::state::INT_PAR_ESCAPE_CHAR)
+                    .unwrap_or(-1);
+                if (0..=crate::scanner::BIGGEST_USV).contains(&escape) {
+                    if let Some(ch) = char::from_u32(escape as u32) {
+                        characters.push(ch);
+                    }
+                }
                 for &unit in name {
                     if let Some(ch) = char::from_u32(unit.max(0) as u32) {
                         characters.push(ch);
@@ -1631,6 +1727,22 @@ impl TeXEngineState {
         match self.cur_val_level {
             INT_VAL => Ok(self.character_tokens(self.cur_val.to_string().chars())),
             DIMEN_VAL => Ok(self.character_tokens(format_scaled_pt(self.cur_val).chars())),
+            GLUE_VAL | MU_VAL => {
+                // C `the_toks` (~9294-9304): glue renders through
+                // `print_spec` — `"pt"` for glue, `"mu"` for muglue — and
+                // the spec's reference count is decremented afterwards.
+                let unit = if self.cur_val_level == MU_VAL {
+                    "mu"
+                } else {
+                    "pt"
+                };
+                let text = self.glue_spec_text(self.cur_val, unit)?;
+                if self.cur_val != TEX_NULL {
+                    self.delete_glue_ref(self.cur_val)?;
+                }
+                Ok(self.character_tokens(text.chars()))
+            }
+            IDENT_VAL => Ok(vec![CS_TOKEN_FLAG + self.cur_val]),
             TOK_VAL => {
                 // Compact token-list values may either point directly at the
                 // first token or at a `def_ref`-style reference head.
@@ -1642,7 +1754,7 @@ impl TeXEngineState {
                 }
             }
             _ => Err(TeXMouthError::UnsupportedPrimitive(
-                "\\the of a glue-valued quantity",
+                "\\the of an unhandled quantity",
             )),
         }
     }
@@ -1715,7 +1827,7 @@ impl TeXEngineState {
 
     pub(crate) fn checked_engine_mem_index(&self, p: i32) -> Result<usize, TeXMouthError> {
         if p < 0 || p as usize >= self.mem.len() {
-            Err(TeXMouthError::InputOutOfBounds(p))
+            Err(crate::scanner::oob(p))
         } else {
             Ok(p as usize)
         }
@@ -2103,8 +2215,14 @@ mod tests {
         let mut state = state();
         state.set_source_text("\\missing");
 
-        let err = state.next_expanded_token().unwrap_err();
-        assert!(matches!(err, TeXMouthError::UndefinedControlSequence(_)));
+        // C's undefined-control-sequence error is recoverable: it reports
+        // and forgets, so expansion continues with `Ok`.
+        state.next_expanded_token().unwrap();
+        assert_eq!(state.error_count, 1);
+        assert!(state
+            .transcript
+            .iter()
+            .any(|line| line.contains("Undefined control sequence")));
     }
 
     #[test]

@@ -667,7 +667,10 @@ impl<'a> CoreBridgeState<'a> {
         InputId::new(self.input_handles.len())
     }
 
-    fn input_open_primary(&mut self) -> Option<InputId> {
+    /// Open the primary input through the provider's dedicated hook
+    /// (`ttstub_input_open_primary`), which may serve piped or in-memory
+    /// content rather than a named file.
+    pub fn input_open_primary(&mut self) -> Option<InputId> {
         let io = self.hooks.io();
 
         let (ih, path) = match io.input_open_primary_with_abspath(self.status) {
@@ -700,7 +703,9 @@ impl<'a> CoreBridgeState<'a> {
         }
     }
 
-    fn input_get_mtime(&mut self, handle: InputId) -> i64 {
+    /// Get an input's modification time, applying the filesystem-emulation
+    /// override when deterministic mode is active (`ttstub_input_get_mtime`).
+    pub fn input_get_mtime(&mut self, handle: InputId) -> i64 {
         if let Some(mtime) = self.fs_emulation_settings.mtime_override {
             return mtime;
         }
@@ -728,7 +733,9 @@ impl<'a> CoreBridgeState<'a> {
         rhandle.read_exact(buf).map_err(Error::from)
     }
 
-    fn input_read_partial(&mut self, handle: InputId, buf: &mut [u8]) -> Result<usize> {
+    /// Read up to `buf.len()` bytes from an input, returning the count
+    /// (`ttstub_input_read`-equivalent for non-sizeable streams).
+    pub fn input_read_partial(&mut self, handle: InputId, buf: &mut [u8]) -> Result<usize> {
         let rhandle: &mut InputHandle = self.get_input(handle);
         rhandle.read(buf).map_err(Error::from)
     }
@@ -758,7 +765,64 @@ impl<'a> CoreBridgeState<'a> {
         rv
     }
 
-    fn shell_escape(&mut self, command: &str) -> bool {
+    /// The absolute path of the most recently opened input
+    /// (`ttstub_get_last_input_abspath`): `None` when the provider did not
+    /// report a filesystem path or when absolute paths are suppressed by
+    /// the filesystem-emulation settings (deterministic mode).
+    pub fn last_input_abspath(&mut self) -> Option<String> {
+        if !self.fs_emulation_settings.expose_absolute_paths {
+            return None;
+        }
+        self.latest_input_path
+            .as_ref()
+            .and_then(|p| p.to_str().map(str::to_owned))
+    }
+
+    /// Report a completed warning diagnostic to the status backend — the
+    /// `ttstub_diag_finish` equivalent for engines that buffer diagnostics
+    /// in their own state rather than streaming through `ttbc_diag_*`.
+    pub fn issue_warning_diag(&mut self, text: &str) {
+        self.status
+            .report(MessageKind::Warning, format_args!("{text}"), None);
+    }
+
+    /// Report a completed error diagnostic to the status backend.
+    pub fn issue_error_diag(&mut self, text: &str) {
+        self.status
+            .report(MessageKind::Error, format_args!("{text}"), None);
+    }
+
+    /// Whether the driver wants rich expansion events
+    /// (`ttstub_is_expansion_hook_active`): when false, the engine skips
+    /// control-sequence name marshalling on the hot expansion path.
+    pub fn wants_expansion_names(&self) -> bool {
+        self.hooks.is_macro_expansion_enabled()
+    }
+
+    /// Notify the driver that the engine is entering expansion
+    /// (`ttstub_event_expand_on` / `ttstub_event_macro_expand`). The rich
+    /// context is delivered only when a macro-expansion hook is active and
+    /// a name is available; otherwise the lightweight `event_expand_on`
+    /// fires — exactly the C engine's dispatch.
+    pub fn expansion_event(&mut self, name: Option<&str>, depth: i32, cur_cmd: i32, cur_chr: i32) {
+        if self.hooks.is_macro_expansion_enabled() {
+            if let Some(name) = name {
+                self.hooks.event_macro_expand(&MacroExpansionContext {
+                    name,
+                    depth,
+                    cur_cmd,
+                    cur_chr,
+                });
+            }
+        } else {
+            self.hooks.event_expand_on();
+        }
+    }
+
+    /// Execute a `\write18` shell-escape command subject to the security
+    /// settings (`ttstub_shell_escape`). Returns `true` on failure or when
+    /// execution is forbidden.
+    pub fn shell_escape(&mut self, command: &str) -> bool {
         if self.security.allow_shell_escape() {
             match self.hooks.sysrq_shell_escape(command, self.status) {
                 Ok(_) => false,
@@ -1668,14 +1732,7 @@ mod macro_expansion_tests {
 
         let name = "\\newcommand";
         unsafe {
-            ttbc_event_macro_expand(
-                &mut state,
-                name.as_ptr(),
-                name.len(),
-                3,
-                111,
-                222,
-            );
+            ttbc_event_macro_expand(&mut state, name.as_ptr(), name.len(), 3, 111, 222);
         }
 
         assert!(rich_flag.load(Ordering::SeqCst));
@@ -1731,14 +1788,7 @@ mod macro_expansion_tests {
         );
 
         unsafe {
-            ttbc_event_macro_expand(
-                &mut state,
-                std::ptr::null(),
-                0,
-                0,
-                0,
-                0,
-            );
+            ttbc_event_macro_expand(&mut state, std::ptr::null(), 0, 0, 0, 0);
         }
 
         assert!(rich_flag.load(Ordering::SeqCst));
@@ -1761,14 +1811,7 @@ mod macro_expansion_tests {
         // Neither ttbc_event_macro_expand nor ttbc_event_expand_on should panic across FFI
         let name = "panicking_macro";
         unsafe {
-            ttbc_event_macro_expand(
-                &mut state,
-                name.as_ptr(),
-                name.len(),
-                1,
-                0,
-                0,
-            );
+            ttbc_event_macro_expand(&mut state, name.as_ptr(), name.len(), 1, 0, 0);
             ttbc_event_expand_on(&mut state);
         }
     }
