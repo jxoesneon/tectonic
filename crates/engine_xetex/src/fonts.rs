@@ -1525,6 +1525,34 @@ mod tests {
     }
 
     #[test]
+    fn load_tfm_font_installs_extensible_recipes() {
+        let mut st = state();
+        st.name_of_file = b"cmex10".to_vec();
+        st.cur_name = b"cmex10".iter().map(|&c| i32::from(c)).collect();
+        st.register_input_byte_source(
+            "cmex10.tfm",
+            std::fs::read(
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../tests/assets/cmex10.tfm"),
+            )
+            .unwrap(),
+        );
+        let font = st.load_tfm_font(-1000).unwrap().unwrap();
+        let record = st.font_record(font).unwrap();
+        assert_eq!(record.exten_recipes.len(), 28);
+        // cmex10 char 12: EXT_TAG recipe 0 = {top:0, mid:0, bot:0, rep:12},
+        // stored in C order [rep, top, bot, mid].
+        assert_eq!(record.char_tags.get(&12), Some(&crate::state::EXT_TAG));
+        assert_eq!(record.char_remainders.get(&12), Some(&0));
+        assert_eq!(record.exten_recipes.get(&0), Some(&[12, 0, 0, 0]));
+        // np = 13 math parameters plus the unused slot 0.
+        assert_eq!(record.params.len(), 14);
+        // nl = 0: the sentinel alone keeps NON_ADDRESS unambiguous.
+        assert_eq!(record.lig_kern.len(), 1);
+        assert_eq!(record.bchar_label, crate::state::NON_ADDRESS);
+    }
+
+    #[test]
     fn load_tfm_font_uses_injected_resolver_and_caches() {
         let mut st = tfm_state();
         let bytes = cmr10_tfm();

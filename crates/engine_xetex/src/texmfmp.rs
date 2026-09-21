@@ -115,3 +115,26 @@ impl TeXEngineState {
         text
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn file_helpers_resolve_through_the_injected_resolver() {
+        let mut state = TeXEngineState::new(4_096);
+        state.set_input_resolver(std::sync::Arc::new(|name: &str| {
+            (name == "doc.bin").then(|| vec![0xDE, 0xAD, 0xBE, 0xEF])
+        }));
+        // `getfilesize` resolves lazily and caches the hit.
+        assert_eq!(state.file_size_text("doc.bin"), "4");
+        assert!(state.input_byte_sources.contains_key("doc.bin"));
+        // `getfiledump` reads the cached bytes.
+        assert_eq!(state.file_dump_text("doc.bin", 0, 4), "DEADBEEF");
+        // `getmd5sum` hashes the resolved file content.
+        assert_eq!(state.md5_sum_text("doc.bin", true).len(), 32);
+        // A miss yields the empty string for all helpers.
+        assert_eq!(state.file_size_text("absent.bin"), "");
+        assert_eq!(state.md5_sum_text("absent.bin", true), "");
+    }
+}
