@@ -11,7 +11,7 @@
 
 [package]
 edition = "2021"
-name = "rustybuzz"
+name = "tectonic-rustybuzz"
 version = "0.20.1"
 authors = [
     "Caleb Maclennan <caleb@alerque.com>",
@@ -23,13 +23,17 @@ build = false
 exclude = [
     "benches/",
     "tests/",
+    "docs/",
+    "scripts/",
+    "Cargo.toml.orig",
+    "Cargo.lock",
 ]
 autobins = false
 autoexamples = false
 autotests = false
 autobenches = false
-description = "A complete harfbuzz shaping algorithm port to Rust."
-documentation = "https://docs.rs/rustybuzz/"
+description = "A complete harfbuzz shaping algorithm port to Rust. Tectonic fork of rustybuzz 0.20.1 carrying CFF glyph-extents fixes."
+documentation = "https://docs.rs/tectonic-rustybuzz/"
 readme = "README.md"
 keywords = [
     "text",
@@ -39,7 +43,7 @@ keywords = [
 ]
 categories = ["text-processing"]
 license = "MIT"
-repository = "https://github.com/harfbuzz/rustybuzz"
+repository = "https://github.com/jxoesneon/rustybuzz"
 
 [lib]
 name = "rustybuzz"

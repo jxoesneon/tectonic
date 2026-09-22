@@ -24,7 +24,7 @@ tectonic_bridge_graphite2 = { path = "../bridge_graphite2", version = "0.17.3"  
 tectonic_io_base = { path = "../io_base", version = "0.17.3"  }
 libc = "0.2"
 enrede = { version = "0.2", features = ["alloc"] }
-rustybuzz = "0.20.1"
+rustybuzz = { version = "0.20.1", package = "tectonic-rustybuzz", path = "../../vendor/rustybuzz" }
 ttf-parser = "0.25.1"
 
 [build-dependencies]

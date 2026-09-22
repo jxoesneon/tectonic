@@ -1,5 +1,5 @@
 [package]
-name = "rustybuzz"
+name = "tectonic-rustybuzz"
 version = "0.20.1"
 authors = [
     "Caleb Maclennan <caleb@alerque.com>",
@@ -8,14 +8,18 @@ authors = [
     "خالد حسني (Khaled Hosny) <khaled@aliftype.com>"
 ]
 edition = "2021"
-description = "A complete harfbuzz shaping algorithm port to Rust."
-documentation = "https://docs.rs/rustybuzz/"
+description = "A complete harfbuzz shaping algorithm port to Rust. Tectonic fork of rustybuzz 0.20.1 carrying CFF glyph-extents fixes."
+documentation = "https://docs.rs/tectonic-rustybuzz/"
 readme = "README.md"
-repository = "https://github.com/harfbuzz/rustybuzz"
+repository = "https://github.com/jxoesneon/rustybuzz"
 license = "MIT"
 keywords = ["text", "shaping", "opentype", "truetype"]
 categories = ["text-processing"]
-exclude = ["benches/", "tests/"]
+exclude = ["benches/", "tests/", "docs/", "scripts/", "Cargo.toml.orig", "Cargo.lock"]
+
+[lib]
+name = "rustybuzz"
+path = "src/lib.rs"
 
 [dependencies]
 bitflags = "2.4.1"
