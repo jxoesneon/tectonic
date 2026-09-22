@@ -1,7 +1,7 @@
 # Tectonic Pure-Rust Engine Migration Roadmap
 
-> **Status**: Ratified by the Ciel Council of Five (Verdict: `PASS_CONDITIONAL`, Score: `8.125 / 10.0`)  
-> **Governance Docket**: `~/.ciel/council/council-20260918-tectonic-migration-roadmap.json`  
+> **Status**: Ratified by project governance review (Verdict: `PASS_CONDITIONAL`, Score: `8.125 / 10.0`)  
+> **Governance Docket**: `council-20260918-tectonic-migration-roadmap.json`  
 > **Target End-State**: 100% Pure-Rust, memory-safe, thread-safe, re-entrant TeX/LaTeX typesetting engine with zero C/C++ compiler dependencies, producing 1:1 bitwise/visually identical output across the entire CTAN and TeXLive corpus.
 
 ---
@@ -49,7 +49,7 @@ Total Active Codebase:
 
 ## 3. Mandatory Safety & Governance Gates
 
-By mandate of the Ciel Council of Five (Safety Member veto conditions), no legacy C component in Phases 3 through 5 may be deprecated or removed without passing these seven unbypassable gates:
+By mandate of the project's governance review (safety-veto conditions), no legacy C component in Phases 3 through 5 may be deprecated or removed without passing these seven unbypassable gates:
 
 1. **Gate 1 (Unbypassable CI Blocker)**: The Phase 2 Differential Testing Harness (`tectonic-crater`) must be fully operational in CI as a required status check before any C code replacement.
 2. **Gate 2 (Two-Tier Parity Verification)**:
@@ -311,8 +311,8 @@ Completing this roadmap transforms Tectonic from an external CLI tool into an em
 
 ---
 
-## 6. Revision History & Council Log
+## 6. Revision History & Governance Log
 
 | Date | Revision | Author / Governance | Notes |
 | :--- | :---: | :--- | :--- |
-| **2026-09-18** | `v1.0.0` | **Ciel Council of Five** | Initial formalization ratified (Docket `council-20260918-tectonic-migration-roadmap.json`, Score: 8.125/10). Established 7 mandatory safety gates, 2-tier parity criteria, Phase 3a decoupling prerequisite, and Phase 4.5 WASM font track. |
+| **2026-09-18** | `v1.0.0` | **Governance review** | Initial formalization ratified (Docket `council-20260918-tectonic-migration-roadmap.json`, Score: 8.125/10). Established 7 mandatory safety gates, 2-tier parity criteria, Phase 3a decoupling prerequisite, and Phase 4.5 WASM font track. |

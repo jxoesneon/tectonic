@@ -28,6 +28,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::expand::format_scaled_pt;
+use crate::fonts::d2fix;
 use crate::primitives::primitive_defs;
 use crate::scan::NUMBER_MATH_FAMILIES;
 use crate::scan::{
@@ -368,10 +369,6 @@ fn requested_scale(x_req: f64, y_req: f64, width: f64, height: f64) -> (f64, f64
     } else {
         (x_req / width, y_req / height)
     }
-}
-
-fn d2fix(value: f64) -> i32 {
-    (value * 65_536.0).round() as i32
 }
 
 fn write_pic_path(words: &mut [crate::state::MemoryWord], path: &[u8]) {

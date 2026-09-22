@@ -1205,6 +1205,12 @@ impl TeXEngineState {
         let mut p = 0i32;
         let mut q = self.rover;
         loop {
+            // The link fields come from the format file; bound the node
+            // indices before indexing `mem` so a crafted file errors out
+            // instead of panicking.
+            if p < 0 || q < p || q + 2 > self.mem.len() as i32 {
+                return Err(bad());
+            }
             let words = r.words((q + 2 - p) as usize)?;
             self.mem[p as usize..(q + 2) as usize].copy_from_slice(&words);
             p = q + self.mem[q as usize].s0;
