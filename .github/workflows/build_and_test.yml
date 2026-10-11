@@ -91,7 +91,7 @@ jobs:
           artifact_dir="appimage"
           mkdir -p "$artifact_dir"
           
-          if [[ $SOURCE_BRANCH == master ]] ; then
+          if [[ $SOURCE_BRANCH == main ]] ; then
             export TECTONIC_APPIMAGE_TAG=continuous
             export UPDATE_INFORMATION="gh-releases-zsync|tectonic-typesetting|tectonic|continuous|tectonic-*.AppImage.zsync"
           fi
