@@ -3,10 +3,10 @@ name: "CodeQL"
 on:
   # Trigger analysis on push to main/master branches
   push:
-    branches: ["local/ferrotex-vendor-v2", "master"]
+    branches: ["local/ferrotex-vendor-v2", "main"]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: ["local/ferrotex-vendor-v2", "master"]
+    branches: ["local/ferrotex-vendor-v2", "main"]
   schedule:
     - cron: "39 5 * * 1"
 
